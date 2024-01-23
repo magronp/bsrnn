@@ -27,13 +27,8 @@ class PLModule(pl.LightningModule):
         eval_device="cuda",
         rec_dir=None,
         eps=1.0e-7,
-        module_type="time",
     ):
         super().__init__()
-
-        # Module type (define how to perform forward pass) and the corrresponding function
-        self.module_type = module_type
-        self.shared_step = getattr(self, "_shared_step_" + module_type)
 
         # General useful parameters
         self.sample_rate = sample_rate
@@ -73,28 +68,14 @@ class PLModule(pl.LightningModule):
         self.save_hyperparameters()
 
     # dummy forward function, just to ensure proper output size
-    def forward(self, input, V=None):
-        if self.module_type == "time":
-            # input: [batch_size, nb_channels, n_samples]
-            y_hat = input.unsqueeze(1).repeat(
-                1, len(self.targets), 1, 1
-            )  # [batch_size, nb_targets, nb_channels, n_samples]
-            return {"waveforms": y_hat}
+    def forward(self, input):
+        # input: [batch_size, nb_channels, n_samples]
+        y_hat = input.unsqueeze(1).repeat(
+            1, len(self.targets), 1, 1
+        )  # [batch_size, nb_targets, nb_channels, n_samples]
+        return {"waveforms": y_hat}
 
-        elif self.module_type == "spectro":
-            # input : [batch_size, nb_channels, F, T]
-            y_hat = input.unsqueeze(1)  # [batch_size, 1, nb_channels, F, T]
-            return {"magnitudes": y_hat}
-
-        elif self.module_type == "phase":
-            # input: [batch_size, nb_channels, F, T]
-            # V: doesn't matter
-            phi = torch.angle(input).unsqueeze(1).repeat(
-                1, len(self.targets), 1, 1
-            )  # [batch_size, nb_targets, nb_channels, F, T]
-            return {"phases": phi}
-
-    def _shared_step_time(self, x, y, comp_loss=True):
+    def _shared_step(self, x, y, comp_loss=True):
         # Apply model, and get the waveform
         outputs = self(x)
         y_hat = outputs["waveforms"]
@@ -113,76 +94,9 @@ class PLModule(pl.LightningModule):
 
         return steploss, y_hat
 
-    def _shared_step_oracle(self, x, y, comp_loss=True):
-        # Apply model, and get the waveform
-        outputs = self(y)
-        y_hat = outputs["waveforms"]
-        steploss = None # no need to account for the particular case (comp_loss), since nothing is learned for oracle
-        return steploss, y_hat
-    
-    def _shared_step_spectro(self, x, y, comp_loss=True):
-        # Input STFT
-        X = self.stft(x)
-
-        # Apply model
-        outputs = self(torch.abs(X))
-
-        # Estimate the waveform using the mixture's phase
-        y_hat = self.istft(
-            outputs["magnitudes"] * torch.exp(1j * torch.angle(X).unsqueeze(1)),
-            length=x.shape[-1],
-        )
-
-        # Compute the loss for training and validation (but no need for testing)
-        if comp_loss:
-            # Add the waveform to the outputs dict
-            outputs["waveforms"] = y_hat
-
-            # Stack the reference waveform and magnitude into a dict
-            refs = {"waveforms": y, "magnitudes": torch.abs(self.stft(y))}
-
-            # Compute the loss
-            steploss = compute_loss(
-                refs, outputs, loss_type=self.loss_type, loss_domain=self.loss_domain
-            )
-        else:
-            steploss = None
-
-        return steploss, y_hat
-
-
-    def _shared_step_phase(self, x, y, comp_loss=True):
-        # Get input STFT
-        X = self.stft(x)
-        Y = self.stft(y)
-        V, phX = torch.abs(Y), torch.angle(Y)
-
-        # Apply model
-        outputs = self(X, V)
-
-        # Estimate the waveform using the provided magnitudes
-        y_hat = self.istft(V * torch.exp(1j * outputs["phases"]), length=x.shape[-1])
-
-        # Compute the loss for training and validation (but no need for testing)
-        if comp_loss:
-            # Add the waveform to the outputs dict
-            outputs["waveforms"] = y_hat
-
-            # Stack the reference waveform and STFT mag/phase into a dict
-            refs = {"waveforms": y, "phases": phX, "magnitudes": V}
-
-            # Compute the loss
-            steploss = compute_loss(
-                refs, outputs, loss_type=self.loss_type, loss_domain=self.loss_domain
-            )
-        else:
-            steploss = None
-        
-        return steploss, y_hat
-
     def training_step(self, batch, batch_idx):
         x, y, _ = batch
-        train_loss, _ = self.shared_step(x, y)
+        train_loss, _ = self._shared_step(x, y)
         self.log(
             "train_loss",
             train_loss,
@@ -266,7 +180,7 @@ class PLModule(pl.LightningModule):
             true_sources.to(self.eval_device)
             # apply model
             with torch.no_grad():
-                loss, y_hat = self.shared_step(mix, true_sources, comp_loss=comp_loss)
+                loss, y_hat = self._shared_step(mix, true_sources, comp_loss=comp_loss)
             # back to the initial device
             final = y_hat.to(in_device)
 
@@ -294,7 +208,7 @@ class PLModule(pl.LightningModule):
                 true_sources_chunk.to(self.eval_device)
                 # apply model
                 with torch.no_grad():
-                    loss_chunk, y_hat = self.shared_step(mix_chunk, true_sources_chunk, comp_loss=comp_loss)
+                    loss_chunk, y_hat = self._shared_step(mix_chunk, true_sources_chunk, comp_loss=comp_loss)
                 # back to the initial device
                 y_hat = y_hat.to(in_device)
                 # apply fader and add to final signal
@@ -407,10 +321,9 @@ if __name__ == "__main__":
     # Params
     cfg_optim = OmegaConf.create({"lr": 0.001, "loss_type": "L1", "loss_domain": "t"})
     cfg_scheduler = OmegaConf.create({"name": "plateau", "factor": 0.5, "patience": 3})
-    module_type = 'spectro'
 
     # Instanciate model
-    model = PLModule(cfg_optim, cfg_scheduler, eval_device="cpu", module_type=module_type, verbose_per_track=False)
+    model = PLModule(cfg_optim, cfg_scheduler, eval_device="cpu", verbose_per_track=False)
     model.eval_segment_len = 1
 
     # Forward pass

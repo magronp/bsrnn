@@ -138,43 +138,24 @@ def get_loss_fn(loss_type="L1"):
 
 def compute_loss(refs, est, loss_type='L1', loss_domain='t'):
     
-    # Define the loss function according to the type
+    if isinstance(loss_domain, str):
+        loss_domain = [loss_domain]
+
+    # Instanciate the loss function
     loss_fn = get_loss_fn(loss_type)
 
-    # Compute the loss depending on the domain (time-domain, TF, ...)
-    if loss_domain == 't':
-        y, y_hat = refs['waveforms'], est['waveforms']
-        loss = loss_fn(y_hat, y)
-
-    elif loss_domain == 't+tfr+tfi':
-        y, y_hat = refs['waveforms'], est['waveforms']
-        Y, Y_hat = refs['stfts'], est['stfts']
-        loss = loss_fn(y_hat, y) + loss_fn(Y.real, Y_hat.real) + loss_fn(Y.imag, Y_hat.imag)
-
-    elif loss_domain == 't+mag':
-        y, y_hat = refs['waveforms'], est['waveforms']
-        V, V_hat = refs['magnitudes'], est['magnitudes']
-        loss = loss_fn(y_hat, y) + loss_fn(V, V_hat)
-
-    elif loss_domain == 'mag':
-        V, V_hat = refs['magnitudes'], est['magnitudes']
-        loss = loss_fn(V, V_hat)
-
-    elif loss_domain == 'ph':
-        ph, ph_hat = refs['phases'], est['phases']
-        V = refs['magnitudes'].squeeze(1)
-        loss = - V * torch.cos(ph - ph_hat)
-        loss = loss.mean()
-
-    elif loss_domain == 't+ph':
-        ph, ph_hat = refs['phases'], est['phases']
-        V = refs['magnitudes'].squeeze(1)
-        lossph = - V * torch.cos(ph - ph_hat)
-        lossph = lossph.mean()
-        y, y_hat = refs['waveforms'], est['waveforms']
-        loss = loss_fn(y_hat, y) + lossph
-    else:
-        raise NameError("Unknown loss domain")
+    # Iterate over domains to compute the total loss
+    loss=0
+    for ld in loss_domain:
+        # Compute the loss depending on the domain (time-domain, TF, ...)
+        if ld == 't':
+            y, y_hat = refs['waveforms'], est['waveforms']
+            loss += loss_fn(y_hat, y)
+        elif ld == 'tf':
+            Y, Y_hat = refs['stfts'], est['stfts']
+            loss += loss_fn(Y.real, Y_hat.real) + loss_fn(Y.imag, Y_hat.imag)
+        else:
+            raise NameError("Unknown loss domain")
 
     return loss
 

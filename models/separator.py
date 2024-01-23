@@ -22,8 +22,7 @@ class Separator(PLModule):
             sample_rate=args.sample_rate,
             n_fft=args.n_fft,
             n_hop=args.n_hop,
-            eps=args.eps,
-            module_type="time",
+            eps=args.eps
         )
 
         # Source models

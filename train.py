@@ -19,7 +19,7 @@ def train(args: DictConfig):
     # Data samplers
     tr_sampler = build_training_sampler(target, args.dset, fast_tr=args.fast_tr)
     if args.fast_tr:
-        val_sampler = tr_sampler  # for debugging / overfitting on one batch
+        val_sampler = tr_sampler  # for debugging (overfitting on one batch)
     else:
         val_sampler = build_fulltrack_sampler(target, args.dset, subset="train", split="valid")
 

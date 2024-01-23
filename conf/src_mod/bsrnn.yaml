@@ -11,3 +11,7 @@ num_repeat: 8
 # The full model (as in the original paper) is as below
 #feature_dim: 128
 #num_repeat: 12
+time_layer: lstm
+band_layer: lstm
+n_att_head: 0
+attn_enc_dim: 20

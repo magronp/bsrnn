@@ -85,8 +85,7 @@ class BSRNN(PLModule):
             cfg_scheduler,
             targets=target,
             sample_rate=sample_rate,
-            eps=eps,
-            module_type='time'
+            eps=eps
         )
 
         instrument = target
@@ -217,7 +216,7 @@ class BSRNN(PLModule):
         output = self.istft(est_spec, length=nsample)
         output = output.view(batch_size, nch, -1)
 
-        # ajouter pour avoir les bonnes tailles
+        # adjust to proper sizes
         est_spec = est_spec.view(batch_size, nch, self.enc_dim, -1)
         est_spec = est_spec.unsqueeze(1)  # B, 1, nch, F, T
         output = output.unsqueeze(1)  # B, 1, nch, n_samples

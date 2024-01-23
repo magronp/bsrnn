@@ -8,4 +8,6 @@ grad_clip_norm: 5
 
 # Loss
 loss_type: L1
-loss_domain: t+tfr+tfi
+loss_domain:
+  - t
+  - tf
