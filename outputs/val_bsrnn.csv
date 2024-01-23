@@ -1,3 +1,0 @@
-,loss_domain,feature_dim,num_repeat,time_layer,band_layer,n_att_head,attn_enc_dim,val_sdr
-0,"['t', 'tf']",64,8,conv,lstm,0,20,5.254660606384277
-1,"['t', 'tf']",64,8,lstm,lstm,0,20,4.133600234985352

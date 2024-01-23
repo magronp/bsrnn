@@ -1,6 +1,0 @@
-.venv/
-data/
-!data/dummy.txt
-outputs/
-!outputs.
-.venv/.venv/
