@@ -56,7 +56,6 @@ def instanciate_src_model_onetarget(
         ckpt_exists = False
 
     if ckpt_exists:
-        #print(ckpt_path)
         model = Model.load_from_checkpoint(
             ckpt_path,
             cfg_optim=cfg_optim,

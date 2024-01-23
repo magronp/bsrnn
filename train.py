@@ -3,7 +3,7 @@ from omegaconf import DictConfig
 import lightning.pytorch as pl
 from helpers.data import build_training_sampler, build_fulltrack_sampler
 from helpers.trainer import create_trainer
-from models.instanciate_src import instanciate_src_model_onetarget
+from helpers.instanciate_src import instanciate_src_model_onetarget
 from os.path import join
 from pathlib import Path
 
