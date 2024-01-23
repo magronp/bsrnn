@@ -1,0 +1,6 @@
+name: optimal_notd
+algo: MISI
+iter: 5
+consistency_weight: 0.0
+use_phase_prior: false
+time_domain_tr: false

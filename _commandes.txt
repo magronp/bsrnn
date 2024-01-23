@@ -1,0 +1,4 @@
+
+fuser 6006/tcp -k
+
+fuser -v /dev/nvidia*

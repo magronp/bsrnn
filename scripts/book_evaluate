@@ -1,0 +1,28 @@
+#!/bin/sh
+
+if [ $1 == "cpu" ]
+then
+	full_command="oarsub -vv -l /nodes=1,walltime=2 -p grvingt -q production scripts/job_evaluate.sh"
+else
+	full_command="oarsub -v -l gpu=1,walltime=3 -p grele -q production scripts/job_evaluate.sh"
+fi
+
+echo $full_command
+
+read -p "Continue and launch this command? (y/n)" 
+
+case $REPLY in 
+	[Yy]* ) 
+	eval $full_command
+	echo "Command launched"
+	;;
+	"" )
+	eval $full_command
+	echo "Command launched"
+	;;
+
+	* ) 
+	echo "Aborted"
+	exit
+	;;
+esac

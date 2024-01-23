@@ -1,0 +1,3 @@
+name: step
+gamma: 0.98
+step_size: 2
