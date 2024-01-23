@@ -7,8 +7,7 @@ import time
 from os import path, sched_getaffinity
 import tqdm
 from os.path import join
-from helpers.data import get_track_list
-from helpers.utils import rec_estimates
+from helpers.data import get_track_list, rec_estimates
 import multiprocessing
 import functools
 
@@ -180,112 +179,6 @@ def compute_loss(refs, est, loss_type='L1', loss_domain='t'):
     return loss
 
 
-def apply_model_to_track_old(
-    model, mix, sample_rate=44100, segment_len=10.0, overlap=0.1, device=None, true_sources=None, loss_type=None, loss_domain=None
-):
-    """
-    Apply model to a given mixture. Use fade, and add segments together in order to add model segment by segment.
-
-    Args:
-        segment_len (int): segment length in seconds
-        overlap (float): fraction of segment_len that will be added and used for OLA
-        device (torch.device, str, or None): if provided, device on which to
-            execute the computation, otherwise `mix.device` is assumed.
-            When `device` is different from `mix.device`, only local computations will
-            be on `device`, while the entire tracks will be stored on `mix.device`.
-    """
-
-    if device is None:
-        device = mix.device
-    else:
-        device = torch.device(device)
-
-    # disable train-only layers and place on the device
-    model.eval()
-    model.to(device)
-
-    bsize, nb_channels, nsamples = mix.shape
-
-    if model.targets is not None:
-        n_targets = len(model.targets)
-    else:
-        n_targets = 1
-
-    # Initialize list for the total loss of the track
-    track_loss = []
-
-    # treat the case where we might want to process the whole track at once
-    if segment_len == -1:
-        chunk_len = nsamples + 1
-    else:
-        chunk_len = int(sample_rate * segment_len * (1 + overlap))
-
-    # if too big chunks / too small mixture, ignore the OLA / fader
-    if chunk_len >= nsamples:
-        with torch.no_grad():
-            mix.to(device)
-            outputs = model(mix)
-            final = outputs['waveforms']
-
-            # Loss
-            if true_sources is not None:
-                refs = {'waveforms': true_sources,
-                        'stfts': model.stft(true_sources)}
-                seg_loss = compute_loss(refs, outputs, loss_type, loss_domain)
-                track_loss.append(seg_loss)
-
-    else:
-        start = 0
-        end = chunk_len
-        overlap_frames = overlap * segment_len * sample_rate
-        fade = torchaudio.transforms.Fade(
-            fade_in_len=0, fade_out_len=int(overlap_frames), fade_shape="linear"
-        )
-
-        final = torch.zeros(
-            (bsize, n_targets, nb_channels, nsamples), device=mix.device
-        )
-
-        while start < nsamples - overlap_frames:
-            # extract current chunk
-            chunk = mix[..., start:end]
-
-            if true_sources is not None:
-                chunk_true_sources = true_sources[..., start:end]
-
-            # apply model
-            with torch.no_grad():
-                chunk.to(device)
-                outputs = model(chunk)
-                out = outputs['waveforms']
-
-                # Loss
-                if true_sources is not None:
-                    refs = {'waveforms': chunk_true_sources,
-                            'stfts': model.stft(chunk_true_sources)}
-                    seg_loss = compute_loss(refs, outputs, loss_type, loss_domain)
-                    track_loss.append(seg_loss)
-                    
-            out = fade(out)
-            final[:, :, :, start:end] += out.detach().to(mix.device)
-
-            # update indices
-            if start == 0:
-                fade.fade_in_len = int(overlap_frames)
-                start += int(chunk_len - overlap_frames)
-            else:
-                start += chunk_len
-            end += chunk_len
-            if end >= nsamples:
-                fade.fade_out_len = 0
-
-    # Aggregate losses over segments (if not empty)
-    if track_loss:
-        track_loss = torch.mean(torch.stack(track_loss))
-
-    return final, track_loss
-
-
 def apply_fn_to_sources(
     input_sig,
     my_fn,
@@ -334,75 +227,6 @@ def apply_fn_to_sources(
             # fader / overlap-add
             out_chunk = fade(out_chunk)
             output_sig[..., start:end] += out_chunk
-
-            # update indices
-            if start == 0:
-                fade.fade_in_len = int(overlap_frames)
-                start += int(chunk_len - overlap_frames)
-            else:
-                start += chunk_len
-            end += chunk_len
-            if end >= nsamples:
-                fade.fade_out_len = 0
-
-    return output_sig
-
-
-def apply_fn_to_sources_old(
-    input_sig,
-    my_fn,
-    sample_rate=44100,
-    eval_segment_len=10.0,
-    eval_overlap=0.1,
-    device=None,
-    *args,
-    **kwargs
-):
-    # my_fn must be a function from [B, ntrg, nch, L] to [B, ntrg, nch, L]
-    # For evaluation, it takes the reference and fabricates the mix inside to avoid dim problem
-
-    if device is None:
-        device = input_sig.device
-    else:
-        device = torch.device(device)
-
-    bsize, n_targets, nb_channels, nsamples = input_sig.shape
-
-    # treat the case where we might want to process the whole track at once
-    if eval_segment_len == -1:
-        chunk_len = nsamples + 1
-    else:
-        chunk_len = int(sample_rate * eval_segment_len * (1 + eval_overlap))
-
-    # if too big chunks / too small mixture, ignore the OLA / fader
-    if chunk_len >= nsamples:
-        with torch.no_grad():
-            input_sig.to(device)
-            output_sig = my_fn(input_sig, *args, **kwargs)
-
-    else:
-        start = 0
-        end = chunk_len
-        overlap_frames = eval_overlap * eval_segment_len * sample_rate
-        fade = torchaudio.transforms.Fade(
-            fade_in_len=0, fade_out_len=int(overlap_frames), fade_shape="linear"
-        )
-
-        output_sig = torch.zeros(
-            (bsize, n_targets, nb_channels, nsamples), device=input_sig.device
-        )
-
-        while start < nsamples - overlap_frames:
-
-            # extract current chunk
-            chunk = input_sig[..., start:end]
-
-            # apply model
-            chunk.to(device)
-            out_chunk = my_fn(chunk, *args, **kwargs)
-
-            out_chunk = fade(out_chunk)
-            output_sig[..., start:end] += out_chunk.detach().to(input_sig.device)
 
             # update indices
             if start == 0:

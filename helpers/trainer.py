@@ -1,6 +1,5 @@
 import torch
 import lightning.pytorch as pl
-torch.set_float32_matmul_precision('medium')
 
 
 def create_trainer(

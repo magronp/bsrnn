@@ -1,5 +1,4 @@
 import torch
-import os
 from models.pl_module import PLModule
 from models.instanciate_src import instanciate_src_models_targets
 

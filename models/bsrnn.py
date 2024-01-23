@@ -239,14 +239,5 @@ if __name__ == '__main__':
     output = model(x)
     print(output.shape)
 
-    """
-    x = torch.randn((2, 44100*3))
-
-    Xbs = torch.stft(x, n_fft=2048, hop_length=512,
-                      window=torch.hann_window(2048).to(x.device).type(x.type()),
-                      return_complex=True)
-
-    stft = mySTFT(n_fft=2048, n_hop=512)
-    Xmy = stft(x)
-    torch.linalg.norm(Xbs - Xmy)
-    """
+# EOF
+    

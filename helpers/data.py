@@ -10,8 +10,30 @@ import os
 import yaml
 from torch.utils.data import DataLoader
 import pandas as pd
-
+from pathlib import Path
 tqdm.monitor_interval = 0
+
+
+def rec_estimates(estimates, track_rec_dir, targets, sample_rate):
+    """
+    estimates: [n_targets, n_channels, n_samples]
+    """
+
+    # Make sure the estimates tensor is detached and on cpu
+    estimates = estimates.cpu().detach()
+
+    # create the rec folder if needed
+    Path(track_rec_dir).mkdir(parents=True, exist_ok=True)
+
+    # Loop over targets
+    for ind_trg, trg in enumerate(targets):
+        torchaudio.save(
+            os.path.join(track_rec_dir, trg + ".wav"),
+            estimates[ind_trg],
+            sample_rate,
+        )
+
+    return
 
 
 class Augmentator(object):
