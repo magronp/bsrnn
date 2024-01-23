@@ -9,11 +9,8 @@ sources:
 - bass
 - drums
 - other
-#seq_duration: 3.0
-#n_samples: 20000
-seq_duration: 6.0
-n_samples: 5000
-n_samples_val:
+seq_duration: 3.0
+n_samples: 20000
 # Augmentations
 source_augmentations:
 - randomcrop
@@ -26,8 +23,7 @@ p_channelswap: 0.5
 p_silent: 0.1
 
 # Samplers
-#batch_size: 2
-batch_size: 4
+batch_size: 2
 nb_workers: 4
 
 # SAD preprocessing

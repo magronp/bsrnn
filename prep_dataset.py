@@ -14,7 +14,7 @@ from omegaconf import DictConfig
 class SAD:
     """
     SAD(Source Activity Detector)
-    taken from: https://github.com/amanteur/BandSplitRNN-Pytorch/blob/main/src/data/preprocessing.py
+    largely adpated from: https://github.com/amanteur/BandSplitRNN-Pytorch/blob/main/src/data/preprocessing.py
     """
 
     def __init__(
@@ -155,9 +155,8 @@ def get_indices_trg(
 
 @hydra.main(version_base=None, config_name="config", config_path="conf")
 def prepare_dset(args: DictConfig):
-    # Define subset to process and targets
-    subset = "train"
-    split = "valid"
+
+    # Define targets
     targets = ["vocals", "bass", "drums", "other"]
     args = args.dset
 
@@ -180,7 +179,7 @@ def prepare_dset(args: DictConfig):
     # get active indices for all targets
     for target in targets:
         print(target)
-        get_indices_trg(target, subset, split, input_dir, output_dir, sad)
+        get_indices_trg(target, "train", "train", input_dir, output_dir, sad)
 
     return
 

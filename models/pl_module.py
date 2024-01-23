@@ -198,45 +198,6 @@ class PLModule(pl.LightningModule):
         lr_current = self.optimizers().optimizer.param_groups[0]["lr"]
         self.log("lr_epoch", lr_current, sync_dist=True)
 
-    def validation_step_old(self, batch, batch_idx):
-        x, y, _ = batch
-        val_loss, y_hat = self.shared_step(x, y)
-
-        self.log(
-            "val_loss",
-            val_loss,
-            on_step=True,
-            on_epoch=True,
-            prog_bar=False,
-            sync_dist=True,
-            batch_size=x.shape[0],
-        )
-
-        # oracle AM (comment)
-        #y_hat = self.istft(
-        #    torch.abs(self.stft(y)) * torch.exp(1j * torch.angle(self.stft(x)).unsqueeze(1)),
-        #    length=x.shape[-1],
-        #)
-
-        # Validation SDR
-        val_sdr = compute_sdr(
-            y, y_hat, win_bss=self.win_bss, sdr_type=self.sdr_type, eps=self.eps
-        )[0]
-        val_sdr = torch.nanmean(val_sdr) #in case there are more than one source
-
-        self.log(
-            "val_sdr",
-            val_sdr,  
-            on_step=True,
-            on_epoch=True,
-            prog_bar=True,
-            sync_dist=True,
-            batch_size=x.shape[0],
-        )
-
-        return val_loss, val_sdr
-
-
     def validation_step(self, batch, batch_idx):
         # Load the data
         x, y, _ = batch

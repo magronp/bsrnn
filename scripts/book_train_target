@@ -1,7 +1,0 @@
-#!/bin/bash
-SRCMOD="$1"
-TARGET="$2"
-SCHEDULER=${3:-"plateau"}
-CLUSTER=${4:-"graffiti"}
-
-oarsub -vv -l /nodes=1,walltime=8 -p $CLUSTER -q production "scripts/job_train_target.sh $SRCMOD $TARGET $SCHEDULER"

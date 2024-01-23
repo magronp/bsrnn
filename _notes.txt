@@ -21,9 +21,3 @@ GRU / LSTM semblent marcher similairement, mais GRU moins de paramètres (7.4M v
 -----
 optim : attention pour tout le monde, sauf "drums"
 
-
-----------------
-précédente version: '1.12.1+cu102', semble plus lent avec la nouvelle.
-
-
-le MISI4 a été fait sans pretraining vu qeu 3 pas encore entrainé... à refaire ensuite

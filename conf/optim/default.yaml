@@ -1,11 +1,11 @@
 # General details
-max_epochs: 300
-patience: 20
+max_epochs: 100
+patience: 10
 
 # Algo-related
-lr: ${src_mod.lr}
-grad_clip_norm: ${src_mod.grad_clip_norm}
+lr: 0.001
+grad_clip_norm: 5
 
 # Loss
-loss_type: ${src_mod.loss_type}
-loss_domain: ${src_mod.loss_domain}
+loss_type: L1
+loss_domain: t+tfr+tfi

@@ -4,9 +4,8 @@ import torch
 from os.path import join
 import lightning.pytorch as pl
 import tqdm
-from models.separator import load_separator
+from models.separator import Separator
 from helpers.data import build_fulltrack_sampler
-from helpers.utils import get_model_info
 from helpers.eval import (
     append_sdr_to_main_file,
     process_all_tracks,
@@ -15,16 +14,12 @@ from helpers.eval import (
 tqdm.monitor_interval = 0
 
 
-def load_model_and_inference(y, args, path_separator, device='cpu'):
+def load_model_and_inference(y, args, device='cpu'):
     # Get the mixture from the references  [1, n_channels, n_samples]
     mix = torch.sum(y, dim=1)
 
     # Load the separator
-    model = load_separator(
-        args,
-        ckpt_path=path_separator
-    )
-    
+    model = Separator(args)
     model.eval()
     model.to(device)
 
@@ -37,7 +32,7 @@ def load_model_and_inference(y, args, path_separator, device='cpu'):
     return y_hat
 
 
-@hydra.main(version_base=None, config_name='config_sep', config_path='conf')
+@hydra.main(version_base=None, config_name='config', config_path='conf')
 def evaluate(args: DictConfig):
 
     # Set random seed for reproducibility
@@ -45,27 +40,14 @@ def evaluate(args: DictConfig):
 
     sdr_type = args.sdr_type
     targets = args.targets
+    src_mod = args.src_mod.name
 
-    # Get the model info (useful folders / paths)
-    model_info = get_model_info(
-        args,
-        out_dir=args.out_dir
-    )
-
-    ## TODO à simplifier car pour l'eval, juste à aller chercher les parametres liés au spinv optimal (dans un yaml)
-
-    # Get the useful information for evaluation
-    model_dir = model_info["model_dir"]
-    rec_dir = model_info["rec_dir"]
-    path_separator = model_info["path_separator"]
-    method_name = model_info["method_name"]
+    model_dir = join(args.out_dir, src_mod)
+    rec_dir = join(model_dir, "audio")
 
     # Evaluation results file
     path_eval_file = join(model_dir, "test_results_" + sdr_type + ".csv")
     path_main_file = join(args.out_dir, "separator_results_" + sdr_type + ".csv")
-
-    # Display the method
-    print(' Method:', method_name)
 
     # Evaluation
     if not (args.only_append_res):
@@ -74,10 +56,7 @@ def evaluate(args: DictConfig):
         if args.eval_device == "cuda":
 
             # Load the separator model
-            model = load_separator(
-                args,
-                ckpt_path=path_separator
-            )
+            model = Separator(args)
 
             # Set the model evaluation-related attributes
             model.rec_dir = rec_dir
@@ -114,8 +93,7 @@ def evaluate(args: DictConfig):
                 eval_overlap=args.eval_overlap,
                 sdr_type=sdr_type,
                 # Now the arguments for the function to test
-                args_sep=args,
-                path_separator=path_separator,
+                args_sep=args
             )
 
         # Record the results
@@ -123,7 +101,7 @@ def evaluate(args: DictConfig):
 
     # Add to the overall results file
     curr_meth_results = append_sdr_to_main_file(
-        path_main_file, method_name, path_eval_file, sdr_type=sdr_type
+        path_main_file, src_mod, path_eval_file, sdr_type=sdr_type
     )
     print(curr_meth_results)
 

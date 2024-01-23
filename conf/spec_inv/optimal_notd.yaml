@@ -1,6 +1,0 @@
-name: optimal_notd
-algo: AM
-iter: 0
-consistency_weight: 0
-use_phase_prior: false
-time_domain_tr: false

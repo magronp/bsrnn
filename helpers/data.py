@@ -1,12 +1,9 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 import torch
 from torch.utils.data import Dataset
 import torchaudio
 import random
 import musdb
-from openunmix.data import UnmixDataset
 from typing import Optional
 import tqdm
 import os
@@ -95,7 +92,7 @@ def get_track_list(root, subset, split=None):
     return list_tracks_subset
 
 
-class MUSDBDataset(UnmixDataset):
+class MUSDBDataset(Dataset):
     def __init__(
         self,
         targets=None,
@@ -353,9 +350,8 @@ class MUSDBDatasetSAD(Dataset):
         else:
             return max([self.n_chunks[t] for t in self.targets])
 
-#TODO réécrire proprement les datasets full length ou découpés pour charger les samplers
 
-def build_training_samplers(targets, cfg_dset, ngpus=None, fast_tr=False):
+def build_training_sampler(targets, cfg_dset, ngpus=None, fast_tr=False):
 
     # If fast training (=overfit batches), remove augmentation to ensure it's always the same batch
     src_aug = cfg_dset.source_augmentations
@@ -385,33 +381,13 @@ def build_training_samplers(targets, cfg_dset, ngpus=None, fast_tr=False):
         seed=cfg_dset.seed,
     )
 
-    if fast_tr:
-        valid_db = train_db
-    else:
-        valid_db = MUSDBDatasetSAD(
-            targets=targets,
-            sources=cfg_dset.sources,
-            data_dir=cfg_dset.data_dir,
-            sad_dir=cfg_dset.sad_dir,
-            n_samples=cfg_dset.n_samples_val,
-            subset="train",
-            split="valid",
-            sample_rate=cfg_dset.sample_rate,
-            seq_duration=cfg_dset.seq_duration,
-            source_augmentations=None,
-            seed=cfg_dset.seed,
-        )
-
     # Samplers
     splr_kwargs = {"num_workers": cfg_dset.nb_workers * ngpus, "pin_memory": True}
     train_sampler = DataLoader(
         train_db, batch_size=cfg_dset.batch_size, shuffle=True, **splr_kwargs
     )
-    valid_sampler = DataLoader(
-        valid_db, batch_size=cfg_dset.batch_size, shuffle=False, **splr_kwargs
-    )
 
-    return train_sampler, valid_sampler
+    return train_sampler
 
 
 def build_fulltrack_sampler(targets, cfg_dset, subset="train", split="valid"):
@@ -454,6 +430,5 @@ if __name__ == "__main__":
 
     x2, y2, _ = train_db[0]
     print(torch.linalg.norm(x - x2))
-
 
 # EOF

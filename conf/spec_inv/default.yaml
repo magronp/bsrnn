@@ -1,6 +1,0 @@
-name: default
-algo: AM
-iter: 0
-consistency_weight: 0.0
-use_phase_prior: False
-time_domain_tr: False
