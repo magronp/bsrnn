@@ -3,27 +3,37 @@ commandes utiles :
 fuser 6006/tcp -k
 fuser -v /dev/nvidia*
 
+jobs à lancer :
 
-Note : differences since the model def need to be slightly adapted to output also the STFT (needed for the original training loss)
+Impact de la loss (sur modèle moyen)
+
+./book_train
+./book_train 'optim.loss_domain=[t] src_mod.time_layer=conv'
+./book_train 'optim.loss_domain=[tf] src_mod.time_layer=conv'
+
+LSTM vs. GRU vs. CONV (loss temporelle, modèle moyen), d'abord changer time_layer, puis band_layer
+
+./book_train 'optim.loss_domain=[t] src_mod.time_layer=gru'
+./book_train 'optim.loss_domain=[t] src_mod.time_layer=conv'
+./book_train 'optim.loss_domain=[t] src_mod.band_layer=gru'
+./book_train 'optim.loss_domain=[t] src_mod.band_layer=conv'
+
+Taille du modèle (loss temporelle, lstm+lstm)
+
+./book_train 'optim.loss_domain=[t] src_mod.num_reapeat=10' gruss
+./book_train 'optim.loss_domain=[t] src_mod.feature_dim=128' gruss
+
+Attention (loss temporelle, lstm+lstm)
+
+./book_train 'optim.loss_domain=[t] src_mod.n_att_head=1'
+./book_train 'optim.loss_domain=[t] src_mod.n_att_head=2 src_mod.attn_enc_dim=10'
+./book_train 'optim.loss_domain=[t] src_mod.n_att_head=2 src_mod.attn_enc_dim=20'
 
 
-Vieilles remarques sur MAGBS, à retenter ici sur le BSRNN (lstm vs gru vs conv ; attention ; domain pour la loss)
 
-v0/v1 : LSTM (OLD)
-v2/v3 : GRU (OLD)
-v8/v11: GRU time + CONV band , mais l'output correspond au training pas fini (v8)
-
-Après ajout de RELU en sortie de masquage pour forcer spectro nonnegatif, et avec GRU+GRU, feature_dim=64, num_repeat=8
-
-v18/24: n_att_head=0..
-v19:    n_att_head=4
-v22/23: n_att_head=0, loss_domain=t+mag
-
-Ne marche pas bien :
-- conv2D
+Resultats obtenus avec Magbs:
+- GRU / LSTM semblent marcher similairement, mais GRU moins de paramètres (7.4M vs. 6.6M pour vocals), donc un peu plus rapide
 - conv+conv
 - gros modèle (feature_dim=128 / num_reapeat=8)
 - gros modèle (feature_dim=64 / num_reapeat=10): pas de diff avec 8
 - avec t+mag, semble identitique voire un peu moins bien que sans
-
-GRU / LSTM semblent marcher similairement, mais GRU moins de paramètres (7.4M vs. 6.6M pour vocals), donc un peu plus rapide

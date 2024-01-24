@@ -1,5 +1,4 @@
 source .venv/bin/activate
-SRCMOD="$1"
-TARGET="$2"
+ARGS="$1"
 
-python3 train.py src_mod=${SRCMOD} src_mod.target=${TARGET}
+python3 train.py ${ARGS}
