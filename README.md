@@ -1,3 +1,8 @@
+# BSRNN
+
+<center><a href="https://arxiv.org/pdf/2209.15174.pdf">
+    <img src="https://gitlab.aicrowd.com/Tomasyu/sdx-2023-music-demixing-track-starter-kit/-/raw/master/Figure/BSRNN.png"></a></center>
+
 
 commandes utiles :
 fuser 6006/tcp -k
@@ -5,11 +10,11 @@ fuser -v /dev/nvidia*
 
 jobs à lancer :
 
-Impact de la loss (sur modèle moyen)
+Impact de la loss (sur modèle moyen)  LANCES
 
 ./book_train
-./book_train 'optim.loss_domain=[t] src_mod.time_layer=conv'
-./book_train 'optim.loss_domain=[tf] src_mod.time_layer=conv'
+./book_train 'optim.loss_domain=[t]'
+./book_train 'optim.loss_domain=[tf]'
 
 LSTM vs. GRU vs. CONV (loss temporelle, modèle moyen), d'abord changer time_layer, puis band_layer
 
