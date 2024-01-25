@@ -138,15 +138,15 @@ def get_loss_fn(loss_type="L1"):
 
 def compute_loss(refs, est, loss_type='L1', loss_domain='t'):
     
-    if isinstance(loss_domain, str):
-        loss_domain = [loss_domain]
+    # Transform the loss-domain string into a list (based on the separator "+")
+    loss_domains = loss_domain.split('+')
 
     # Instanciate the loss function
     loss_fn = get_loss_fn(loss_type)
 
     # Iterate over domains to compute the total loss
     loss=0
-    for ld in loss_domain:
+    for ld in loss_domains:
         # Compute the loss depending on the domain (time-domain, TF, ...)
         if ld == 't':
             y, y_hat = refs['waveforms'], est['waveforms']
