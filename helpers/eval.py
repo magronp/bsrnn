@@ -376,34 +376,36 @@ def aggregate_res_over_tracks(path_or_df, method_name=None, sdr_type="global"):
 
     # Aggregate scores over tracks (mean for the global  SDR, median otherwise)
     if sdr_type == "global":
-        test_results_agg = test_results.mean(numeric_only=True)[1:]
+        test_results_agg = test_results.mean(numeric_only=True, axis=0)
     else:
-        test_results_agg = test_results.median(numeric_only=True)[1:]
+        test_results_agg = test_results.median(numeric_only=True, axis=0)
 
     # Get the mean over sources
-    test_results_agg["song"] = test_results_agg.mean()
+    mean_sdr = test_results_agg.mean()
+
+    # Reform the dataframe
+    test_results_agg = pd.DataFrame(test_results_agg).T
+    test_results_agg["song"] = mean_sdr
 
     # Add the method name
     if method_name is not None:
-        test_results_agg["method"] = method_name
+        test_results_agg.insert(loc=0, column='method', value=method_name)
 
     return test_results_agg
 
 
 def append_df_to_main_file(path_main_file, df):
-    
+
     # Load the file containing all results if it exists
     if path.exists(path_main_file):
         all_test_results = pd.read_csv(path_main_file, index_col=0)
     # Otherwise, create it
     else:
-        cols = list(
-            df.columns.values[1:]
-        )  # remove "unnamed:0" cols
+        cols = list(df.columns.values)
         all_test_results = pd.DataFrame(columns=cols)
 
     # Add a new entry to the frame containing all results
-    all_test_results.loc[len(all_test_results)] = df
+    all_test_results = pd.concat([all_test_results, df], ignore_index=True)
 
     # Record the results
     all_test_results.to_csv(path_main_file)

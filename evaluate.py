@@ -98,7 +98,7 @@ def evaluate(args: DictConfig):
             )
 
         # Record the results
-        test_results.to_csv(path_eval_file)
+        test_results.to_csv(path_eval_file, index=False)
 
     # Aggregate the results over tracks, display it, and append the the main file
     df = aggregate_res_over_tracks(path_eval_file, src_mod, args.sdr_type)
