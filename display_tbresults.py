@@ -17,7 +17,7 @@ def display_from_tb(model_to_validate, tblogdir='tb_logs/', outdir='outputs/'):
     path_res_file = os.path.join(outdir, 'val_' + model_to_validate + ".csv")
 
     # Init result dataframe
-    all_results = pd.DataFrame(columns=optim_sched_params + model_params + ["val_sdr"])
+    all_results = pd.DataFrame(columns=["version"] + optim_sched_params + model_params + ["val_sdr"])
 
     # Iterate over experiments
     all_tb_dirs = os.listdir(tblogdir_model)
@@ -35,6 +35,7 @@ def display_from_tb(model_to_validate, tblogdir='tb_logs/', outdir='outputs/'):
 
         # Initialize the result df
         curr_res = {}
+        curr_res["version"] = tbdir
 
         # Load the TB log
         event_acc = EventAccumulator(tbfile)
@@ -54,6 +55,9 @@ def display_from_tb(model_to_validate, tblogdir='tb_logs/', outdir='outputs/'):
 
         # Add a new entry to the frame containing all results
         all_results.loc[len(all_results)] = curr_res
+
+    # Sort by version number
+    all_results = all_results.sort_values("version")
 
     # Record the results
     all_results.to_csv(path_res_file)

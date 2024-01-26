@@ -366,42 +366,49 @@ def process_track_and_evaluate(
     return test_sdr
 
 
-def append_sdr_to_main_file(
-    path_main_file, method_name, path_eval_file, sdr_type="global"
-):
+def aggregate_res_over_tracks(path_or_df, method_name=None, sdr_type="global"):
 
-    # Load the current method result file
-    test_results = pd.read_csv(path_eval_file)
-
-    # Either load the file or create it if  does not exist
-    res_file_exists = path.exists(path_main_file)
-    if res_file_exists:
-        all_test_results = pd.read_csv(path_main_file, index_col=0)
+    # The results are either directly provided, or as a path to a file
+    if isinstance(path_or_df, str):
+        test_results = pd.read_csv(path_or_df)
     else:
-        cols = list(
-            test_results.columns.values[2:]
-        )  # remove "unnamed:0" and "track" cols
-        cols.insert(0, "method")
-        cols.append("song")
-        all_test_results = pd.DataFrame(columns=cols)
+        test_results = path_or_df
 
     # Aggregate scores over tracks (mean for the global  SDR, median otherwise)
     if sdr_type == "global":
-        curr_meth = test_results.mean(numeric_only=True)[1:]
+        test_results_agg = test_results.mean(numeric_only=True)[1:]
     else:
-        curr_meth = test_results.median(numeric_only=True)[1:]
+        test_results_agg = test_results.median(numeric_only=True)[1:]
 
-    # Get the mean over sources and add the method name
-    curr_meth["song"] = curr_meth.mean()
-    curr_meth["method"] = method_name
+    # Get the mean over sources
+    test_results_agg["song"] = test_results_agg.mean()
 
-    # Add a new entry to the frame containing all results (and print it)
-    all_test_results.loc[len(all_test_results)] = curr_meth
+    # Add the method name
+    if method_name is not None:
+        test_results_agg["method"] = method_name
 
-    # Record the results frame
+    return test_results_agg
+
+
+def append_df_to_main_file(path_main_file, df):
+    
+    # Load the file containing all results if it exists
+    if path.exists(path_main_file):
+        all_test_results = pd.read_csv(path_main_file, index_col=0)
+    # Otherwise, create it
+    else:
+        cols = list(
+            df.columns.values[1:]
+        )  # remove "unnamed:0" cols
+        all_test_results = pd.DataFrame(columns=cols)
+
+    # Add a new entry to the frame containing all results
+    all_test_results.loc[len(all_test_results)] = df
+
+    # Record the results
     all_test_results.to_csv(path_main_file)
 
-    return curr_meth
+    return
 
 
 if __name__ == "__main__":

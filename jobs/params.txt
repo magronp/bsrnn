@@ -1,13 +1,15 @@
-# Basic / losses
-"optim.loss_domain=t"
-"optim.loss_domain=tf"
-"optim.loss_domain=t+tf"
+# Par defaut, modèle de taille moyenne (64 /10)
 
-# LSTM vs. GRU vs. CONV (loss temporelle, modèle moyen), d'abord changer time_layer, puis band_layer size
-#"src_mod.time_layer=gru"
-#"src_mod.time_layer=conv"
-#"src_mod.time_layer=gru"
-#"src_mod.time_layer=conv"
+# Basic / losses
+#"optim.loss_domain=t"
+#"optim.loss_domain=tf"  # clarifier qui est qui entre v0 et v1
+#"optim.loss_domain=t+tf"
+
+# Layer type (LSTM vs. GRU vs. CONV)
+"src_mod.time_layer=gru"
+"src_mod.time_layer=conv"
+"src_mod.band_layer=gru"
+"src_mod.band_layer=conv"
 
 # Taille du modèle (loss temporelle, lstm+lstm) (sur gruss)
 #"src_mod.num_reapeat=10"

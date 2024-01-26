@@ -7,7 +7,8 @@ import tqdm
 from models.separator import Separator
 from helpers.data import build_fulltrack_sampler
 from helpers.eval import (
-    append_sdr_to_main_file,
+    aggregate_res_over_tracks,
+    append_df_to_main_file,
     process_all_tracks,
 )
 
@@ -99,11 +100,10 @@ def evaluate(args: DictConfig):
         # Record the results
         test_results.to_csv(path_eval_file)
 
-    # Add to the overall results file
-    curr_meth_results = append_sdr_to_main_file(
-        path_main_file, src_mod, path_eval_file, sdr_type=sdr_type
-    )
-    print(curr_meth_results)
+    # Aggregate the results over tracks, display it, and append the the main file
+    df = aggregate_res_over_tracks(path_eval_file, src_mod, args.sdr_type)
+    print(df)
+    append_df_to_main_file(path_main_file, df)
 
 
 if __name__ == "__main__":

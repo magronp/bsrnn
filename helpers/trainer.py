@@ -30,7 +30,7 @@ def create_trainer(
 
     # Tensorboard logger
     if log_dir is not None:
-        my_logger = pl.loggers.TensorBoardLogger(save_dir=log_dir, name=method_name, default_hp_metric=False)
+        my_logger = pl.loggers.TensorBoardLogger(save_dir=log_dir, name=method_name)
     else:
         my_logger = False
 
