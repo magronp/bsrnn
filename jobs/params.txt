@@ -6,19 +6,18 @@
 #"optim.loss_domain=t+tf"
 
 # Layer type (LSTM vs. GRU vs. CONV)
-#"src_mod.time_layer=gru" # v3
-#"src_mod.time_layer=conv" # v3prime
-#"src_mod.band_layer=gru" # v4
-#"src_mod.band_layer=conv" # v5
+#"src_mod.time_layer=gru"
+#"src_mod.time_layer=conv"
+#"src_mod.band_layer=gru"
+#"src_mod.band_layer=conv"
 
 # Attention mechanism (loss temporelle, lstm+lstm)
-#"src_mod.n_att_head=1 src_mod.attn_enc_dim=10" # v6
-#"src_mod.n_att_head=1 src_mod.attn_enc_dim=20" # v6
-#"src_mod.n_att_head=2 src_mod.attn_enc_dim=20" # v7
+#"src_mod.n_att_head=1 src_mod.attn_enc_dim=10"
+#"src_mod.n_att_head=1 src_mod.attn_enc_dim=20"
+#"src_mod.n_att_head=2 src_mod.attn_enc_dim=20"
 
-# Taille du modèle (loss temporelle, lstm+lstm) (sur gruss -> il faut uploader cuda a 11)
-#pip install torch==1.12.1+cu116 torchvision==0.13.1+cu116 torchaudio==0.12.1 --extra-index-url https://download.pytorch.org/whl/cu116
-# ou
-# pip install torch==1.13.1+cu117 torchvision==0.14.1+cu117 torchaudio==0.13.1 --extra-index-url https://download.pytorch.org/whl/cu117
-#"src_mod.num_repeat=10"
-#"src_mod.feature_dim=128"
+#"src_mod.n_att_head=1 src_mod.attn_enc_dim=4"
+
+# Taille du modèle (loss temporelle, lstm+lstm)
+"src_mod.num_repeat=10"
+"src_mod.feature_dim=128"
