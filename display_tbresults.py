@@ -35,7 +35,7 @@ def display_from_tb(model_to_validate, tblogdir='tb_logs/', outdir='outputs/'):
 
         # Initialize the result df
         curr_res = {}
-        curr_res["version"] = tbdir
+        curr_res["version"] = int(tbdir.replace('version_',''))
 
         # Load the TB log
         event_acc = EventAccumulator(tbfile)
@@ -60,7 +60,7 @@ def display_from_tb(model_to_validate, tblogdir='tb_logs/', outdir='outputs/'):
     all_results = all_results.sort_values("version")
 
     # Record the results
-    all_results.to_csv(path_res_file)
+    all_results.to_csv(path_res_file, index=False)
 
     return all_results
 

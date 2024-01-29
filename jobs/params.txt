@@ -16,8 +16,13 @@
 #"src_mod.n_att_head=1 src_mod.attn_enc_dim=20"
 #"src_mod.n_att_head=2 src_mod.attn_enc_dim=20"
 
-#"src_mod.n_att_head=1 src_mod.attn_enc_dim=4"
+#"src_mod.n_att_head=1 src_mod.attn_enc_dim=4"  #v10
+
+"src_mod.n_att_head=2 src_mod.attn_enc_dim=4"
+"src_mod.n_att_head=2 src_mod.attn_enc_dim=10"
 
 # Taille du modèle (loss temporelle, lstm+lstm)
-"src_mod.num_repeat=10"
-"src_mod.feature_dim=128"
+#"src_mod.num_repeat=10" #v11
+#"src_mod.feature_dim=128" #v12
+
+
