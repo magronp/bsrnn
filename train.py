@@ -4,8 +4,6 @@ import lightning.pytorch as pl
 from helpers.data import build_training_sampler, build_fulltrack_sampler
 from helpers.trainer import create_trainer
 from helpers.instanciate_src import instanciate_src_model_onetarget
-from os.path import join
-from pathlib import Path
 
 
 @hydra.main(version_base=None, config_name='config', config_path='conf')
@@ -15,6 +13,7 @@ def train(args: DictConfig):
     pl.seed_everything(args.seed, workers=True)
 
     target = args.src_mod.target
+    ckpt_path = args.ckpt_path
     
     # Data samplers
     tr_sampler = build_training_sampler(target, args.dset, fast_tr=args.fast_tr)
@@ -27,11 +26,8 @@ def train(args: DictConfig):
     src_mod_name = args.src_mod.name
     method_name = src_mod_name + "-" + target
     model_dir = args.out_dir + src_mod_name + "/"
-    ckpt_path_log = join(model_dir, target + ".ckpt")
-    if not (args.resume_tr and Path(ckpt_path_log).exists()):
-        ckpt_path_log = None
 
-    # Display some info
+    # Display the method's name
     print('Method: ', method_name)
 
     # Instanciate model
@@ -39,8 +35,7 @@ def train(args: DictConfig):
         args.optim,
         args.scheduler,
         args.src_mod,
-        target=target,
-        load_pretrained_sources=args.resume_tr
+        pretrained_src_path=ckpt_path
     )
     print('Number of parameters: ', model.count_params())
 
@@ -54,7 +49,7 @@ def train(args: DictConfig):
     )
 
     # Fit
-    trainer.fit(model, tr_sampler, val_sampler, ckpt_path=ckpt_path_log)
+    trainer.fit(model, tr_sampler, val_sampler, ckpt_path=ckpt_path)
 
     return
 

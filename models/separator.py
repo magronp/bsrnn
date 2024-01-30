@@ -1,6 +1,7 @@
 import torch
 from models.pl_module import PLModule
-from helpers.instanciate_src import instanciate_src_models_targets
+from helpers.instanciate_src import instanciate_src_model_onetarget
+import os
 
 
 class Separator(PLModule):
@@ -22,16 +23,21 @@ class Separator(PLModule):
             sample_rate=args.sample_rate,
             n_fft=args.n_fft,
             n_hop=args.n_hop,
-            eps=args.eps
+            eps=args.eps,
         )
 
-        # Source models
-        self.source_models = instanciate_src_models_targets(
-            cfg_optim,
-            cfg_scheduler,
-            cfg_src_mod,
-            targets=targets,
-            load_pretrained_sources=args.load_pretrained_sources,
+        self.source_models = torch.nn.ModuleDict(
+            {
+                t: instanciate_src_model_onetarget(
+                    cfg_optim,
+                    cfg_scheduler,
+                    cfg_src_mod,
+                    pretrained_src_path=os.path.join(
+                        cfg_src_mod.out_dir, cfg_src_mod.name, t + ".ckpt"
+                    ),
+                )
+                for t in targets
+            }
         )
 
     def forward(self, mix):
@@ -41,5 +47,6 @@ class Separator(PLModule):
         s_est = torch.cat(s_est, dim=1)
 
         return {"waveforms": s_est}
+
 
 # EOF

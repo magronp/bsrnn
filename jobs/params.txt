@@ -1,9 +1,7 @@
-# Par defaut, modèle de taille moyenne (64 /10)
-
-# Basic / losses
-#"optim.loss_domain=t"
-#"optim.loss_domain=tf"
-#"optim.loss_domain=t+tf"
+# Losses
+#"optim.loss_domain=t"  # v15
+#"optim.loss_domain=tf" # v16
+"optim.loss_domain=t+tf" # à relancer
 
 # Layer type (LSTM vs. GRU vs. CONV)
 #"src_mod.time_layer=gru"
@@ -11,18 +9,14 @@
 #"src_mod.band_layer=gru"
 #"src_mod.band_layer=conv"
 
-# Attention mechanism (loss temporelle, lstm+lstm)
+# Attention mechanism
+#"src_mod.n_att_head=1 src_mod.attn_enc_dim=4"
 #"src_mod.n_att_head=1 src_mod.attn_enc_dim=10"
 #"src_mod.n_att_head=1 src_mod.attn_enc_dim=20"
+"src_mod.n_att_head=2 src_mod.attn_enc_dim=4 ckpt_path=outputs/bsrnn/vocals-v13.ckpt" #resumed depuis v13
+"src_mod.n_att_head=2 src_mod.attn_enc_dim=10 ckpt_path=outputs/bsrnn/vocals-v14.ckpt"  #resuminprogressed depuis v14
 #"src_mod.n_att_head=2 src_mod.attn_enc_dim=20"
 
-#"src_mod.n_att_head=1 src_mod.attn_enc_dim=4"  #v10
-
-"src_mod.n_att_head=2 src_mod.attn_enc_dim=4"
-"src_mod.n_att_head=2 src_mod.attn_enc_dim=10"
-
 # Taille du modèle (loss temporelle, lstm+lstm)
-#"src_mod.num_repeat=10" #v11
-#"src_mod.feature_dim=128" #v12
-
-
+#"src_mod.num_repeat=10"
+#"src_mod.feature_dim=128"

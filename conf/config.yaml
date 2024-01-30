@@ -39,8 +39,8 @@ only_append_res: False
 
 # Training-related booleans
 fast_tr: False  # for overfitting on one batch (useful for debugging)
-resume_tr: False
 load_pretrained_sources: True
+ckpt_path: 
 
 # Hydra-related
 hydra:  

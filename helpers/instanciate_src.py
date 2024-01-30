@@ -12,52 +12,26 @@ def get_class_from_str(model_name):
     return Model
 
 
-def instanciate_src_models_targets(
-    cfg_optim,
-    cfg_scheduler,
-    cfg_src_mod,
-    targets,
-    load_pretrained_sources=False,
-):
-    
-    models = torch.nn.ModuleDict(
-        {
-            t: instanciate_src_model_onetarget(
-                cfg_optim,
-                cfg_scheduler,
-                cfg_src_mod,
-                target=t,
-                load_pretrained_sources=load_pretrained_sources,
-            )
-            for t in targets
-        }
-    )
-
-    return models
-
-
 def instanciate_src_model_onetarget(
     cfg_optim,
     cfg_scheduler,
     cfg_src_mod,
-    target="vocals",
-    load_pretrained_sources=False,
+    pretrained_src_path=None,
 ):
     device = torch.device("cpu")
 
     # Model class
     Model = get_class_from_str(cfg_src_mod.name)
 
-    # Load the pretrained sources only if they exist (in "outputs/src_mod_dir/target.ckpt")
-    if load_pretrained_sources:
-        ckpt_path = os.path.join(cfg_src_mod.out_dir, cfg_src_mod.name, target + ".ckpt")
-        ckpt_exists = os.path.exists(ckpt_path)
-    else:
-        ckpt_exists = False
+    # Load the pretrained sources only if path is provided and if they exist
+    ckpt_exist = False
+    if pretrained_src_path:
+        if os.path.exists(pretrained_src_path):
+            ckpt_exist = True
 
-    if ckpt_exists:
+    if ckpt_exist:
         model = Model.load_from_checkpoint(
-            ckpt_path,
+            pretrained_src_path,
             cfg_optim=cfg_optim,
             cfg_scheduler=cfg_scheduler,
             map_location=device,
