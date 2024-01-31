@@ -1,7 +1,7 @@
 # Losses
-#"optim.loss_domain=t"  # v15
+"optim.loss_domain=t ckpt_path=outputs/bsrnn/vocals-v15.ckpt"  # v21, relancé depuis v15
 #"optim.loss_domain=tf" # v16
-"optim.loss_domain=t+tf" # à relancer
+#"optim.loss_domain=t+tf" # v18
 
 # Layer type (LSTM vs. GRU vs. CONV)
 #"src_mod.time_layer=gru"
@@ -13,8 +13,8 @@
 #"src_mod.n_att_head=1 src_mod.attn_enc_dim=4"
 #"src_mod.n_att_head=1 src_mod.attn_enc_dim=10"
 #"src_mod.n_att_head=1 src_mod.attn_enc_dim=20"
-"src_mod.n_att_head=2 src_mod.attn_enc_dim=4 ckpt_path=outputs/bsrnn/vocals-v13.ckpt" #resumed depuis v13
-"src_mod.n_att_head=2 src_mod.attn_enc_dim=10 ckpt_path=outputs/bsrnn/vocals-v14.ckpt"  #resuminprogressed depuis v14
+#"src_mod.n_att_head=2 src_mod.attn_enc_dim=4"
+#"src_mod.n_att_head=2 src_mod.attn_enc_dim=10"
 #"src_mod.n_att_head=2 src_mod.attn_enc_dim=20"
 
 # Taille du modèle (loss temporelle, lstm+lstm)
