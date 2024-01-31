@@ -88,6 +88,17 @@ We see that adding one attention head brings some improvement, although it shoul
 
 
 
+## Acknowledgments
+
+In our implementation we have used some code from external sources.
+
+- We adapated the attention mechanism from the TFGridNet implementation in the [ESPNET toolbox](https://github.com/espnet/espnet/blob/35c2e2b13026ba212a2ba5e454e1621d30f2d8b9/espnet2/enh/separator/tfgridnet_separator.py#L18)
+- We implemented the BSRNN-related classes (ResNet, BSNet, BSRNN) using the authors' [repository from the MDX challenge](http://gitlab.aicrowd.com/Tomasyu/sdx-2023-music-demixing-track-starter-kit) (note however that we had to adapt it so that it outputs both time-domain and TF domain components, necessary to compute the loss).
+- For the source activity detector used in preparing the dataset, we largely relied on the [implementation from Amantur Amatov](https://github.com/amanteur/BandSplitRNN-Pytorch).
+
+We would like to thank Jianwei Yu, who is an author of the BSRNN paper, for trying to help us with the implementation. We also thank Christopher Landschoot for fruitful discussion related to his [own implementation](https://github.com/crlandsc/Music-Demixing-with-Band-Split-RNN).
+
+
 commandes utiles :
 fuser 6006/tcp -k
 fuser -v /dev/nvidia*
