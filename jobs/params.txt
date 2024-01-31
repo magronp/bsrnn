@@ -1,5 +1,5 @@
 # Losses
-"optim.loss_domain=t ckpt_path=outputs/bsrnn/vocals-v15.ckpt"  # v21, relancé depuis v15
+#"optim.loss_domain=t ckpt_path=outputs/bsrnn/vocals-v15.ckpt"  # v21, relancé depuis v15
 #"optim.loss_domain=tf" # v16
 #"optim.loss_domain=t+tf" # v18
 

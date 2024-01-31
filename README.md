@@ -2,7 +2,7 @@
 
 This repository contains an unofficial Pytorch implementation of the [BSRNN](https://arxiv.org/pdf/2209.15174.pdf) model for music separation.
 
-<div style="align: left; text-align:center;">
+<div style="align: center; text-align:center;">
     <img src="https://gitlab.aicrowd.com/Tomasyu/sdx-2023-music-demixing-track-starter-kit/-/raw/master/Figure/BSRNN.png" width="500px" />
     <div class="caption"><i>Image taken from the <a href="https://arxiv.org/pdf/2209.15174.pdf">BSRNN paper</a>.</i></div>
 </div>
@@ -47,17 +47,17 @@ First, we display below the results in terms of loss domain, and architecture (h
 We observe that the loss employed in the paper is the best, but not significantly better than simply time-domain. We also note that unfortunately, when increasing the model size, the performance degrades, thus we can't reproduce the paper's results.
 
 
-### Band split layers
+### Band and sequence modeling layers
 
-Here we investigate on the usage of alternative layers to LSTM in the BS networks. We use the t+tf loss, and the best architecture obtained above (8 repeats, 64 hidden dim).
+Here we investigate on the usage of alternative layers to LSTM for band and sequence modeling. We use the t+tf loss, and the best architecture obtained above (8 repeats, 64 hidden dim).
 
-| time layer | band layer |  SDR    |
-|------------|------------|---------|
-|  lstm      |   lstm     |         |
-|  gru       |   lstm     |   7.09  |
-|  conv      |   lstm     |   6.41  |
-|  lstm      |   gru      |   7.01  |
-|  lstm      |   conv     |   6.55  |
+| sequence modeling layer | band modeling layer |  SDR    |
+|-------------------------|---------------------|---------|
+|  lstm                   |   lstm              |         |
+|  gru                    |   lstm              |   7.09  |
+|  conv                   |   lstm              |   6.41  |
+|  lstm                   |   gru               |   7.01  |
+|  lstm                   |   conv              |   6.55  |
 
 Nothing is better than the basic LSTM. The Conv1D layers don't work (although they are much faster to train because of memory constraints), and GRU work similarly, though they are slightly faster to train than LSTM, because slightly less parameters.
 
@@ -65,7 +65,7 @@ Nothing is better than the basic LSTM. The Conv1D layers don't work (although th
 
 We propose to further boost the results by using a multi-head attention mechanism, inspired from the TFGridNet model, which is very similar to BSRNN (projects frequency bands in a deep embedding space, and then applies LSTM over both time and band dimensions).
 
-<div style="align: left; text-align:center;">
+<div style="align: center; text-align:center;">
     <img src="https://www.researchgate.net/publication/363402998/figure/fig1/AS:11431281083662730@1662694210541/Proposed-full-band-self-attention-module_W640.jpg" width="400px" />
     <div class="caption"><i>Image taken from the <a href="https://arxiv.org/abs/2209.03952">TFGridNet paper</a>.</i></div>
 </div>
