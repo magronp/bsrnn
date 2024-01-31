@@ -1,19 +1,15 @@
-# BSRNN
+# (Yet another) unofficial implementation of Band-Split RNN for music source separation
 
-<center><a href="https://arxiv.org/pdf/2209.15174.pdf">
-    <img src="https://gitlab.aicrowd.com/Tomasyu/sdx-2023-music-demixing-track-starter-kit/-/raw/master/Figure/BSRNN.png" width="400"></a>
-    Image taken from the <a href="https://arxiv.org/pdf/2209.15174.pdf">BSRNN paper.</a>
-</center>
+This repository contains an unofficial Pytorch implementation of the [BSRNN](https://arxiv.org/pdf/2209.15174.pdf) model for music separation.
 
-
-<center><a href="https://www.researchgate.net/publication/363402998_TF-GridNet_Making_Time-Frequency_Domain_Models_Great_Again_for_Monaural_Speaker_Separation">
-    <img src="https://www.researchgate.net/publication/363402998/figure/fig1/AS:11431281083662730@1662694210541/Proposed-full-band-self-attention-module_W640.jpg" width="300"></a>
-    Image taken from the <a href="https://arxiv.org/abs/2209.03952">TFGridNet paper.</a>
-</center>
+<div style="align: left; text-align:center;">
+    <img src="https://gitlab.aicrowd.com/Tomasyu/sdx-2023-music-demixing-track-starter-kit/-/raw/master/Figure/BSRNN.png" width="400px" />
+    <div class="caption"><i>Image taken from the <a href="https://arxiv.org/pdf/2209.15174.pdf">BSRNN paper</a>.</i></div>
+</div>
 
 
 
-## Test results
+##  Test results
 
 We report both the *global* and the *museval* SDR:
 - The global SDR is computed on the whole track and doesn't account for filtering (thus it is similar to the a basic SNR). It is used as metric in the latest MDX challenges. Then mean over tracks.
@@ -33,7 +29,12 @@ Global and museval SDRs are respectively refered to as *utterance* SDR and *chun
 
 ## Validation results
 
-Here we display the results on the validation set (global SDR) for different variants (all on the vocals track). First, we display below the results in terms of loss domain, and architecture (hidden dimension and number of BS blocks).
+
+Here we display the results on the validation set (global SDR) for different variants (all on the vocals track).
+
+### Loss and model size
+
+First, we display below the results in terms of loss domain, and architecture (hidden dimension and number of BS blocks).
 
 | loss    |   feature_dim  |  num_repeat    |  SDR    |
 |---------|----------------|----------------|---------|
@@ -43,10 +44,12 @@ Here we display the results on the validation set (global SDR) for different var
 |  t+tf   |      64        |       10       |   6.96  |
 |  t+tf   |      128       |       8        |   5.63  |
 
+We observe that the loss employed in the paper is the best, but not significantly better than simply time-domain. We also note that unfortunately, when increasing the model size, the performance degrades, thus we can't reproduce the paper's results.
 
 
-Band split layers (using t+tf, and the 64+8 architecture)
+### Band split layers
 
+Here we investigate on the usage of alternative layers to LSTM in the BS networks. We use the t+tf loss, and the best architecture obtained above (8 repeats, 64 hidden dim).
 
 | time layer | band layer |  SDR    |
 |------------|------------|---------|
@@ -56,8 +59,18 @@ Band split layers (using t+tf, and the 64+8 architecture)
 |  lstm      |   gru      |   7.01  |
 |  lstm      |   conv     |   6.55  |
 
+Nothing is better than the basic LSTM. The Conv1D layers don't work (although they are much faster to train because of memory constraints), and GRU work similarly, though they are slightly faster to train than LSTM, because slightly less parameters.
 
-Attention mechanism (using t+tf loss, the basic 64+8 architecture, and lstm layers)
+### Attention mechanism
+
+We propose to further boost the results by using a multi-head attention mechanism, inspired from the TFGridNet model, which is very similar to BSRNN (projects frequency bands in a deep embedding space, and then applies LSTM over both time and band dimensions).
+
+<div style="align: left; text-align:center;">
+    <img src="https://www.researchgate.net/publication/363402998/figure/fig1/AS:11431281083662730@1662694210541/Proposed-full-band-self-attention-module_W640.jpg" width="300px" />
+    <div class="caption"><i>Image taken from the <a href="https://arxiv.org/abs/2209.03952">TFGridNet paper</a>.</i></div>
+</div>
+
+Below we investigate the impact of the number of attention heads, as well as the dimension of the attention encoder.
 
 | number of heads | attention encoder dim |  SDR    |
 |-----------------|-----------------------|---------|
@@ -69,7 +82,10 @@ Attention mechanism (using t+tf loss, the basic 64+8 architecture, and lstm laye
 |  2              |           10          |  7.37   |
 |  2              |           20          |  7.56   |
 
-We see that adding one attention head brings some improvement, although it should be noted that this applies to the vocals track, but not necessarily to the other tracks.
+We see that adding one attention head brings some improvement, although it should be noted that this applies to the vocals track, but not necessarily to the other tracks. Thus in our test results we do not use attention, but keep in mind it might be useful.
+
+## Reproducing the results
+
 
 
 commandes utiles :
