@@ -1,70 +1,86 @@
-import os
-import yaml
 import pandas as pd
 from tensorboard.backend.event_processing.event_accumulator import EventAccumulator
+from tensorboard.plugins.hparams.plugin_data_pb2 import HParamsPluginData
+from os import path, walk
+import fnmatch
 
 
-def display_from_tb(model_to_validate, tblogdir='tb_logs/', outdir='outputs/'):
+def find_files(directory, pattern="events*"):
+    """Recursively finds all files matching the pattern."""
+    filespaths = []
+    filenames_list = []
+    for root, _, filenames in walk(directory):
+        for filename in fnmatch.filter(filenames, pattern):
+            filespaths.append(path.join(root, filename))
+            filenames_list.append(filename)
 
-    if 'bsrnn' in model_to_validate:
-        optim_sched_params = ["loss_domain"]
-        model_params =  ["feature_dim", "num_repeat","time_layer","band_layer", "n_att_head", "attn_enc_dim"]
-    else:
-        raise NameError("Unknown model type")
+    return filespaths, filenames_list
 
+
+def display_from_tb(method_name, tblogdir="tb_logs/", outdir="outputs/"):
     # Path to scan / record results
-    tblogdir_model = os.path.join(tblogdir, model_to_validate)
-    path_res_file = os.path.join(outdir, 'val_' + model_to_validate + ".csv")
+    tblogdir_model = path.join(tblogdir, method_name)
+    path_res_file = path.join(outdir, "val_" + method_name + ".csv")
 
     # Init result dataframe
-    all_results = pd.DataFrame(columns=["version"] + optim_sched_params + model_params + ["val_sdr"])
+    param_keys = [
+        "cfg_optim/loss_domain",
+        "feature_dim",
+        "num_repeat",
+        "time_layer",
+        "band_layer",
+        "n_att_head",
+        "attn_enc_dim",
+    ]
+    all_results = pd.DataFrame(columns=param_keys + ["val_sdr", "exp_name"])
 
     # Iterate over experiments
-    all_tb_dirs = os.listdir(tblogdir_model)
-    for tbdir in all_tb_dirs:
+    all_tb_paths, all_tb_names = find_files(tblogdir_model)
 
-        # Get the TB and hparams (yaml) files
-        curr_dir = os.path.join(tblogdir_model, tbdir)
-        tbfiles = os.listdir(curr_dir)
-        tbfiles = [os.path.join(curr_dir, tbfiles[i]) for i in [0, 1]]
-        for f in tbfiles:
-            if 'yaml' in f:
-                yamlfile = f
-            else:
-                tbfile = f
-
+    for i, tbpath in enumerate(all_tb_paths):
+        print(tbpath)
         # Initialize the result df
         curr_res = {}
-        curr_res["version"] = int(tbdir.replace('version_',''))
+        curr_res["exp_name"] = all_tb_names[i].replace("events.out.tfevents.", "")
 
         # Load the TB log
-        event_acc = EventAccumulator(tbfile)
+        event_acc = EventAccumulator(tbpath)
         event_acc.Reload()
-        # Store the val SDR into a pandas dataframe and extract the max
-        df_tmp = pd.DataFrame(event_acc.Scalars("val_sdr_epoch"))
-        curr_res["val_sdr"] = df_tmp["value"].max()
+
+        # Store the val loss / SDR into pd frames, and extract the SDR corresponding to the min loss
+        df_valloss = pd.DataFrame(event_acc.Scalars("val_loss_epoch"))
+        iddx = df_valloss.idxmin()["value"]
+        df_valsdr = pd.DataFrame(event_acc.Scalars("val_sdr_epoch"))
+        curr_res["val_sdr"] = df_valsdr["value"][iddx]
 
         # Load the hyperparameters
-        with open(yamlfile, "r") as f:
-            hparams = yaml.safe_load(f)
+        data = event_acc._plugin_to_tag_to_content["hparams"][
+            "_hparams_/session_start_info"
+        ]
+        hparam_data = HParamsPluginData.FromString(data).session_start_info.hparams
+        hparam_dict = {
+            key: hparam_data[key].ListFields()[0][1] for key in hparam_data.keys()
+        }
+
         # Add the relevent ones in the df
-        for k in model_params:
-            curr_res[k] = hparams[k]
-        curr_res["loss_domain"] = hparams["cfg_optim"]["loss_domain"]
-        curr_res["scheduler"] = hparams["cfg_scheduler"]["name"]
+        for k in param_keys:
+            curr_res[k] = hparam_dict[k]
 
         # Add a new entry to the frame containing all results
         all_results.loc[len(all_results)] = curr_res
 
-    # Sort by version number
-    all_results = all_results.sort_values("version")
+    # Sort by exp name
+    all_results.sort_values(by=["exp_name"])
 
-    # Record the results
-    all_results.to_csv(path_res_file, index=False)
+    # Record and display the results
+    all_results.to_csv(path_res_file)
+    print(all_results.drop(columns=["exp_name"]))
 
     return all_results
 
 
-model_to_validate = 'bsrnn-vocals'
-all_results = display_from_tb(model_to_validate)
-print(all_results)
+if __name__ == "__main__":
+    method_name = "bsrnn-vocals"
+    all_results = display_from_tb(method_name)
+
+# EOF
