@@ -13,14 +13,26 @@ This repository contains an unofficial Pytorch implementation of the [BSRNN](htt
 
 Here we report the results in terms of global SDR, which is referred to as *utterance SDR* in the [BSRNN paper](https://arxiv.org/pdf/2209.15174.pdf) (note that our implementation allows for computing the *chunk SDR* using the museval toolbox, see below). It is used as metric in the latest MDX challenges. This SDR is computed on whole tracks and doesn't allow any filtering, thus it is similar to the a basic SNR. Then we take the mean over tracks.
 
-| Target      |   BSRNN paper  | Our implementation |
+|             |   BSRNN paper  | Our implementation |
 |-------------|----------------|--------------------|
-| vocals      |   10.04        |                   |
-| bass        |    6.80        |                   |
-| drums       |    8.92        |                   |
-| other       |    6.01        |                   |
-| all sources |    7.94        |                   |
+| vocals      |   10.04        |      7.67          |
+| bass        |    6.80        |      5.77          |
+| drums       |    8.92        |      8.26          |
+| other       |    6.01        |      4.33          |
+| all sources |    7.94        |      6.51          |
 
+Below we also report the results in terms *chunk SDR*, computed using the museval tooblox. It was used as metric in the previous SiSEC challenges. This SDR allows for a global distortion filter, and then is computed by taking the median over 1second chunks, and median over tracks.
+
+|             |   BSRNN paper  | Our implementation |
+|-------------|----------------|--------------------|
+| vocals      |   10.01        |      7.19          |
+| bass        |    7.22        |      6.57          |
+| drums       |    9.01        |      7.59          |
+| other       |    6.70        |      4.42          |
+| all sources |    8.24        |      6.44          |
+
+
+Thus, we are about 1.4-1.8 dB SDR behind the baseline implementation.
 
 ## Validation results
 
@@ -104,9 +116,3 @@ In our implementation we have used some code from external sources.
 - For the source activity detector used in preparing the dataset, we largely relied on the [implementation from Amantur Amatov](https://github.com/amanteur/BandSplitRNN-Pytorch).
 
 We would like to thank Jianwei Yu, who is an author of the BSRNN paper, for trying to help us with the implementation. We also thank Christopher Landschoot for fruitful discussion related to his [own implementation](https://github.com/crlandsc/Music-Demixing-with-Band-Split-RNN).
-
-
-commandes utiles :
-fuser 6006/tcp -k
-fuser -v /dev/nvidia*
-

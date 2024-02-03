@@ -48,7 +48,7 @@ def evaluate(args: DictConfig):
 
     # Evaluation results file
     path_eval_file = join(model_dir, "test_results_" + sdr_type + ".csv")
-    path_main_file = join(args.out_dir, "separator_results_" + sdr_type + ".csv")
+    path_main_file = join(args.out_dir, "test_results_" + sdr_type + ".csv")
 
     # Evaluation
     if not (args.only_append_res):
