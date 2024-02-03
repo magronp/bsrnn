@@ -373,7 +373,7 @@ class MUSDBDatasetSAD(Dataset):
             return max([self.n_chunks[t] for t in self.targets])
 
 
-def build_training_sampler(targets, cfg_dset, ngpus=None, fast_tr=False):
+def build_training_samplers(targets, cfg_dset, ngpus=None, fast_tr=False):
 
     # If fast training (=overfit batches), remove augmentation to ensure it's always the same batch
     src_aug = cfg_dset.source_augmentations
@@ -403,13 +403,45 @@ def build_training_sampler(targets, cfg_dset, ngpus=None, fast_tr=False):
         seed=cfg_dset.seed,
     )
 
+    if fast_tr:
+        valid_db = train_db
+    else:
+        # Uncomment if want to use SAD-ed chunks for validation instead of full length tracks
+        #valid_db = MUSDBDatasetSAD(
+        #    targets=targets,
+        #    sources=cfg_dset.sources,
+        #    data_dir=cfg_dset.data_dir,
+        #    sad_dir=cfg_dset.sad_dir,
+        #    n_samples=cfg_dset.n_samples_val,
+        #    subset="train",
+        #    split="valid",
+        #    sample_rate=cfg_dset.sample_rate,
+        #    seq_duration=cfg_dset.seq_duration,
+        #    source_augmentations=None,
+        #    seed=cfg_dset.seed,
+        #)
+        valid_db = MUSDBDataset(
+            targets=targets,
+            sources=cfg_dset.sources,
+            root=cfg_dset.data_dir,
+            subset="train",
+            split="valid",
+            sample_rate=cfg_dset.sample_rate,
+            seq_duration=None,
+            samples_per_track=1,
+            seed=cfg_dset.seed,
+        )
+
     # Samplers
     splr_kwargs = {"num_workers": cfg_dset.nb_workers * ngpus, "pin_memory": True}
     train_sampler = DataLoader(
         train_db, batch_size=cfg_dset.batch_size, shuffle=True, **splr_kwargs
     )
+    valid_sampler = DataLoader(
+        valid_db, batch_size=1, shuffle=False, **splr_kwargs # val sampler batch size can be changed if using chunks
+    )
 
-    return train_sampler
+    return train_sampler, valid_sampler
 
 
 def build_fulltrack_sampler(targets, cfg_dset, subset="train", split="valid"):

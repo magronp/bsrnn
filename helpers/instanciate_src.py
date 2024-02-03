@@ -24,12 +24,12 @@ def instanciate_src_model_onetarget(
     Model = get_class_from_str(cfg_src_mod.name)
 
     # Load the pretrained sources only if path is provided and if they exist
-    ckpt_exist = False
+    ckpt_exists = False
     if pretrained_src_path:
         if os.path.exists(pretrained_src_path):
-            ckpt_exist = True
+            ckpt_exists = True
 
-    if ckpt_exist:
+    if ckpt_exists:
         model = Model.load_from_checkpoint(
             pretrained_src_path,
             cfg_optim=cfg_optim,

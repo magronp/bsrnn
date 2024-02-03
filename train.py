@@ -1,7 +1,7 @@
 import hydra
 from omegaconf import DictConfig
 import lightning.pytorch as pl
-from helpers.data import build_training_sampler, build_fulltrack_sampler
+from helpers.data import build_training_samplers
 from helpers.trainer import create_trainer
 from helpers.instanciate_src import instanciate_src_model_onetarget
 
@@ -16,11 +16,7 @@ def train(args: DictConfig):
     ckpt_path = args.ckpt_path
     
     # Data samplers
-    tr_sampler = build_training_sampler(target, args.dset, fast_tr=args.fast_tr)
-    if args.fast_tr:
-        val_sampler = tr_sampler  # for debugging (overfitting on one batch)
-    else:
-        val_sampler = build_fulltrack_sampler(target, args.dset, subset="train", split="valid")
+    tr_sampler, val_sampler = build_training_samplers(target, args.dset, fast_tr=args.fast_tr)
 
     # Method name
     src_mod_name = args.src_mod.name

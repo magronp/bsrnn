@@ -38,7 +38,7 @@ def display_from_tb(method_name, tblogdir="tb_logs/", outdir="outputs/"):
     all_tb_paths, all_tb_names = find_files(tblogdir_model)
 
     for i, tbpath in enumerate(all_tb_paths):
-        print(tbpath)
+
         # Initialize the result df
         curr_res = {}
         curr_res["exp_name"] = all_tb_names[i].replace("events.out.tfevents.", "")

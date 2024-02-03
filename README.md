@@ -11,20 +11,15 @@ This repository contains an unofficial Pytorch implementation of the [BSRNN](htt
 
 ##  Test results
 
-We report both the *global* and the *museval* SDR:
-- The global SDR is computed on the whole track and doesn't account for filtering (thus it is similar to the a basic SNR). It is used as metric in the latest MDX challenges. Then mean over tracks.
-- The museval SDR allows for a global distortion filter on the track, and takes the median over segments of 1s. It's the one used in the SISEC 2018 challenge. Then median over tracks.
+Here we report the results in terms of global SDR, which is referred to as *utterance SDR* in the [BSRNN paper](https://arxiv.org/pdf/2209.15174.pdf) (note that our implementation allows for computing the *chunk SDR* using the museval toolbox, see below). It is used as metric in the latest MDX challenges. This SDR is computed on whole tracks and doesn't allow any filtering, thus it is similar to the a basic SNR. Then we take the mean over tracks.
 
-Global and museval SDRs are respectively refered to as *utterance* SDR and *chunk* SDR in the [BSRNN paper](https://arxiv.org/pdf/2209.15174.pdf).
-
-
-| Target      |   global SDR   | museval SDR    |
-|-------------|----------------|----------------|
-| vocals      | 6.883          |                |
-| bass        | -              | -              |
-| drums       | -              | -              |
-| other       | -              | -              |
-| all sources | -              | -              |
+| Target      |   BSRNN paper  | Our implementation |
+|-------------|----------------|--------------------|
+| vocals      |   10.04        |                   |
+| bass        |    6.80        |                   |
+| drums       |    8.92        |                   |
+| other       |    6.01        |                   |
+| all sources |    7.94        |                   |
 
 
 ## Validation results
@@ -34,30 +29,42 @@ Here we display the results on the validation set (global SDR) for different var
 
 ### Loss and model size
 
-First, we display below the results in terms of loss domain, and architecture (hidden dimension and number of BS blocks).
+First, we check the influence of the loss. The origninal paper uses a combination of a time-domain (t) and time-frequency domain (tf) loss (t+tf). We check using each term individually. For speed, this experiment uses a model with hidden dimension of 64 and num_repeats of 8.
 
-| loss    |   feature_dim  |  num_repeat    |  SDR    |
-|---------|----------------|----------------|---------|
-|  t      |      64        |       8        |         |
-|  tf     |      64        |       8        |         |
-|  t+tf   |      64        |       8        |         |
-|  t+tf   |      64        |       10       |   6.96  |
-|  t+tf   |      128       |       8        |   5.63  |
+| loss    |   SDR   |
+|---------|---------|
+|  t      |   7,40  |
+|  tf     |   6,41  |
+|  t+tf   |   7.20  |
 
-We observe that the loss employed in the paper is the best, but not significantly better than simply time-domain. We also note that unfortunately, when increasing the model size, the performance degrades, thus we can't reproduce the paper's results.
+We observe that using a time-domain loss only is better than the loss used in the paper (t+tf). Nonetheles, let's use it anyway in what follows.
+
+
+### Model size
+
+We now increase the  architecture (hidden dimension and number of BS blocks).
+
+| feature_dim  |  num_repeat    |   SDR   |
+|--------------|----------------|---------|
+|    64        |       8        |   7.20  |
+|    64        |       10       |   6.95  |
+|    128       |       8        |   5.42  |
+
+We also note that unfortunately, when increasing the model size, the performance degrades, thus we can't reproduce the paper's results.
+
 
 
 ### Band and sequence modeling layers
 
 Here we investigate on the usage of alternative layers to LSTM for band and sequence modeling. We use the t+tf loss, and the best architecture obtained above (8 repeats, 64 hidden dim).
 
-| sequence modeling layer | band modeling layer |  SDR    |
+| sequence modeling layer | band modeling layer |   SDR   |
 |-------------------------|---------------------|---------|
-|  lstm                   |   lstm              |         |
-|  gru                    |   lstm              |   7.09  |
-|  conv                   |   lstm              |   6.41  |
-|  lstm                   |   gru               |   7.01  |
-|  lstm                   |   conv              |   6.55  |
+|  lstm                   |   lstm              |   7.20  |
+|  gru                    |   lstm              |   6.83  |
+|  conv                   |   lstm              |   6.24  |
+|  lstm                   |   gru               |   6.79  |
+|  lstm                   |   conv              |   6.09  |
 
 Nothing is better than the basic LSTM. The Conv1D layers don't work (although they are much faster to train because of memory constraints), and GRU work similarly, though they are slightly faster to train than LSTM, because slightly less parameters.
 
@@ -74,13 +81,13 @@ Below we investigate the impact of the number of attention heads, as well as the
 
 | number of heads | attention encoder dim |  SDR    |
 |-----------------|-----------------------|---------|
-|  0              |           -           |         |
-|  1              |           4           |  7.62   |
+|  0              |           -           |  7.20   |
+|  1              |           4           |  7.45   |
 |  1              |           10          |  7.71   |
-|  1              |           20          |  7.53   |
-|  2              |           4           |  7.23   |
-|  2              |           10          |  7.37   |
-|  2              |           20          |  7.56   |
+|  1              |           20          |  7.35   |
+|  2              |           4           |  7.49   |
+|  2              |           10          |  7,05   |
+|  2              |           20          |  7.29   |
 
 We see that adding one attention head brings some improvement, although it should be noted that this applies to the vocals track, but not necessarily to the other tracks. Thus in our test results we do not use attention, but keep in mind it might be useful.
 

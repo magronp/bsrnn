@@ -1,6 +1,6 @@
 # Losses
-"optim.loss_domain=t" # relancé
-"optim.loss_domain=tf" # relancé
+#"optim.loss_domain=t"
+#"optim.loss_domain=tf"
 #"optim.loss_domain=t+tf"
 
 # Layer type (LSTM vs. GRU vs. CONV)
@@ -13,8 +13,8 @@
 #"src_mod.n_att_head=1 src_mod.attn_enc_dim=4"
 #"src_mod.n_att_head=1 src_mod.attn_enc_dim=10"
 #"src_mod.n_att_head=1 src_mod.attn_enc_dim=20"
-#"src_mod.n_att_head=2 src_mod.attn_enc_dim=4" # relancé
-#"src_mod.n_att_head=2 src_mod.attn_enc_dim=10" # relancé
+#"src_mod.n_att_head=2 src_mod.attn_enc_dim=4"
+#"src_mod.n_att_head=2 src_mod.attn_enc_dim=10"
 #"src_mod.n_att_head=2 src_mod.attn_enc_dim=20"
 
 # Taille du modèle (loss temporelle, lstm+lstm)
