@@ -86,7 +86,7 @@ LSTM layers seem to be the best choice. GRU (resp. Conv1D) layers induce a moder
 
 As a prospective attempt to further boost the results, we propose to use a multi-head attention mechanism, inspired from the [TFGridNet](https://arxiv.org/abs/2209.03952) model. This model is quite similar to BSRNN, as it projects frequency bands in a deep embedding space, and then applies LSTM over both time and band dimensions, but it incorporates an additional multi-head attention mechanism. Below we investigate the impact of the number of attention heads, as well as the dimension of the attention encoder.
 
-| number of heads | attention encoder dim |  SDR    |
+| number of heads | attention encoder dim |  uSDR   |
 |-----------------|-----------------------|---------|
 |  0              |           -           |  7.20   |
 |  1              |           4           |  7.45   |
