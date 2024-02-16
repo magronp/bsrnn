@@ -8,7 +8,9 @@ class mySTFT(nn.Module):
         super().__init__()
         self.n_fft = n_fft
         self.n_hop = n_hop
-        self.transf = torchaudio.transforms.Spectrogram(n_fft=n_fft, hop_length=n_hop, power=None)
+        self.transf = torchaudio.transforms.Spectrogram(
+            n_fft=n_fft, hop_length=n_hop, power=None
+        )
 
     def forward(self, input: Tensor) -> Tensor:
         return self.transf(input)
@@ -19,9 +21,12 @@ class myISTFT(nn.Module):
         super().__init__()
         self.n_fft = n_fft
         self.n_hop = n_hop
-        self.transf = torchaudio.transforms.InverseSpectrogram(n_fft=n_fft, hop_length=n_hop)
+        self.transf = torchaudio.transforms.InverseSpectrogram(
+            n_fft=n_fft, hop_length=n_hop
+        )
 
     def forward(self, input: Tensor, length=None) -> Tensor:
         return self.transf(input, length)
+
 
 # EOF

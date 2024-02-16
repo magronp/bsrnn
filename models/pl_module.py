@@ -133,11 +133,11 @@ class PLModule(pl.LightningModule):
         val_sdr = compute_sdr(
             y, y_hat, win_bss=self.win_bss, sdr_type=self.sdr_type, eps=self.eps
         )[0]
-        val_sdr = torch.nanmean(val_sdr) #in case there are more than one source
+        val_sdr = torch.nanmean(val_sdr)  # in case there are more than one source
 
         self.log(
             "val_sdr",
-            val_sdr,  
+            val_sdr,
             on_step=True,
             on_epoch=True,
             prog_bar=True,
@@ -146,7 +146,6 @@ class PLModule(pl.LightningModule):
         )
 
         return val_loss, val_sdr
-    
 
     def _apply_model_to_track(self, mix, true_sources, comp_loss=True):
 
@@ -208,7 +207,9 @@ class PLModule(pl.LightningModule):
                 true_sources_chunk.to(self.eval_device)
                 # apply model
                 with torch.no_grad():
-                    loss_chunk, y_hat = self._shared_step(mix_chunk, true_sources_chunk, comp_loss=comp_loss)
+                    loss_chunk, y_hat = self._shared_step(
+                        mix_chunk, true_sources_chunk, comp_loss=comp_loss
+                    )
                 # back to the initial device
                 y_hat = y_hat.to(in_device)
                 # apply fader and add to final signal
@@ -234,7 +235,6 @@ class PLModule(pl.LightningModule):
                 loss = None
 
         return final, loss
-
 
     def test_step(self, batch, batch_idx):
         # Load the data
@@ -323,24 +323,26 @@ if __name__ == "__main__":
     cfg_scheduler = OmegaConf.create({"name": "plateau", "factor": 0.5, "patience": 3})
 
     # Instanciate model
-    model = PLModule(cfg_optim, cfg_scheduler, eval_device="cpu", verbose_per_track=False)
+    model = PLModule(
+        cfg_optim, cfg_scheduler, eval_device="cpu", verbose_per_track=False
+    )
     model.eval_segment_len = 1
 
     # Forward pass
-    outputs = model(x) 
+    outputs = model(x)
     for key in outputs:
-        print('Output: ', key, '-- shape: ', outputs[key].shape)
+        print("Output: ", key, "-- shape: ", outputs[key].shape)
 
     # Training (loss)
     train_loss = model.training_step(batch, 0)
-    print('Training loss:', train_loss.item())
+    print("Training loss:", train_loss.item())
 
     # Validation step (loss and SDR)
     val_loss, val_sdr = model.validation_step(batch, 0)
-    print('Validation loss:', val_loss.item(), ' --- Validation SDR: ', val_sdr)
+    print("Validation loss:", val_loss.item(), " --- Validation SDR: ", val_sdr)
 
     # Test step (SDR)
     testsdr = model.test_step(batch, 0)
-    print('Test SDR:', testsdr)
+    print("Test SDR:", testsdr)
 
 # EOF

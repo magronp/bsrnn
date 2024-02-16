@@ -8,7 +8,7 @@ defaults:
   - override hydra/hydra_logging: disabled  
   - override hydra/job_logging: disabled  
 
-# Targets to separate (useful for the Separator / evaluation stage)
+# Targets to separate (for preprocessing / evaluation)
 targets:
   - vocals
   - bass

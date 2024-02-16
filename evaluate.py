@@ -15,7 +15,7 @@ from helpers.eval import (
 tqdm.monitor_interval = 0
 
 
-def load_model_and_inference(y, args, device='cpu'):
+def load_model_and_inference(y, args, device="cpu"):
     # Get the mixture from the references  [1, n_channels, n_samples]
     mix = torch.sum(y, dim=1)
 
@@ -33,7 +33,7 @@ def load_model_and_inference(y, args, device='cpu'):
     return y_hat
 
 
-@hydra.main(version_base=None, config_name='config', config_path='conf')
+@hydra.main(version_base=None, config_name="config", config_path="conf")
 def evaluate(args: DictConfig):
 
     # Set random seed for reproducibility
@@ -53,7 +53,7 @@ def evaluate(args: DictConfig):
     # Evaluation
     if not (args.only_append_res):
 
-        # If cuda, use the test method for speed 
+        # If cuda, use the test method for speed
         if args.eval_device == "cuda":
 
             # Load the separator model
@@ -69,7 +69,7 @@ def evaluate(args: DictConfig):
             model.eval_device = "cuda"
 
             # Test dataloader
-            test_sampler = build_fulltrack_sampler(targets, args.dset, subset='test')
+            test_sampler = build_fulltrack_sampler(targets, args.dset, subset="test")
 
             # Testing
             trainer = pl.Trainer(num_nodes=1, devices=1, logger=False)
@@ -94,7 +94,7 @@ def evaluate(args: DictConfig):
                 eval_overlap=args.eval_overlap,
                 sdr_type=sdr_type,
                 # Now the arguments for the function to test
-                args_sep=args
+                args_sep=args,
             )
 
         # Record the results

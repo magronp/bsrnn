@@ -12,7 +12,7 @@ def get_class_from_str(model_name):
     return Model
 
 
-def instanciate_src_model_onetarget(
+def instanciate_src_model(
     cfg_optim,
     cfg_scheduler,
     cfg_src_mod,
@@ -35,7 +35,7 @@ def instanciate_src_model_onetarget(
             cfg_optim=cfg_optim,
             cfg_scheduler=cfg_scheduler,
             map_location=device,
-            strict=False
+            strict=False,
         )
 
     # Otherwise, instanciate the model from scratch
@@ -43,5 +43,6 @@ def instanciate_src_model_onetarget(
         model = Model(cfg_optim, cfg_scheduler, **cfg_src_mod)
 
     return model
+
 
 # EOF

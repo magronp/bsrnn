@@ -136,23 +136,23 @@ def get_loss_fn(loss_type="L1"):
     return loss_fn
 
 
-def compute_loss(refs, est, loss_type='L1', loss_domain='t'):
-    
+def compute_loss(refs, est, loss_type="L1", loss_domain="t"):
+
     # Transform the loss-domain string into a list (based on the separator "+")
-    loss_domains = loss_domain.split('+')
+    loss_domains = loss_domain.split("+")
 
     # Instanciate the loss function
     loss_fn = get_loss_fn(loss_type)
 
     # Iterate over domains to compute the total loss
-    loss=0
+    loss = 0
     for ld in loss_domains:
         # Compute the loss depending on the domain (time-domain, TF, ...)
-        if ld == 't':
-            y, y_hat = refs['waveforms'], est['waveforms']
+        if ld == "t":
+            y, y_hat = refs["waveforms"], est["waveforms"]
             loss += loss_fn(y_hat, y)
-        elif ld == 'tf':
-            Y, Y_hat = refs['stfts'], est['stfts']
+        elif ld == "tf":
+            Y, Y_hat = refs["stfts"], est["stfts"]
             loss += loss_fn(Y.real, Y_hat.real) + loss_fn(Y.imag, Y_hat.imag)
         else:
             raise NameError("Unknown loss domain")
@@ -224,10 +224,10 @@ def apply_fn_to_sources(
 
 def process_all_tracks(
     my_fn,
-    subset='test',
+    subset="test",
     split=None,
     parallel_cpu=True,
-    targets=['vocals', 'bass', 'drums', 'other'],
+    targets=["vocals", "bass", "drums", "other"],
     rec_dir=None,
     data_dir="data/",
     win_dur=1.0,
@@ -246,10 +246,10 @@ def process_all_tracks(
 
     # Get number of available CPUs and check whether parallelize or not
     num_cpus = len(sched_getaffinity(0)) // 4 - 1
-    num_cpus = 10 # because the formula above doesn't really work...
+    num_cpus = 10  # because the formula above doesn't really work...
     parall = parallel_cpu and num_cpus > 1
-    print('Parallel CPU:', parall)
-    
+    print("Parallel CPU:", parall)
+
     # Defined the simplified function (freeze the non track-specific arguments)
     myfun = functools.partial(
         process_track_and_evaluate,
@@ -268,8 +268,8 @@ def process_all_tracks(
         *args,
         **kwargs
     )
-    
-    # If parallel, use multi-CPU to perform evaluation 
+
+    # If parallel, use multi-CPU to perform evaluation
     if parall:
         # Set torch num thread to 1 (mandatory when using multiprocessing with torch ops)
         torch.set_num_threads(1)
@@ -303,8 +303,8 @@ def process_all_tracks(
 def process_track_and_evaluate(
     track_name,
     my_fn,
-    subset='test',
-    targets=['vocals', 'bass', 'drums', 'other'],
+    subset="test",
+    targets=["vocals", "bass", "drums", "other"],
     rec_dir=None,
     data_dir="data/",
     win_dur=1.0,
@@ -317,7 +317,7 @@ def process_track_and_evaluate(
     *args,
     **kwargs
 ):
-    
+
     # Process only part of the track if needed (mostly for debugging)
     if max_len is None:
         nfr = -1
@@ -329,18 +329,22 @@ def process_track_and_evaluate(
 
     # Load true sources, add batch dim [1, n_targets, n_channels, n_samples]
     references = torch.stack(
-        [torchaudio.load(join(track_dir, trg + ".wav"), num_frames=nfr)[0] for trg in targets]
+        [
+            torchaudio.load(join(track_dir, trg + ".wav"), num_frames=nfr)[0]
+            for trg in targets
+        ]
     ).unsqueeze(0)
 
     # Estimate the sources
-    estimates = apply_fn_to_sources(references,
-                                    my_fn,
-                                    sample_rate=sample_rate,
-                                    eval_segment_len=eval_segment_len,
-                                    eval_overlap=eval_overlap,
-                                    *args,
-                                    **kwargs
-                                    )
+    estimates = apply_fn_to_sources(
+        references,
+        my_fn,
+        sample_rate=sample_rate,
+        eval_segment_len=eval_segment_len,
+        eval_overlap=eval_overlap,
+        *args,
+        **kwargs
+    )
 
     # SDR
     win_bss = int(win_dur * sample_rate)
@@ -358,10 +362,9 @@ def process_track_and_evaluate(
 
     # Record the estimates
     if rec_dir:
-        estimates = estimates[0] # remove the batch dim
+        estimates = estimates[0]  # remove the batch dim
         track_rec_dir = join(rec_dir, subset, track_name)
         rec_estimates(estimates, track_rec_dir, targets, sample_rate)
-        
 
     return test_sdr
 
@@ -389,7 +392,7 @@ def aggregate_res_over_tracks(path_or_df, method_name=None, sdr_type="global"):
 
     # Add the method name
     if method_name is not None:
-        test_results_agg.insert(loc=0, column='method', value=method_name)
+        test_results_agg.insert(loc=0, column="method", value=method_name)
 
     return test_results_agg
 
@@ -399,7 +402,7 @@ def append_df_to_main_file(path_main_file, df):
     # Load the file containing all results if it exists
     if path.exists(path_main_file):
         all_test_results = pd.read_csv(path_main_file, index_col=0)
-    # Otherwise, create it
+    # Otherwise, create it
     else:
         cols = list(df.columns.values)
         all_test_results = pd.DataFrame(columns=cols)

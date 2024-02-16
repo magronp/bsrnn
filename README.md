@@ -1,12 +1,11 @@
-# (Yet another) unofficial implementation of Band-Split RNN for music source separation
+# Band-Split RNN for music separation - yet another unofficial implementation
 
-This repository contains an unofficial Pytorch implementation of the [BSRNN](https://arxiv.org/pdf/2209.15174.pdf) model for music separation.
+This repository contains an unofficial Pytorch implementation of the [BSRNN](https://arxiv.org/pdf/2209.15174.pdf) model for music separation. The models are trained on the freely available [MUSDB18](https://sigsep.github.io/datasets/musdb.html) dataset.
 
 <div style="align: center; text-align:center;">
     <img src="https://gitlab.aicrowd.com/Tomasyu/sdx-2023-music-demixing-track-starter-kit/-/raw/master/Figure/BSRNN.png" width="500px" />
     <div class="caption"><i>Image taken from the <a href="https://arxiv.org/pdf/2209.15174.pdf">BSRNN paper</a>.</i></div>
 </div>
-
 
 
 ##  Test results
@@ -21,7 +20,7 @@ Here we report the results in terms of global SDR, which is referred to as *utte
 | other       |    6.01        |      4.33          |
 | all sources |    7.94        |      6.51          |
 
-Below we also report the results in terms *chunk SDR*, computed using the museval tooblox. It was used as metric in the previous SiSEC challenges. This SDR allows for a global distortion filter, and then is computed by taking the median over 1second chunks, and median over tracks.
+Below we also report the results in terms *chunk SDR*, computed using the museval tooblox. It was used as metric in the [SiSEC 2018](https://sisec.inria.fr/2018-professionally-produced-music-recordings/) challenge. This SDR allows for a global distortion filter, and then is computed by taking the median over 1second chunks, and median over tracks.
 
 |             |   BSRNN paper  | Our implementation |
 |-------------|----------------|--------------------|
@@ -82,7 +81,7 @@ Nothing is better than the basic LSTM. The Conv1D layers don't work (although th
 
 ### Attention mechanism
 
-We propose to further boost the results by using a multi-head attention mechanism, inspired from the TFGridNet model, which is very similar to BSRNN (projects frequency bands in a deep embedding space, and then applies LSTM over both time and band dimensions).
+As a prospective attempt to further boost the results, we propose to use a multi-head attention mechanism, inspired from the TFGridNet model. This model is quite similar to BSRNN, as it projects frequency bands in a deep embedding space, and then applies LSTM over both time and band dimensions.
 
 <div style="align: center; text-align:center;">
     <img src="https://www.researchgate.net/publication/363402998/figure/fig1/AS:11431281083662730@1662694210541/Proposed-full-band-self-attention-module_W640.jpg" width="400px" />
@@ -101,10 +100,79 @@ Below we investigate the impact of the number of attention heads, as well as the
 |  2              |           10          |  7,05   |
 |  2              |           20          |  7.29   |
 
-We see that adding one attention head brings some improvement, although it should be noted that this applies to the vocals track, but not necessarily to the other tracks. Thus in our test results we do not use attention, but keep in mind it might be useful.
+We observe that adding one attention head may bring up to 0.5 dB improvement, which is quite noticeable. However, it should be noted that this applies to the vocals track, but not necessarily to the other tracks (in preliminary experiments, attention heads was not beneficial for the bass and other tracks). We report test results without attention, but this mechanism should be considered for further boosting the results.
 
-## Reproducing the results
+## How to use
 
+### Setup
+
+After cloning this repo, create and activate a virtual env and install the required packages:
+
+```
+pip install -r requirements.txt
+```
+
+Then, download the [MUSDB18HQ](https://zenodo.org/records/3338373) dataset and unzip it in the `data` folder (or change the strucure and path accordingly in the config file).
+
+Finally, to speed up data loading at training, you will need to pre-process the dataset in order to extract non-silent segment indices. To that end, simply run:
+```
+python prep_dataset.py
+```
+
+
+### Training
+
+The core training function can be simply run as follows:
+```
+python train.py
+```
+that wil train the default target (=vocals) using default parameters (= those used for reporting [test results](#test-results)).
+
+To have with debugging, you can use the `fast_tr` flag as follows:
+```
+python train.py fast_tr=True
+```
+This enables the [overfit_batches](https://lightning.ai/docs/pytorch/stable/common/trainer.html#overfit-batches) functionnality of Ligthning to perform training and validation on a single batch (this also disables random operations when creating the dataset for ensuring it's the same batch at each step/epoch). 
+
+
+### Trying multiple configurations
+
+This project is based on [PyTorch](https://pytorch.org/) ([Ligthning(](https://lightning.ai/docs/pytorch/stable/)) and [Hydra](https://hydra.cc/). This means you can easily change parameters (model size, number of layer, learning rate, etc.), via either the configuration files, or directly in command line, for instance:
+```
+python train.py optim.loss_domain=t+tf src_mod.num_repeat=10
+```
+Have a look at the config files to check all the parameters you can change! If you want to train all target models using default parameters, simply run:
+
+```
+python train.py -m src_mod.target=vocals,bass,drums,other
+```
+
+The list of all model/configuration variants used when presenting the [validation results](#validation-results) are stored in the `jobs/params.txt` file. This file can be used as a parameter array when running multiple jobs using the [OAR](https://oar.imag.fr/docs/latest/user/quickstart.html) task manager (see the `jobs/book_training` script). Depending on your working environment this script might need some adaptation. Alternatively, you can simply run each job independently as above:
+
+You can then run:
+```
+python display_tbresults.py
+```
+
+in order to aggregate all validation results from tensorboard logs into a csv file for comparing variants (and display them).
+
+### Evaluation
+
+Once all target models are trained, to perform evaluation on the test set, run:
+```
+python evaluate.py
+```
+Note that when creating a Separator module, the code looks for target-specific checkpoints in the `output/bsrnn` folder. If a certain checkpoint is not found, a model will be initialized from scratch with random weights instead. The function above computes the global SDR (=uSDR) by default, but you can easily compute the museval SDR (=cSDR) as follows:
+```
+python evaluate.py sdr_type=museval
+```
+
+
+## Hardware
+
+All computation were carried out using the [Grid5000](https://www.grid5000.fr) testbed, supported by a French scientific interest group hosted by Inria and including CNRS, RENATER and several Universities as well as other organizations.
+
+In particular, for training the models we use 4 Nvidia RTX 2080 Ti (11 GiB) GPUs, except the [larger ones](#model-size) that were trained with  2 Nvidia A40 (45 GiB) GPUs
 
 
 ## Acknowledgments

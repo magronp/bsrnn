@@ -1,4 +1,3 @@
-
 import torch
 from torch.utils.data import Dataset
 import torchaudio
@@ -11,6 +10,7 @@ import yaml
 from torch.utils.data import DataLoader
 import pandas as pd
 from pathlib import Path
+
 tqdm.monitor_interval = 0
 
 
@@ -42,15 +42,15 @@ class Augmentator(object):
         transforms: list = [],
         seq_duration: float = 3.0,
         sample_rate: int = 44100,
-        min_db: float = -10.0,
-        max_db: float = 10.0,
+        min_gain: float = -10.0,
+        max_gain: float = 10.0,
         p_silent: float = 0.1,
         p_channelswap: float = 0.5,
     ):
         self.transforms = transforms
         self.seq_dur_samples = int(seq_duration * sample_rate)
-        self.min_db = min_db
-        self.max_db = max_db
+        self.min_gain = min_gain
+        self.max_gain = max_gain
         self.p_silent = p_silent
         self.p_channelswap = p_channelswap
 
@@ -63,9 +63,9 @@ class Augmentator(object):
         else:
             return audio
 
-    def _augment_rescale(self, audio: torch.Tensor) -> torch.Tensor:
-        """Applies a random gain between `low` and `high`"""
-        g = self.min_db + torch.rand(1) * (self.max_db - self.min_db)
+    def _augment_rescale_db(self, audio: torch.Tensor) -> torch.Tensor:
+        """Applies a random gain between `min_gain` and `max_gain` (in dB)"""
+        g = self.min_gain + torch.rand(1) * (self.max_gain - self.min_gain)
         g = 10 ** (g / 20)
         return audio * g
 
@@ -114,7 +114,7 @@ def get_track_list(root, subset, split=None):
     return list_tracks_subset
 
 
-class MUSDBDataset(Dataset):
+class MUSDBDatasetFulltrack(Dataset):
     def __init__(
         self,
         targets=None,
@@ -123,9 +123,6 @@ class MUSDBDataset(Dataset):
         subset: str = "train",
         split: str = "train",
         sample_rate: int = 44100,
-        seq_duration: Optional[float] = 6.0,
-        samples_per_track: int = 1,
-        random_track_mix: bool = False,
         seed: int = 42,
         *args,
         **kwargs,
@@ -141,20 +138,12 @@ class MUSDBDataset(Dataset):
         random.seed(seed)
         torch.manual_seed(seed)
 
-        self.seq_duration = seq_duration
-        self.samples_per_track = samples_per_track
-
         self.sources = sources
         self.targets = targets
         self.subset = subset
         self.split = split
-        self.random_track_mix = random_track_mix
         self.root = root
         self.list_tracks = get_track_list(root, subset, split)
-
-        # if seq_duration not provided, ensure process of entire tracks
-        if self.seq_duration is None:
-            self.samples_per_track = 1
 
         # Sample rate (original, target), and eventually resampling fn
         self.orig_sample_rate = 44100  # musdb is fixed sample rate
@@ -168,55 +157,28 @@ class MUSDBDataset(Dataset):
     def __getitem__(self, index):
         audio_sources = []
 
-        # select track
-        if self.random_track_mix:
-            track_name = random.choice(self.list_tracks)
-        else:
-            track_name = self.list_tracks[index // self.samples_per_track]
-
-        # Track folder
+        # Select track
+        track_name = self.list_tracks[index]
         track_dir = os.path.join(self.root, self.subset, track_name)
 
-        # Get the total track duration (useful if 'seq_duration' is specified)
-        track_info = torchaudio.info(os.path.join(track_dir, "mixture.wav"))
-        track_duration = track_info.num_frames / track_info.sample_rate
+        # Load the sources
+        for source in self.sources:
+            src_path = os.path.join(track_dir, source + ".wav")
 
-        # Put a condition on the energy of the mixture (remove if silent)
-        silent_mix = True
-        while silent_mix:
-            # Load the sources
-            for source in self.sources:
-                src_path = os.path.join(track_dir, source + ".wav")
+            # Load the waveform
+            audio = torchaudio.load(src_path)[0]
 
-                # Check wether a duration is provided or not
-                if self.seq_duration:
-                    frame_offset = int(
-                        random.uniform(0, track_duration - self.seq_duration)
-                        * self.orig_sample_rate
-                    )
-                    num_frames = int(self.seq_duration * self.orig_sample_rate)
-                else:
-                    frame_offset = 0
-                    num_frames = -1
+            # Resample if needed
+            if self.resample_bool:
+                audio = self.resample_fn(audio)
 
-                # Load the waveform
-                audio = torchaudio.load(
-                    src_path, frame_offset=frame_offset, num_frames=num_frames
-                )[0]
+            # Add the current source to the list of all sources
+            audio_sources.append(audio)
 
-                # Resample if needed
-                if self.resample_bool:
-                    audio = self.resample_fn(audio)
-
-                # Add the current source to the list of all sources
-                audio_sources.append(audio)
-
-            # create stem tensor of shape (source, channel, samples)
-            stems = torch.stack(audio_sources, dim=0)
-            # apply linear mix over source index=0
-            x = stems.sum(0)
-
-            silent_mix = torch.sum(torch.square(x)) < 1e-6
+        # create stem tensor of shape (source, channel, samples)
+        stems = torch.stack(audio_sources, dim=0)
+        # apply linear mix over source index=0
+        x = stems.sum(0)
 
         # Only keep the targets to be estimated
         ind_trg = [self.sources.index(x) for x in self.targets]
@@ -225,7 +187,7 @@ class MUSDBDataset(Dataset):
         return x, y, track_name
 
     def __len__(self):
-        return len(self.list_tracks) * self.samples_per_track
+        return len(self.list_tracks)
 
 
 class MUSDBDatasetSAD(Dataset):
@@ -241,10 +203,9 @@ class MUSDBDatasetSAD(Dataset):
         sample_rate: int = 44100,
         seq_duration: Optional[float] = 3.0,
         source_augmentations: bool = None,
-        min_db: float = -10.0,
-        max_db: float = 10.0,
+        min_gain: float = -10.0,
+        max_gain: float = 10.0,
         p_silent: float = 0.1,
-        p_channelswap: float = 0.5,
         seed: int = 42,
     ) -> None:
         # Seed for reproducibility
@@ -283,10 +244,9 @@ class MUSDBDatasetSAD(Dataset):
             transforms=source_augmentations,
             seq_duration=seq_duration,
             sample_rate=sample_rate,
-            min_db=min_db,
-            max_db=max_db,
+            min_gain=min_gain,
+            max_gain=max_gain,
             p_silent=p_silent,
-            p_channelswap=p_channelswap,
         )
 
         # Load the list of valid chunks (preprocessed with SAD) and shuffle them
@@ -383,7 +343,7 @@ def build_training_samplers(targets, cfg_dset, ngpus=None, fast_tr=False):
     # Number of GPUs
     if ngpus is None:
         ngpus = torch.cuda.device_count()
-    
+
     # Train and validation datasets
     train_db = MUSDBDatasetSAD(
         targets=targets,
@@ -396,39 +356,22 @@ def build_training_samplers(targets, cfg_dset, ngpus=None, fast_tr=False):
         sample_rate=cfg_dset.sample_rate,
         seq_duration=cfg_dset.seq_duration,
         source_augmentations=src_aug,
-        min_db=cfg_dset.min_db,
-        max_db=cfg_dset.max_db,
+        min_gain=cfg_dset.min_gain,
+        max_gain=cfg_dset.max_gain,
         p_silent=cfg_dset.p_silent,
-        p_channelswap=cfg_dset.p_channelswap,
         seed=cfg_dset.seed,
     )
 
     if fast_tr:
         valid_db = train_db
     else:
-        # Uncomment if want to use SAD-ed chunks for validation instead of full length tracks
-        #valid_db = MUSDBDatasetSAD(
-        #    targets=targets,
-        #    sources=cfg_dset.sources,
-        #    data_dir=cfg_dset.data_dir,
-        #    sad_dir=cfg_dset.sad_dir,
-        #    n_samples=cfg_dset.n_samples_val,
-        #    subset="train",
-        #    split="valid",
-        #    sample_rate=cfg_dset.sample_rate,
-        #    seq_duration=cfg_dset.seq_duration,
-        #    source_augmentations=None,
-        #    seed=cfg_dset.seed,
-        #)
-        valid_db = MUSDBDataset(
+        valid_db = MUSDBDatasetFulltrack(
             targets=targets,
             sources=cfg_dset.sources,
             root=cfg_dset.data_dir,
             subset="train",
             split="valid",
             sample_rate=cfg_dset.sample_rate,
-            seq_duration=None,
-            samples_per_track=1,
             seed=cfg_dset.seed,
         )
 
@@ -438,29 +381,30 @@ def build_training_samplers(targets, cfg_dset, ngpus=None, fast_tr=False):
         train_db, batch_size=cfg_dset.batch_size, shuffle=True, **splr_kwargs
     )
     valid_sampler = DataLoader(
-        valid_db, batch_size=1, shuffle=False, **splr_kwargs # val sampler batch size can be changed if using chunks
+        valid_db,
+        batch_size=1,
+        shuffle=False,
+        **splr_kwargs,  # val sampler batch size can be changed if using chunks
     )
 
     return train_sampler, valid_sampler
 
 
 def build_fulltrack_sampler(targets, cfg_dset, subset="train", split="valid"):
-    my_db = MUSDBDataset(
+    fulltrack_db = MUSDBDatasetFulltrack(
         targets=targets,
         sources=cfg_dset.sources,
         root=cfg_dset.data_dir,
         subset=subset,
         split=split,
         sample_rate=cfg_dset.sample_rate,
-        seq_duration=None,
-        samples_per_track=1,
         seed=cfg_dset.seed,
     )
 
     splr_kwargs = {"num_workers": cfg_dset.nb_workers, "pin_memory": True}
-    my_sampler = DataLoader(my_db, batch_size=1, **splr_kwargs)
+    fulltrack_sampler = DataLoader(fulltrack_db, batch_size=1, **splr_kwargs)
 
-    return my_sampler
+    return fulltrack_sampler
 
 
 if __name__ == "__main__":

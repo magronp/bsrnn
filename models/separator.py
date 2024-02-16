@@ -1,6 +1,6 @@
 import torch
 from models.pl_module import PLModule
-from helpers.instanciate_src import instanciate_src_model_onetarget
+from models.instanciate_src import instanciate_src_model
 import os
 
 
@@ -28,7 +28,7 @@ class Separator(PLModule):
 
         self.source_models = torch.nn.ModuleDict(
             {
-                t: instanciate_src_model_onetarget(
+                t: instanciate_src_model(
                     cfg_optim,
                     cfg_scheduler,
                     cfg_src_mod,
@@ -47,6 +47,5 @@ class Separator(PLModule):
         s_est = torch.cat(s_est, dim=1)
 
         return {"waveforms": s_est}
-
 
 # EOF

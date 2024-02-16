@@ -29,16 +29,16 @@ def create_trainer(
     )
 
     # Tensorboard logger
-    if log_dir is not None:
-        my_logger = pl.loggers.TensorBoardLogger(save_dir=log_dir, name=method_name)
-    else:
+    if log_dir is None:
         my_logger = False
+    else:
+        my_logger = pl.loggers.TensorBoardLogger(save_dir=log_dir, name=method_name)
 
     # For debugging, use the overfit_batches flag
     if fast_tr:
-        overfit_batches=1
+        overfit_batches = 1
     else:
-        overfit_batches=0.0
+        overfit_batches = 0.0
 
     # Instanciate the trainer
     trainer = pl.Trainer(
@@ -55,6 +55,5 @@ def create_trainer(
     )
 
     return trainer
-
 
 # EOF

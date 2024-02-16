@@ -156,8 +156,7 @@ def get_indices_trg(
 @hydra.main(version_base=None, config_name="config", config_path="conf")
 def prepare_dset(args: DictConfig):
 
-    # Define targets
-    targets = ["vocals", "bass", "drums", "other"]
+    targets = args.targets
     args = args.dset
 
     # initialize Source Activity Detector
