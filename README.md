@@ -126,9 +126,9 @@ The core training function can be simply run as follows:
 ```
 python train.py
 ```
-that wil train the default target (=vocals) using default parameters (= those used for reporting [test results](#test-results)).
+This will train the default target (=vocals) using default parameters (= those used for reporting [test results](#test-results)).
 
-To have with debugging, you can use the `fast_tr` flag as follows:
+For debugging / fast prototyping / overfitting on purpose, you can use the `fast_tr` flag as follows:
 ```
 python train.py fast_tr=True
 ```
@@ -137,7 +137,7 @@ This enables the [overfit_batches](https://lightning.ai/docs/pytorch/stable/comm
 
 ### Trying multiple configurations
 
-This means you can easily change parameters (model size, number of layer, learning rate, etc.), via either the configuration files, or directly in command line, for instance:
+Thanks to the Hydra framework, you can easily change parameters (model size, number of layer, learning rate, etc.), via either the configuration files, or directly in command line, for instance:
 ```
 python train.py optim.loss_domain=t+tf src_mod.num_repeat=10
 ```
@@ -147,14 +147,12 @@ Have a look at the config files to check all the parameters you can change! If y
 python train.py -m src_mod.target=vocals,bass,drums,other
 ```
 
-The list of all model/configuration variants used when presenting the [validation results](#validation-results) are stored in the `jobs/params.txt` file. This file can be used as a parameter array when running multiple jobs using the [OAR](https://oar.imag.fr/docs/latest/user/quickstart.html) task manager (see the `jobs/book_training` script). Depending on your working environment this script might need some adaptation. Alternatively, you can simply run each job independently as above:
+The list of all model/configuration variants used when presenting the [validation results](#validation-results) are stored in the `jobs/params.txt` file. This file can be used as a parameter array when running multiple jobs using the [OAR](https://oar.imag.fr/docs/latest/user/quickstart.html) task manager (see the `jobs/book_training` script). Depending on your working environment this script might need some adaptation. Alternatively, you can simply run each job independently as on the example above, using all the configurations in the `jobs/params.txt` file.
 
-You can then run:
+Lastly, we prepare a script that can easily aggregate all validation results from tensorboard logs into a csv file for comparing variants, and display them:
 ```
 python display_tbresults.py
 ```
-
-in order to aggregate all validation results from tensorboard logs into a csv file for comparing variants (and display them).
 
 ### Evaluation
 
@@ -162,7 +160,7 @@ Once all target models are trained, to perform evaluation on the test set, run:
 ```
 python evaluate.py
 ```
-Note that when creating a Separator module, the code looks for target-specific checkpoints in the `output/bsrnn` folder. If a certain checkpoint is not found, a model will be initialized from scratch with random weights instead. The function above computes the global SDR (=uSDR) by default, but you can easily compute the museval SDR (=cSDR) as follows:
+Note that when creating a Separator module, the code search for target-specific checkpoints in the `output/bsrnn/` folder. If a certain checkpoint is not found, a model will be initialized from scratch with random weights instead. The function above computes the uSDR by default, but you can easily compute the cSDR:
 ```
 python evaluate.py sdr_type=museval
 ```
@@ -177,10 +175,10 @@ In particular, for training the models we use 4 Nvidia RTX 2080 Ti (11 GiB) GPUs
 
 ## Acknowledgments
 
-In our implementation we have used some code from external sources.
+Our implementation relies on code from external sources.
 
 - We adapated the attention mechanism from the TFGridNet implementation in the [ESPNET toolbox](https://github.com/espnet/espnet/blob/35c2e2b13026ba212a2ba5e454e1621d30f2d8b9/espnet2/enh/separator/tfgridnet_separator.py#L18)
-- We implemented the BSRNN-related classes (ResNet, BSNet, BSRNN) using the authors' [repository from the MDX challenge](http://gitlab.aicrowd.com/Tomasyu/sdx-2023-music-demixing-track-starter-kit) (note however that we had to adapt it so that it outputs both time-domain and TF domain components, necessary to compute the loss).
+- We implemented the BSRNN-related classes (ResNet, BSNet, BSRNN) using the authors' [repository from the MDX challenge](http://gitlab.aicrowd.com/Tomasyu/sdx-2023-music-demixing-track-starter-kit). Note however that this code *needs to be adapted* so that it outputs both time-domain and TF domain components, which are necessary to compute the loss.
 - For the source activity detector used in preparing the dataset, we largely relied on the [implementation from Amantur Amatov](https://github.com/amanteur/BandSplitRNN-Pytorch).
 
 We would like to thank Jianwei Yu, who is an author of the BSRNN paper, for trying to help us with the implementation. We also thank Christopher Landschoot for fruitful discussion related to his [own implementation](https://github.com/crlandsc/Music-Demixing-with-Band-Split-RNN).
