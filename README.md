@@ -7,7 +7,9 @@ This repository contains an unofficial implementation of the [BSRNN](https://arx
     <div class="caption"><i>Image taken from the <a href="https://arxiv.org/pdf/2209.15174.pdf">BSRNN paper</a>.</i></div>
 </div>
 
-This project's goal is to reproduce the original results from the BSRNN paper, which we were unfortunately unable to achieve. Therefore, if you spot an error in the code, or something that differs from the description in the paper, please feel free to reach out or post a message. :slightly_smiling_face:
+&nbsp;
+
+The goal of this project is to reproduce the original results from the BSRNN paper. Unfortunately, we were unable to achieve this; therefore, if you spot an error in the code, or something that differs from the description in the paper, please feel free to reach out or post a message. :slightly_smiling_face:
 
 
 ##  Test results
@@ -24,7 +26,7 @@ Here we report the results on the test set (check below for more information on 
 | average     |    7.94        |      6.51          |    8.24        |      6.44          |
 
 
-We can see there we are about 1.4-1.8 dB SDR behind the results reported in the paper. Note that a similar conclusion can be drawn from [another unofficial implementation](https://github.com/amanteur/BandSplitRNN-Pytorch) (with actually even worse results). Thus, some efforts are still needed to reproduce the BSRNN results. 
+We can see that we are about 1.4-1.8 dB SDR behind the results reported in the paper. Note that a similar conclusion can be drawn from [another unofficial implementation](https://github.com/amanteur/BandSplitRNN-Pytorch) (with actually even worse results). Thus, some efforts are still needed to reproduce the BSRNN results. 
 
 
 **About the metrics**:
@@ -35,9 +37,9 @@ As in the original BSRNN paper, we report two variants of the SDR:
 
 
 
-## Validation results
+## Variants
 
-Here we display result on the validation set for different variants (all on the vocals track). We use the uSDR, since it is much faster to compute than cSDR.
+Here we display result on the validation set for various configurations (all using the vocals as target). We use the uSDR, since it is much faster to compute than cSDR.
 
 ### Loss and model size
 
@@ -141,7 +143,7 @@ Have a look at the config files to check all the parameters you can change! If y
 python train.py -m src_mod.target=vocals,bass,drums,other
 ```
 
-The list of all model/configuration variants used when presenting the [validation results](#validation-results) are stored in the `jobs/params.txt` file. This file can be used as a parameter array when running multiple jobs using the [OAR](https://oar.imag.fr/docs/latest/user/quickstart.html) task manager (see the `jobs/book_training` script). Depending on your working environment this script might need some adaptation. Alternatively, you can simply run each job independently as on the example above, using all the configurations in the `jobs/params.txt` file.
+The list of all model/configuration variants used when presenting the [validation results](#variants) are stored in the `jobs/params.txt` file. This file can be used as a parameter array when running multiple jobs using the [OAR](https://oar.imag.fr/docs/latest/user/quickstart.html) task manager (see the `jobs/book_training` script). Depending on your working environment this script might need some adaptation. Alternatively, you can simply run each job independently as on the example above, using all the configurations in the `jobs/params.txt` file.
 
 Lastly, we prepare a script that can easily aggregate all validation results from tensorboard logs into a csv file for comparing variants, and display them:
 ```
