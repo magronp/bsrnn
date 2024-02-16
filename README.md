@@ -8,70 +8,68 @@ This repository contains an unofficial implementation of the [BSRNN](https://arx
 </div>
 
 This project's goal is to reproduce the original results from the BSRNN paper, which we were unfortunately unable to achieve. Therefore, if you spot an error in the code, or something that differs from the description in the paper, please feel free to reach out or post a message. :slightly_smiling_face:
- 
+
 
 ##  Test results
 
-Here we report the results in terms of global SDR, which is referred to as *utterance SDR* in the [BSRNN paper](https://arxiv.org/pdf/2209.15174.pdf) (note that our implementation allows for computing the *chunk SDR* using the museval toolbox, see below). It is used as metric in the latest MDX challenges. This SDR is computed on whole tracks and doesn't allow any filtering, thus it is similar to the a basic SNR. Then we take the mean over tracks.
-
-|             |   BSRNN paper  | Our implementation |
-|-------------|----------------|--------------------|
-| vocals      |   10.04        |      7.67          |
-| bass        |    6.80        |      5.77          |
-| drums       |    8.92        |      8.26          |
-| other       |    6.01        |      4.33          |
-| all sources |    7.94        |      6.51          |
-
-Below we also report the results in terms *chunk SDR*, computed using the museval tooblox. It was used as metric in the [SiSEC 2018](https://sisec.inria.fr/2018-professionally-produced-music-recordings/) challenge. This SDR allows for a global distortion filter, and then is computed by taking the median over 1second chunks, and median over tracks.
-
-|             |   BSRNN paper  | Our implementation |
-|-------------|----------------|--------------------|
-| vocals      |   10.01        |      7.19          |
-| bass        |    7.22        |      6.57          |
-| drums       |    9.01        |      7.59          |
-| other       |    6.70        |      4.42          |
-| all sources |    8.24        |      6.44          |
+Here we report the results on the test set (check below for more information on the metrics).
 
 
-Thus, we are about 1.4-1.8 dB SDR behind the baseline implementation.
+|             |  uSDR - paper  |    uSDR - ours     |  cSDR - paper  |    cSDR - ours     |
+|-------------|----------------|--------------------|----------------|--------------------|
+| vocals      |   10.04        |      7.67          |   10.01        |      7.19          |
+| bass        |    6.80        |      5.77          |    7.22        |      6.57          |
+| drums       |    8.92        |      8.26          |    9.01        |      7.59          |
+| other       |    6.01        |      4.33          |    6.70        |      4.42          |
+| average     |    7.94        |      6.51          |    8.24        |      6.44          |
+
+
+We can see there we are about 1.4-1.8 dB SDR behind the official results implementation, which justifies refining this implementation.
+
+**About the metrics**:
+
+As in the original BSRNN paper, we report two variants of the SDR:
+- the *utterance SDR* (uSDR), which is used as metric in the latest MDX challenges. This SDR does not allow any distortion filter (thus it is similar to a basic SNR), and it is computed on entire tracks (no chunking) and averaged over tracks.
+- the *chunk SDR*, which is computed using the [museval](https://github.com/sigsep/sigsep-mus-eval) tooblox. It was used as metric in the [SiSEC 2018](https://sisec.inria.fr/2018-professionally-produced-music-recordings/) challenge. This SDR allows for a global distortion filter, and it is computed by taking the median over 1s-long chunks, and median over tracks.
+
+
 
 ## Validation results
 
-
-Here we display the results on the validation set (global SDR) for different variants (all on the vocals track).
+Here we display result on the validation set for different variants (all on the vocals track). We use the uSDR, since it is much faster to compute than cSDR.
 
 ### Loss and model size
 
-First, we check the influence of the loss. The origninal paper uses a combination of a time-domain (t) and time-frequency domain (tf) loss (t+tf). We check using each term individually. For speed, this experiment uses a model with hidden dimension of 64 and num_repeats of 8.
+First, we check the influence of the loss. The original paper uses a combination of a time-domain (t) and time-frequency domain (tf) loss (t+tf). We check using each term individually. For speed, this experiment uses a model with hidden dimension of 64 and num_repeats of 8.
 
-| loss    |   SDR   |
+| loss    |   uSDR   |
 |---------|---------|
 |  t      |   7,40  |
 |  tf     |   6,41  |
 |  t+tf   |   7.20  |
 
-We observe that using a time-domain loss only is better than the loss used in the paper (t+tf). Nonetheles, let's use it anyway in what follows.
+We observe that using a time-domain only loss yields better results than the loss used in the paper (t+tf). Nonetheles, in what follows we consider the t+tf loss for consistency with the paper.
 
 
 ### Model size
 
-We now increase the  architecture (hidden dimension and number of BS blocks).
+We now increase the  architecture (hidden dimension and number of band-split blocks).
 
-| feature_dim  |  num_repeat    |   SDR   |
+| feature_dim  |  num_repeat    |   uSDR   |
 |--------------|----------------|---------|
 |    64        |       8        |   7.20  |
 |    64        |       10       |   6.95  |
 |    128       |       8        |   5.42  |
 
-We also note that unfortunately, when increasing the model size, the performance degrades, thus we can't reproduce the paper's results.
+Unfortunately, when increasing the model size, the performance degrades. This is the main barrier to reproducing the paper's results.
 
 
 
 ### Band and sequence modeling layers
 
-Here we investigate on the usage of alternative layers to LSTM for band and sequence modeling. We use the t+tf loss, and the best architecture obtained above (8 repeats, 64 hidden dim).
+Here we investigate on the usage of alternative layers to LSTM for band and sequence modeling. We use the t+tf loss, and the best architecture obtained above.
 
-| sequence modeling layer | band modeling layer |   SDR   |
+| sequence modeling layer | band modeling layer |   uSDR   |
 |-------------------------|---------------------|---------|
 |  lstm                   |   lstm              |   7.20  |
 |  gru                    |   lstm              |   6.83  |
@@ -79,11 +77,11 @@ Here we investigate on the usage of alternative layers to LSTM for band and sequ
 |  lstm                   |   gru               |   6.79  |
 |  lstm                   |   conv              |   6.09  |
 
-Nothing is better than the basic LSTM. The Conv1D layers don't work (although they are much faster to train because of memory constraints), and GRU work similarly, though they are slightly faster to train than LSTM, because slightly less parameters.
+LSTM layers seem to be the best choice. GRU (resp. Conv1D) layers induce a moderate (resp. large) performance drop, although they are also moderately (resp. much) faster to train because of memory constraints.
 
 ### Attention mechanism
 
-As a prospective attempt to further boost the results, we propose to use a multi-head attention mechanism, inspired from the TFGridNet model. This model is quite similar to BSRNN, as it projects frequency bands in a deep embedding space, and then applies LSTM over both time and band dimensions.
+As a prospective attempt to further boost the results, we propose to use a multi-head attention mechanism, inspired from the [TFGridNet](https://arxiv.org/abs/2209.03952) model. This model is quite similar to BSRNN, as it projects frequency bands in a deep embedding space, and then applies LSTM over both time and band dimensions.
 
 <div style="align: center; text-align:center;">
     <img src="https://www.researchgate.net/publication/363402998/figure/fig1/AS:11431281083662730@1662694210541/Proposed-full-band-self-attention-module_W640.jpg" width="400px" />
