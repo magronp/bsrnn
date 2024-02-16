@@ -24,7 +24,8 @@ Here we report the results on the test set (check below for more information on 
 | average     |    7.94        |      6.51          |    8.24        |      6.44          |
 
 
-We can see there we are about 1.4-1.8 dB SDR behind the official results implementation, which justifies refining this implementation.
+We can see there we are about 1.4-1.8 dB SDR behind the results reported in the paper. Note that a similar conclusion can be drawn from [another unofficial implementation](https://github.com/amanteur/BandSplitRNN-Pytorch) (with actually even worse results). Thus, some efforts are still needed to reproduce the BSRNN results. 
+
 
 **About the metrics**:
 
@@ -81,14 +82,7 @@ LSTM layers seem to be the best choice. GRU (resp. Conv1D) layers induce a moder
 
 ### Attention mechanism
 
-As a prospective attempt to further boost the results, we propose to use a multi-head attention mechanism, inspired from the [TFGridNet](https://arxiv.org/abs/2209.03952) model. This model is quite similar to BSRNN, as it projects frequency bands in a deep embedding space, and then applies LSTM over both time and band dimensions.
-
-<div style="align: center; text-align:center;">
-    <img src="https://www.researchgate.net/publication/363402998/figure/fig1/AS:11431281083662730@1662694210541/Proposed-full-band-self-attention-module_W640.jpg" width="400px" />
-    <div class="caption"><i>Image taken from the <a href="https://arxiv.org/abs/2209.03952">TFGridNet paper</a>.</i></div>
-</div>
-
-Below we investigate the impact of the number of attention heads, as well as the dimension of the attention encoder.
+As a prospective attempt to further boost the results, we propose to use a multi-head attention mechanism, inspired from the [TFGridNet](https://arxiv.org/abs/2209.03952) model. This model is quite similar to BSRNN, as it projects frequency bands in a deep embedding space, and then applies LSTM over both time and band dimensions, but it incorporates an additional multi-head attention mechanism. Below we investigate the impact of the number of attention heads, as well as the dimension of the attention encoder.
 
 | number of heads | attention encoder dim |  SDR    |
 |-----------------|-----------------------|---------|
