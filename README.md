@@ -33,7 +33,7 @@ We can see that we are about 1.4-1.8 dB SDR behind the results reported in the p
 
 As in the original BSRNN paper, we report two variants of the SDR:
 - the *utterance SDR* (uSDR), which is used as metric in the latest MDX challenges. This SDR does not allow any distortion filter (thus it is similar to a basic SNR), and it is computed on entire tracks (no chunking) and averaged over tracks.
-- the *chunk SDR*, which is computed using the [museval](https://github.com/sigsep/sigsep-mus-eval) tooblox. It was used as metric in the [SiSEC 2018](https://sisec.inria.fr/2018-professionally-produced-music-recordings/) challenge. This SDR allows for a global distortion filter, and it is computed by taking the median over 1s-long chunks, and median over tracks.
+- the *chunk SDR* (cSDR), which is computed using the [museval](https://github.com/sigsep/sigsep-mus-eval) tooblox. It was used as metric in the [SiSEC 2018](https://sisec.inria.fr/2018-professionally-produced-music-recordings/) challenge. This SDR allows for a global distortion filter, and it is computed by taking the median over 1s-long chunks, and median over tracks.
 
 
 
