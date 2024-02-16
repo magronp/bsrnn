@@ -1,12 +1,14 @@
 # Band-Split RNN for music separation - yet another unofficial implementation
 
-This repository contains an unofficial Pytorch implementation of the [BSRNN](https://arxiv.org/pdf/2209.15174.pdf) model for music separation. The models are trained on the freely available [MUSDB18](https://sigsep.github.io/datasets/musdb.html) dataset.
+This repository contains an unofficial implementation of the [BSRNN](https://arxiv.org/pdf/2209.15174.pdf) model for music separation. This project is based on [PyTorch](https://pytorch.org/) ([Ligthning](https://lightning.ai/docs/pytorch/stable/)) and [Hydra](https://hydra.cc/), and uses the HQ version of the freely available [MUSDB18](https://sigsep.github.io/datasets/musdb.html) dataset.
 
 <div style="align: center; text-align:center;">
     <img src="https://gitlab.aicrowd.com/Tomasyu/sdx-2023-music-demixing-track-starter-kit/-/raw/master/Figure/BSRNN.png" width="500px" />
     <div class="caption"><i>Image taken from the <a href="https://arxiv.org/pdf/2209.15174.pdf">BSRNN paper</a>.</i></div>
 </div>
 
+This project's goal is to reproduce the original results from the BSRNN paper, which we were unfortunately unable to achieve. Therefore, if you spot an error in the code, or something that differs from the description in the paper, please feel free to reach out or post a message. :slightly_smiling_face:
+ 
 
 ##  Test results
 
@@ -137,7 +139,7 @@ This enables the [overfit_batches](https://lightning.ai/docs/pytorch/stable/comm
 
 ### Trying multiple configurations
 
-This project is based on [PyTorch](https://pytorch.org/) ([Ligthning(](https://lightning.ai/docs/pytorch/stable/)) and [Hydra](https://hydra.cc/). This means you can easily change parameters (model size, number of layer, learning rate, etc.), via either the configuration files, or directly in command line, for instance:
+This means you can easily change parameters (model size, number of layer, learning rate, etc.), via either the configuration files, or directly in command line, for instance:
 ```
 python train.py optim.loss_domain=t+tf src_mod.num_repeat=10
 ```
