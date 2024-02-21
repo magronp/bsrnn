@@ -16,3 +16,4 @@ outputs/*
 tb_logs/
 data/*
 !data/.dummy.txt
+.notes.txt
