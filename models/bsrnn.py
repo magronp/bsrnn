@@ -298,6 +298,7 @@ class BSRNN(PLModule):
         self,
         cfg_optim,
         cfg_scheduler,
+        cfg_eval,
         target="vocals",
         sample_rate=44100,
         n_fft=2048,
@@ -315,7 +316,12 @@ class BSRNN(PLModule):
 
         # Inherit from the PLModule
         super().__init__(
-            cfg_optim, cfg_scheduler, targets=target, sample_rate=sample_rate, eps=eps
+            cfg_optim,
+            cfg_scheduler,
+            cfg_eval,
+            targets=target,
+            sample_rate=sample_rate,
+            eps=eps,
         )
 
         instrument = target

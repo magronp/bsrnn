@@ -1,0 +1,4 @@
+#!/bin/bash
+CLUSTER=${1:-"grele"}
+
+oarsub -vv -l /gpu=1,walltime=12 -p $CLUSTER -q production jobs/test.sh

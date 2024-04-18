@@ -15,17 +15,11 @@ class PLModule(pl.LightningModule):
         self,
         cfg_optim,
         cfg_scheduler,
+        cfg_eval,
         targets=["vocals", "bass", "drums", "other"],
         sample_rate=44100,
         n_fft=2048,
         n_hop=512,
-        eval_segment_len=10.0,
-        eval_overlap=0.1,
-        sdr_type="global",
-        win_dur=1.0,
-        verbose_per_track=True,
-        eval_device="cuda",
-        rec_dir=None,
         eps=1.0e-7,
     ):
         super().__init__()
@@ -46,13 +40,14 @@ class PLModule(pl.LightningModule):
         self.cfg_scheduler = cfg_scheduler
 
         # Evaluation (valid/test) attributes
-        self.eval_segment_len = eval_segment_len
-        self.eval_overlap = eval_overlap
-        self.sdr_type = sdr_type
-        self.win_bss = int(win_dur * sample_rate)
-        self.verbose_per_track = verbose_per_track
-        self.eval_device = eval_device
-        self.rec_dir = rec_dir
+        self.eval_device = cfg_eval.device
+        self.eval_segment_len = cfg_eval.segment_len
+        self.eval_overlap = cfg_eval.overlap
+        self.eval_hop_size = cfg_eval.hop_size
+        self.sdr_type = cfg_eval.sdr_type
+        self.win_bss = int(cfg_eval.win_dur * sample_rate)
+        self.verbose_per_track = cfg_eval.verbose_per_track
+        self.rec_dir = cfg_eval.rec_dir
 
         # Transforms
         self.n_fft = n_fft
@@ -63,7 +58,6 @@ class PLModule(pl.LightningModule):
         # Initialize val/test results storage
         self.test_sdr_temp = []
         self.test_results = None
-        self.best_val_sdr = -torch.inf
 
         self.save_hyperparameters()
 
@@ -75,10 +69,14 @@ class PLModule(pl.LightningModule):
         )  # [batch_size, nb_targets, nb_channels, n_samples]
         return {"waveforms": y_hat}
 
-    def _shared_step(self, x, y, comp_loss=True):
+    def _shared_step(self, x, y=None, comp_loss=True):
         # Apply model, and get the waveform
         outputs = self(x)
         y_hat = outputs["waveforms"]
+
+        # If true sources are not provided, do not compute the loss
+        if y is None:
+            comp_loss=False
 
         # Compute the loss for training and validation (but no need for testing)
         if comp_loss:
@@ -115,7 +113,7 @@ class PLModule(pl.LightningModule):
     def validation_step(self, batch, batch_idx):
         # Load the data
         x, y, _ = batch
-
+    
         # Get the estimates and validation loss
         y_hat, val_loss = self._apply_model_to_track(x, y, comp_loss=True)
 
@@ -147,15 +145,136 @@ class PLModule(pl.LightningModule):
 
         return val_loss, val_sdr
 
-    def _apply_model_to_track(self, mix, true_sources, comp_loss=True):
+
+    def _apply_model_to_track(self, mix, true_sources=None, comp_loss=True):
+
+        # Apply either the fader or OLA, depending if hop size is provided
+        if self.eval_hop_size is None:
+            output_sig = self._apply_model_to_track_fader(mix, true_sources, comp_loss=comp_loss)
+        else:
+            output_sig = self._apply_model_to_track_ola(mix, true_sources, comp_loss=comp_loss)
+
+        return output_sig
+
+
+    def _apply_model_to_track_ola(self, mix, true_sources=None, comp_loss=True):
+
+        # mix: [B, num_channels, n_samples]
+        # true_sources: [B, num_sources, num_channels, n_samples]
+        
+        # If true sources are not provided, do not compute the loss
+        if true_sources is None:
+            comp_loss=False
+
+        # Place model on eval device
+        self.to(self.eval_device)
+
+        # Get the input signal device
+        in_device = mix.device
+
+        # Size and parameters
+        bsize, nb_channels, nsamples = mix.shape
+        eval_frames = int(self.sample_rate * self.eval_segment_len)
+        hop_frames = int(self.sample_rate * self.eval_hop_size)
+        fact_ol = self.eval_hop_size / self.eval_segment_len
+        
+        if self.targets is not None:
+            n_targets = len(self.targets)
+        else:
+            n_targets = 1
+
+        # treat the case where we might want to process the whole track at once
+        if self.eval_segment_len == -1:
+            chunk_len = nsamples + 1
+        else:
+            chunk_len = eval_frames
+
+        # if too big chunks / too small mixture, ignore the OLA
+        if chunk_len >= nsamples:
+            # move to eval device
+            mix = mix.to(self.eval_device)
+            if true_sources is not None:
+                true_sources = true_sources.to(self.eval_device)
+            # apply model
+            with torch.no_grad():
+                loss, y_hat = self._shared_step(mix, true_sources, comp_loss=comp_loss)
+            # back to the initial device
+            final = y_hat.to(in_device)
+
+        else:
+            loss = []
+
+            # add 0s at the begining and end 
+            mix = torch.cat(
+                (
+                    torch.zeros((bsize, nb_channels, eval_frames), device=in_device),
+                    mix,
+                    torch.zeros((bsize, nb_channels, eval_frames), device=in_device),
+                ),
+                dim=-1,
+            )
+
+            # init output sig (same as mix but with n_targets)
+            final = torch.zeros(
+                (bsize, n_targets, nb_channels, nsamples + 2 * eval_frames), device=in_device
+            )
+
+            start = 0
+            while start < nsamples + eval_frames:
+                # extract current mix chunk and move to eval device
+                mix_chunk = mix[..., start:start + eval_frames]
+                mix_chunk = mix_chunk.to(self.eval_device)
+
+                # Chunk the true sources and move to eval device
+                if true_sources is not None:
+                    true_sources_chunk = true_sources[..., start:start + eval_frames]
+                    true_sources_chunk = true_sources_chunk.to(self.eval_device)
+                else:
+                    true_sources_chunk = None
+
+                # apply model
+                with torch.no_grad():
+                    loss_chunk, y_hat = self._shared_step(
+                        mix_chunk, true_sources_chunk, comp_loss=comp_loss
+                    )
+                # back to the initial device
+                y_hat = y_hat.to(in_device)
+
+                # OLA
+                final[:, :, :, start:start + eval_frames]  += y_hat * fact_ol
+
+                # Store loss over chunks
+                loss.append(loss_chunk)
+
+                # update indices
+                start += hop_frames
+
+            # Aggregate loss over chunks
+            if comp_loss:
+                loss = torch.median(torch.stack(loss))
+            else:
+                loss = None
+
+        # remove the meaningless samples at the beg and end
+        final = final[...,eval_frames:-eval_frames]
+        
+        return final, loss
+    
+
+    def _apply_model_to_track_fader(self, mix, true_sources=None, comp_loss=True):
 
         # mix: [B, num_channels, n_samples]
         # true_sources: [B, num_sources, num_channels, n_samples]
 
-        in_device = mix.device
-
+        # If true sources are not provided, do not compute the loss
+        if true_sources is None:
+            comp_loss=False
+            
         # Place model on eval device
         self.to(self.eval_device)
+
+        # Get the input signal device
+        in_device = mix.device
 
         bsize, nb_channels, nsamples = mix.shape
 
@@ -172,11 +291,12 @@ class PLModule(pl.LightningModule):
                 self.sample_rate * self.eval_segment_len * (1 + self.eval_overlap)
             )
 
-        # if too big chunks / too small mixture, ignore the OLA / fader
+        # if too big chunks / too small mixture, ignore the fader
         if chunk_len >= nsamples:
             # move to eval device
-            mix.to(self.eval_device)
-            true_sources.to(self.eval_device)
+            mix = mix.to(self.eval_device)
+            if true_sources is not None:
+                true_sources = true_sources.to(self.eval_device)
             # apply model
             with torch.no_grad():
                 loss, y_hat = self._shared_step(mix, true_sources, comp_loss=comp_loss)
@@ -199,12 +319,17 @@ class PLModule(pl.LightningModule):
             )
 
             while start < nsamples - overlap_frames:
-                # extract current chunk
+                # extract current mix chunk and move to eval device
                 mix_chunk = mix[..., start:end]
-                true_sources_chunk = true_sources[..., start:end]
-                # move to eval device      self.test_sdr_temp.clear()  # free memory
-                mix_chunk.to(self.eval_device)
-                true_sources_chunk.to(self.eval_device)
+                mix_chunk = mix_chunk.to(self.eval_device)
+
+                # Chunk the true sources and move to eval device
+                if true_sources is not None:
+                    true_sources_chunk = true_sources[..., start:end]
+                    true_sources_chunk = true_sources_chunk.to(self.eval_device)
+                else:
+                    true_sources_chunk = None
+
                 # apply model
                 with torch.no_grad():
                     loss_chunk, y_hat = self._shared_step(

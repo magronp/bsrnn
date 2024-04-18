@@ -9,111 +9,60 @@ This repository contains an unofficial implementation of the [BSRNN](https://arx
 
 &nbsp;
 
-The goal of this project is to reproduce the original results from the BSRNN paper. Unfortunately, we were unable to achieve this; therefore, if you spot an error in the code, or something that differs from the description in the paper, please feel free to reach out or post a message. :slightly_smiling_face:
+The goal of this project is to reproduce the original results from the BSRNN paper. Unfortunately, we were unable to achieve the performance reported in the paper. Therefore, if you spot an error in the code, or something that differs from the description in the paper, please feel free to reach out, send a message, or open an issue. :slightly_smiling_face:
+
+We provide pretrained models on a [Zenodo repository](https://zenodo.org/records/10992913), which you can use for [separating your own song](#inference--demo).
 
 
 ##  Test results
 
-Here we report the results on the test set (check below for more information on the metrics).
+Here we report the results on the test set (check [below](#metrics) for more information on the metrics).
 
 
-|             |  uSDR - paper  |    uSDR - ours     |  cSDR - paper  |    cSDR - ours     |
-|-------------|----------------|--------------------|----------------|--------------------|
-| vocals      |   10.04        |      7.67          |   10.01        |      7.19          |
-| bass        |    6.80        |      5.77          |    7.22        |      6.57          |
-| drums       |    8.92        |      8.26          |    9.01        |      7.59          |
-| other       |    6.01        |      4.33          |    6.70        |      4.42          |
-| average     |    7.94        |      6.51          |    8.24        |      6.44          |
+|             |  uSDR - paper |    uSDR - ours    |  cSDR - paper |    cSDR - ours    |
+|-------------|---------------|-------------------|---------------|-------------------|
+| vocals      |   10.0        |      8.5          |   10.0        |      8.1          |
+| bass        |    6.8        |      6.3          |    7.2        |      7.8          |
+| drums       |    8.9        |      8.5          |    9.0        |      8.2          |
+| other       |    6.0        |      5.1          |    6.7        |      5.2          |
+| average     |    7.9        |      7.1          |    8.2        |      7.3          |
 
 
-We can see that we are about 1.4-1.8 dB SDR behind the results reported in the paper. Note that a similar conclusion can be drawn from [another unofficial implementation](https://github.com/amanteur/BandSplitRNN-Pytorch) (with actually even worse results). Thus, some efforts are still needed to reproduce the BSRNN results. 
+We are about 0.8-0.9 dB SDR behind the results reported in the paper. A similar conclusion can be drawn from [another unofficial implementation](https://github.com/amanteur/BandSplitRNN-Pytorch) with worse results. Thus, some efforts are still needed to reproduce the BSRNN results. 
 
 
-**About the metrics**:
+## Tuning the model
 
-As in the original BSRNN paper, we report two variants of the SDR:
+We report the results obtained with several variants (learning rate, architecture, training loss...) in a [separate document](tuning.md). We also provide several [suggestions](tuning.md#potential-improvements) to improve the results in order to match those of the original paper.
+
+
+## Metrics
+
+As in the original BSRNN paper, we consider two variants of the SDR:
 - the *utterance SDR* (uSDR), which is used as metric in the latest MDX challenges. This SDR does not allow any distortion filter (thus it is similar to a basic SNR), and it is computed on entire tracks (no chunking) and averaged over tracks.
 - the *chunk SDR* (cSDR), which is computed using the [museval](https://github.com/sigsep/sigsep-mus-eval) tooblox. It was used as metric in the [SiSEC 2018](https://sisec.inria.fr/2018-professionally-produced-music-recordings/) challenge. This SDR allows for a global distortion filter, and it is computed by taking the median over 1s-long chunks, and median over tracks.
 
 
 
-## Variants
-
-Here we display result on the validation set for various configurations (all using the vocals as target). We use the uSDR, since it is much faster to compute than cSDR.
-
-### Loss and model size
-
-First, we check the influence of the loss. The original paper uses a combination of a time-domain (t) and time-frequency domain (tf) loss (t+tf). We check using each term individually. For speed, this experiment uses a model with hidden dimension of 64 and num_repeats of 8.
-
-| loss    |   uSDR   |
-|---------|---------|
-|  t      |   7,40  |
-|  tf     |   6,41  |
-|  t+tf   |   7.20  |
-
-We observe that using a time-domain only loss yields better results than the loss used in the paper (t+tf). Nonetheles, in what follows we consider the t+tf loss for consistency with the paper.
-
-
-### Model size
-
-We now increase the  architecture (hidden dimension and number of band-split blocks).
-
-| feature_dim  |  num_repeat    |   uSDR   |
-|--------------|----------------|---------|
-|    64        |       8        |   7.20  |
-|    64        |       10       |   6.95  |
-|    128       |       8        |   5.42  |
-
-Unfortunately, when increasing the model size, the performance degrades. This is the main barrier to reproducing the paper's results.
-
-
-
-### Band and sequence modeling layers
-
-Here we investigate on the usage of alternative layers to LSTM for band and sequence modeling. We use the t+tf loss, and the best architecture obtained above.
-
-| sequence modeling layer | band modeling layer |   uSDR   |
-|-------------------------|---------------------|---------|
-|  lstm                   |   lstm              |   7.20  |
-|  gru                    |   lstm              |   6.83  |
-|  conv                   |   lstm              |   6.24  |
-|  lstm                   |   gru               |   6.79  |
-|  lstm                   |   conv              |   6.09  |
-
-LSTM layers seem to be the best choice. GRU (resp. Conv1D) layers induce a moderate (resp. large) performance drop, although they are also moderately (resp. much) faster to train because of memory constraints.
-
-### Attention mechanism
-
-As a prospective attempt to further boost the results, we propose to use a multi-head attention mechanism, inspired from the [TFGridNet](https://arxiv.org/abs/2209.03952) model. This model is quite similar to BSRNN, as it projects frequency bands in a deep embedding space, and then applies LSTM over both time and band dimensions, but it incorporates an additional multi-head attention mechanism. Below we investigate the impact of the number of attention heads, as well as the dimension of the attention encoder.
-
-| number of heads | attention encoder dim |  uSDR   |
-|-----------------|-----------------------|---------|
-|  0              |           -           |  7.20   |
-|  1              |           4           |  7.45   |
-|  1              |           10          |  7.71   |
-|  1              |           20          |  7.35   |
-|  2              |           4           |  7.49   |
-|  2              |           10          |  7,05   |
-|  2              |           20          |  7.29   |
-
-We observe that adding one attention head may bring up to 0.5 dB improvement, which is quite noticeable. However, it should be noted that this applies to the vocals track, but not necessarily to the other tracks (in preliminary experiments, attention heads was not beneficial for the bass and other tracks). We report test results without attention, but this mechanism should be considered for further boosting the results.
 
 ## How to use
 
 ### Setup
 
-After cloning this repo, create and activate a virtual env and install the required packages:
+Clone this repo, create and activate a virtual environment, and install the required packages:
 
 ```
 pip install -r requirements.txt
 ```
 
-Then, download the [MUSDB18HQ](https://zenodo.org/records/3338373) dataset and unzip it in the `data` folder (or change the strucure and path accordingly in the config file).
+Then, download the [MUSDB18HQ](https://zenodo.org/records/3338373) dataset and unzip it in the `data` folder (or change the strucure and path accordingly in the config file). If you want to skip training and simply perform [evaluation](#evaluation) or [inference](#inference--demo) for a quick demo, you can download pretrained models on the [Zenodo repository](https://zenodo.org/records/10992913).
 
-Finally, to speed up data loading at training, you will need to pre-process the dataset in order to extract non-silent segment indices. To that end, simply run:
+To speed up data loading at training, you need to pre-process the dataset in order to extract non-silent segment indices. To that end, simply run:
 ```
 python prep_dataset.py
 ```
+
+### 
 
 
 ### Training
@@ -122,7 +71,7 @@ The core training function can be simply run as follows:
 ```
 python train.py
 ```
-This will train the default target (=vocals) using default parameters (= those used for reporting [test results](#test-results)).
+This will train the default target (=vocals) using default parameters for both the optimizer and model architecture (check the conf files for more information).
 
 For debugging / fast prototyping / overfitting on purpose, you can use the `fast_tr` flag as follows:
 ```
@@ -143,7 +92,7 @@ Have a look at the config files to check all the parameters you can change! If y
 python train.py -m src_mod.target=vocals,bass,drums,other
 ```
 
-The list of all model/configuration variants used when presenting the [validation results](#variants) are stored in the `jobs/params.txt` file. This file can be used as a parameter array when running multiple jobs using the [OAR](https://oar.imag.fr/docs/latest/user/quickstart.html) task manager (see the `jobs/book_training` script). Depending on your working environment this script might need some adaptation. Alternatively, you can simply run each job independently as on the example above, using all the configurations in the `jobs/params.txt` file.
+The list of all model/configuration variants used when presenting the [validation results](#tuning.md) are stored in the `jobs/params.txt` file. This file can be used as a parameter array when running multiple jobs using the [OAR](https://oar.imag.fr/docs/latest/user/quickstart.html) task manager (see the `jobs/book_training` script). Depending on your working environment, this script might need some adaptation. Alternatively, you can simply run each job independently as on the example above, using all the configurations in the `jobs/params.txt` file.
 
 Lastly, we prepare a script that can easily aggregate all validation results from tensorboard logs into a csv file for comparing variants, and display them:
 ```
@@ -152,14 +101,27 @@ python display_tbresults.py
 
 ### Evaluation
 
-Once all target models are trained, to perform evaluation on the test set, run:
+Once all target models are trained, perform evaluation on the test set by running:
 ```
 python evaluate.py
 ```
-Note that when creating a Separator module, the code search for target-specific checkpoints in the `output/bsrnn/` folder. If a certain checkpoint is not found, a model will be initialized from scratch with random weights instead. The function above computes the uSDR by default, but you can easily compute the cSDR:
+When creating a Separator module, the code search for target-specific checkpoints in the output folder, whose path is `outputs/bsrnn/<target>.ckpt`. If a certain checkpoint is not found, a model will be initialized from scratch with random weights instead. The function above computes the uSDR by default, but you can easily compute the cSDR:
 ```
-python evaluate.py sdr_type=museval
+python evaluate.py eval.sdr_type=museval
 ```
+
+### Inference / demo
+
+For convenience and quick demo-ing, we provide a script `inference.py` to process a mixture. The basic usage is:
+```
+python inference.py +file_path=path/to/my/file.wav +rec_dir=dir/to/record/estimates
+```
+You can specify an offset and a maximum duration (in seconds) with the `offset` and `max_len` parameters (by default, the whole song is processed). By default, it outputs all 4 tracks, but you can only compute some targets of interest, e.g.:
+```
+python inference.py +file_path=path/to/my/file.wav +rec_dir=dir/to/record/estimates targets=[vocals,bass]
+```
+
+The function loads checkpoints as for the evaluation process described [above](#evaluation). You can dowload pretrained checkpoints from the [Zenodo repository](https://zenodo.org/records/10992913), and place them in the `outputs/bsrnn/` folder.
 
 
 ## Hardware

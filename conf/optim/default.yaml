@@ -3,7 +3,7 @@ max_epochs: 100
 patience: 10
 
 # Algo-related
-lr: 0.001
+lr: 0.0005
 grad_clip_norm: 5
 
 # Loss

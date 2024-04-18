@@ -1,9 +1,10 @@
 # Defaults
 defaults:
   - _self_
-  - dset: musdb18hq
+  - dset: musdb18hq_sad
   - optim: default
   - scheduler: step
+  - eval: default
   - src_mod: bsrnn
   - override hydra/hydra_logging: disabled  
   - override hydra/job_logging: disabled  
@@ -26,21 +27,23 @@ sample_rate: 44100
 n_fft: 2048
 n_hop: 512
 
-# Evaluation parameters
-parallel_cpu: true
-eval_device: cuda
-eval_segment_len: 10.0
-eval_overlap: 0.1
-eval_max_len:
-verbose_per_track: True
-sdr_type: global # 'global' or 'museval' (so-called uSDR or cSDR)
-win_dur: 1.0 # for the museval SDR
-only_append_res: False
-
-# Training-related booleans
+# Training-related
 fast_tr: False  # for overfitting on one batch (useful for debugging)
-load_pretrained_sources: True
 ckpt_path: 
+ngpus:
+sync_bn: True
+monitor_val: 'loss'
+
+# when instanciating the separator
+load_pretrained_sources: True
+
+# For evaluation
+parallel_cpu: false
+only_append_res: false
+
+# For inference (leave blank for processing the whole song)
+max_len:
+offset:
 
 # Hydra-related
 hydra:  

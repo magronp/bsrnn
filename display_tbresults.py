@@ -17,7 +17,7 @@ def find_files(directory, pattern="events*"):
     return filespaths, filenames_list
 
 
-def display_from_tb(method_name, tblogdir="tb_logs/", outdir="outputs/"):
+def display_from_tb(method_name, tblogdir="tb_logs/", outdir="outputs/", monitor_val='loss'):
     # Path to scan / record results
     tblogdir_model = path.join(tblogdir, method_name)
     path_res_file = path.join(outdir, "val_" + method_name + ".csv")
@@ -25,6 +25,7 @@ def display_from_tb(method_name, tblogdir="tb_logs/", outdir="outputs/"):
     # Init result dataframe
     param_keys = [
         "cfg_optim/loss_domain",
+        "cfg_optim/lr",
         "feature_dim",
         "num_repeat",
         "time_layer",
@@ -32,7 +33,7 @@ def display_from_tb(method_name, tblogdir="tb_logs/", outdir="outputs/"):
         "n_att_head",
         "attn_enc_dim",
     ]
-    all_results = pd.DataFrame(columns=param_keys + ["val_sdr", "exp_name"])
+    all_results = pd.DataFrame(columns=param_keys + ["val_sdr", "exp_name",  "tb_version"])
 
     # Iterate over experiments
     all_tb_paths, all_tb_names = find_files(tblogdir_model)
@@ -41,17 +42,24 @@ def display_from_tb(method_name, tblogdir="tb_logs/", outdir="outputs/"):
 
         # Initialize the result df
         curr_res = {}
-        curr_res["exp_name"] = all_tb_names[i].replace("events.out.tfevents.", "")
+        expname = all_tb_names[i]
+        curr_res["exp_name"] = expname.replace("events.out.tfevents.", "")
+        curr_res["tb_version"] = int(tbpath.replace(expname,'').replace(tblogdir_model,'').replace('/','').replace('version_',''))
 
         # Load the TB log
         event_acc = EventAccumulator(tbpath)
         event_acc.Reload()
 
-        # Store the val loss / SDR into pd frames, and extract the SDR corresponding to the min loss
-        df_valloss = pd.DataFrame(event_acc.Scalars("val_loss_epoch"))
-        iddx = df_valloss.idxmin()["value"]
+        # Get the SDR corresponding to the optimal model, depending on the monitoring strategy
         df_valsdr = pd.DataFrame(event_acc.Scalars("val_sdr_epoch"))
-        curr_res["val_sdr"] = df_valsdr["value"][iddx]
+        if monitor_val == 'loss':
+            df_valloss = pd.DataFrame(event_acc.Scalars("val_loss_epoch"))
+            idx_opt = df_valloss.idxmin()['value']
+        elif monitor_val == 'sdr':
+            idx_opt = df_valsdr.idxmax()['value']
+        else:
+            raise NameError("Unknown monitoring type")
+        curr_res["val_sdr"] = df_valsdr["value"][idx_opt]
 
         # Load the hyperparameters
         data = event_acc._plugin_to_tag_to_content["hparams"][
@@ -70,7 +78,7 @@ def display_from_tb(method_name, tblogdir="tb_logs/", outdir="outputs/"):
         all_results.loc[len(all_results)] = curr_res
 
     # Sort by exp name
-    all_results.sort_values(by=["exp_name"])
+    all_results.sort_values(by=["tb_version"], inplace=True)
 
     # Record and display the results
     all_results.to_csv(path_res_file)

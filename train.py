@@ -30,7 +30,7 @@ def train(args: DictConfig):
 
     # Instanciate model
     model = instanciate_src_model(
-        args.optim, args.scheduler, args.src_mod, pretrained_src_path=ckpt_path
+        args.optim, args.scheduler, args.eval, args.src_mod, pretrained_src_path=ckpt_path
     )
     print("Number of parameters: ", model.count_params())
 
@@ -41,6 +41,9 @@ def train(args: DictConfig):
         ckpt_name=target,
         ckpt_dir=model_dir,
         fast_tr=args.fast_tr,
+        ngpus=args.ngpus,
+        sync_bn=args.sync_bn,
+        monitor_val=args.monitor_val
     )
 
     # Fit

@@ -1,4 +1,5 @@
 #!/bin/bash
-CLUSTER=${1:-"graffiti"}
+#CLUSTER=${1:-"graffiti"}
+CLUSTER=${1:-"gruss"}
 
 oarsub -vv -l /nodes=1,walltime=24 -p $CLUSTER -q production jobs/train.sh --array-param-file jobs/params.txt

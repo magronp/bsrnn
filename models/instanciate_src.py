@@ -3,6 +3,7 @@ import torch
 from models.bsrnn import BSRNN
 
 
+# A general function to return the model class: thus any other model can be added here
 def get_class_from_str(model_name):
     if model_name == "bsrnn":
         Model = BSRNN
@@ -15,6 +16,7 @@ def get_class_from_str(model_name):
 def instanciate_src_model(
     cfg_optim,
     cfg_scheduler,
+    cfg_eval,
     cfg_src_mod,
     pretrained_src_path=None,
 ):
@@ -34,13 +36,14 @@ def instanciate_src_model(
             pretrained_src_path,
             cfg_optim=cfg_optim,
             cfg_scheduler=cfg_scheduler,
+            cfg_eval=cfg_eval,
             map_location=device,
             strict=False,
         )
 
     # Otherwise, instanciate the model from scratch
     else:
-        model = Model(cfg_optim, cfg_scheduler, **cfg_src_mod)
+        model = Model(cfg_optim, cfg_scheduler, cfg_eval, **cfg_src_mod)
 
     return model
 

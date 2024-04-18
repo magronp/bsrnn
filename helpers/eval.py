@@ -1,15 +1,9 @@
 import torch
-import torchaudio
 import museval
 import pandas as pd
 import math
 import time
-from os import path, sched_getaffinity
-import tqdm
-from os.path import join
-from helpers.data import get_track_list, rec_estimates
-import multiprocessing
-import functools
+from os.path import exists
 
 
 def mypad(input_tensor, tot_len):
@@ -21,8 +15,8 @@ def mypad(input_tensor, tot_len):
 
 def sdr_global(ref, est, eps=1e-7):
     """
-    Global SDR: no distortion filter, no frame, back to basic (MDX21 style).
-    Note : it's also called "new SDR" (nSDR) in DEMUCS or "utterance SDR" (uSDR) in BSRNN...
+    The global SDR is a basic SNR (no distortion filter, no framewise computation), as in MDX21/23 challenges.
+    It's also called "new SDR" (nSDR) in DEMUCS or "utterance SDR" (uSDR) in BSRNN.
     ref / est: [batch_size, n_targets, n_channels, n_samples]
     output: [n_targets]
     """
@@ -160,215 +154,6 @@ def compute_loss(refs, est, loss_type="L1", loss_domain="t"):
     return loss
 
 
-def apply_fn_to_sources(
-    input_sig,
-    my_fn,
-    sample_rate=44100,
-    eval_segment_len=10.0,
-    eval_overlap=0.1,
-    *args,
-    **kwargs
-):
-    # my_fn must be a function from [B, ntrg, nch, L] to [B, ntrg, nch, L]
-    # For evaluation, it takes the reference and fabricates the mix inside to avoid dim problem
-
-    bsize, n_targets, nb_channels, nsamples = input_sig.shape
-
-    # treat the case where we might want to process the whole track at once
-    if eval_segment_len == -1:
-        chunk_len = nsamples + 1
-    else:
-        chunk_len = int(sample_rate * eval_segment_len * (1 + eval_overlap))
-
-    # if too big chunks / too small mixture, ignore the OLA / fader
-    if chunk_len >= nsamples:
-        output_sig = my_fn(input_sig, *args, **kwargs)
-
-    else:
-        start = 0
-        end = chunk_len
-        overlap_frames = eval_overlap * eval_segment_len * sample_rate
-        fade = torchaudio.transforms.Fade(
-            fade_in_len=0, fade_out_len=int(overlap_frames), fade_shape="linear"
-        )
-
-        output_sig = torch.zeros(
-            (bsize, n_targets, nb_channels, nsamples), device=input_sig.device
-        )
-
-        while start < nsamples - overlap_frames:
-
-            # extract current chunk
-            chunk = input_sig[..., start:end]
-
-            # apply function, detach and alocate to input device to be sure
-            out_chunk = my_fn(chunk, *args, **kwargs)
-            out_chunk = out_chunk.detach().to(input_sig.device)
-
-            # fader / overlap-add
-            out_chunk = fade(out_chunk)
-            output_sig[..., start:end] += out_chunk
-
-            # update indices
-            if start == 0:
-                fade.fade_in_len = int(overlap_frames)
-                start += int(chunk_len - overlap_frames)
-            else:
-                start += chunk_len
-            end += chunk_len
-            if end >= nsamples:
-                fade.fade_out_len = 0
-
-    return output_sig
-
-
-def process_all_tracks(
-    my_fn,
-    subset="test",
-    split=None,
-    parallel_cpu=True,
-    targets=["vocals", "bass", "drums", "other"],
-    rec_dir=None,
-    data_dir="data/",
-    win_dur=1.0,
-    sample_rate=44100,
-    max_len=None,
-    verbose_per_track=True,
-    eval_segment_len=10.0,
-    eval_overlap=0.1,
-    sdr_type="global",
-    *args,
-    **kwargs
-):
-
-    # List of tracks to process
-    list_tracks = get_track_list(data_dir, subset=subset, split=split)
-
-    # Get number of available CPUs and check whether parallelize or not
-    num_cpus = len(sched_getaffinity(0)) // 4 - 1
-    num_cpus = 10  # because the formula above doesn't really work...
-    parall = parallel_cpu and num_cpus > 1
-    print("Parallel CPU:", parall)
-
-    # Defined the simplified function (freeze the non track-specific arguments)
-    myfun = functools.partial(
-        process_track_and_evaluate,
-        my_fn=my_fn,
-        subset=subset,
-        targets=targets,
-        rec_dir=rec_dir,
-        data_dir=data_dir,
-        win_dur=win_dur,
-        sample_rate=sample_rate,
-        max_len=max_len,
-        verbose_per_track=verbose_per_track,
-        eval_segment_len=eval_segment_len,
-        eval_overlap=eval_overlap,
-        sdr_type=sdr_type,
-        *args,
-        **kwargs
-    )
-
-    # If parallel, use multi-CPU to perform evaluation
-    if parall:
-        # Set torch num thread to 1 (mandatory when using multiprocessing with torch ops)
-        torch.set_num_threads(1)
-
-        # Define the pool, and run
-        with multiprocessing.pool.Pool(num_cpus) as pool:
-            sdr_list = list(
-                pool.map(
-                    func=myfun,
-                    iterable=list_tracks,
-                    chunksize=1,
-                )
-            )
-    else:
-        # Simple loop over tracks (applies to both CPU and GPU)
-        sdr_list = []
-        for track_name in tqdm.tqdm(list_tracks):
-            sdr = myfun(track_name)
-            sdr_list.append(sdr)
-
-    # Arrange the results as pd dataframe
-    cols = targets.copy()
-    cols.insert(0, "track")
-    test_results = pd.DataFrame(columns=cols)
-    for sdr in sdr_list:
-        test_results.loc[len(test_results)] = sdr
-
-    return test_results
-
-
-def process_track_and_evaluate(
-    track_name,
-    my_fn,
-    subset="test",
-    targets=["vocals", "bass", "drums", "other"],
-    rec_dir=None,
-    data_dir="data/",
-    win_dur=1.0,
-    sample_rate=44100,
-    max_len=None,
-    verbose_per_track=True,
-    eval_segment_len=10.0,
-    eval_overlap=0.1,
-    sdr_type="global",
-    *args,
-    **kwargs
-):
-
-    # Process only part of the track if needed (mostly for debugging)
-    if max_len is None:
-        nfr = -1
-    else:
-        nfr = int(max_len * sample_rate)
-
-    # Folder where the track reference files are stored
-    track_dir = join(data_dir, subset, track_name)
-
-    # Load true sources, add batch dim [1, n_targets, n_channels, n_samples]
-    references = torch.stack(
-        [
-            torchaudio.load(join(track_dir, trg + ".wav"), num_frames=nfr)[0]
-            for trg in targets
-        ]
-    ).unsqueeze(0)
-
-    # Estimate the sources
-    estimates = apply_fn_to_sources(
-        references,
-        my_fn,
-        sample_rate=sample_rate,
-        eval_segment_len=eval_segment_len,
-        eval_overlap=eval_overlap,
-        *args,
-        **kwargs
-    )
-
-    # SDR
-    win_bss = int(win_dur * sample_rate)
-    sdr_med = compute_sdr(references, estimates, win_bss=win_bss, sdr_type=sdr_type)[0]
-
-    # Arrange SDR into a dict
-    test_sdr = {}
-    test_sdr["track"] = track_name
-    for j, trg in enumerate(targets):
-        test_sdr[trg] = sdr_med[j].item()
-
-    # Display results
-    if verbose_per_track:
-        print(test_sdr)
-
-    # Record the estimates
-    if rec_dir:
-        estimates = estimates[0]  # remove the batch dim
-        track_rec_dir = join(rec_dir, subset, track_name)
-        rec_estimates(estimates, track_rec_dir, targets, sample_rate)
-
-    return test_sdr
-
-
 def aggregate_res_over_tracks(path_or_df, method_name=None, sdr_type="global"):
 
     # The results are either directly provided, or as a path to a file
@@ -400,7 +185,7 @@ def aggregate_res_over_tracks(path_or_df, method_name=None, sdr_type="global"):
 def append_df_to_main_file(path_main_file, df):
 
     # Load the file containing all results if it exists
-    if path.exists(path_main_file):
+    if exists(path_main_file):
         all_test_results = pd.read_csv(path_main_file, index_col=0)
     # Otherwise, create it
     else:

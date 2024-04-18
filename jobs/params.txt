@@ -1,9 +1,12 @@
-# Uncomment the config(s) below you want to run when booking jobs
+### Uncomment the config(s) below you want to run when booking jobs
+
+# Learning rate
+#"optim.lr=0.001"
+#"optim.lr=0.0005"
 
 # Losses
 #"optim.loss_domain=t"
 #"optim.loss_domain=tf"
-#"optim.loss_domain=t+tf"
 
 # Layer type (LSTM vs. GRU vs. CONV)
 #"src_mod.time_layer=gru"
@@ -19,11 +22,21 @@
 #"src_mod.n_att_head=2 src_mod.attn_enc_dim=10"
 #"src_mod.n_att_head=2 src_mod.attn_enc_dim=20"
 
-# Model size
-#"src_mod.num_repeat=10"
-#"src_mod.feature_dim=128"
+# Big model
+#"src_mod.feature_dim=128 src_mod.num_repeat=12 optim.lr=0.00025"
 
 # Other sources
-#"src_mod.target=bass"
-#"src_mod.target=drums"
-#"src_mod.target=other"
+#"src_mod.target=bass src_mod.feature_dim=128 src_mod.num_repeat=12 optim.lr=0.00025"
+#"src_mod.target=bass src_mod.feature_dim=128 src_mod.num_repeat=12 optim.lr=0.00025 ckpt_path=outputs/bsrnn/bass.ckpt"
+#"src_mod.target=drums src_mod.feature_dim=128 src_mod.num_repeat=12 optim.lr=0.00025 ckpt_path=outputs/bsrnn/drums.ckpt"
+"src_mod.target=other src_mod.feature_dim=128 src_mod.num_repeat=12 optim.lr=0.00025 ckpt_path=outputs/bsrnn/other.ckpt optim.patience=15"
+
+
+### Further variants to explore
+
+# Dataset (no SAD preprocessing)
+#"dset=musdb18hq"
+
+# Monitoring with max SDR
+#"src_mod.feature_dim=128 src_mod.num_repeat=12 optim.lr=0.00025 monitor_val=sdr"
+

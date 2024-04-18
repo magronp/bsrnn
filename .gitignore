@@ -11,9 +11,8 @@
 *.stdout
 
 .venv/*
+tb_logs/
 outputs/*
 !outputs/.dummy.txt
-tb_logs/
 data/*
 !data/.dummy.txt
-.notes.txt

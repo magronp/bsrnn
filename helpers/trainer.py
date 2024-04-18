@@ -10,19 +10,30 @@ def create_trainer(
     log_dir="tb_logs/",
     fast_tr=False,
     ngpus=None,
+    sync_bn=True,
+    monitor_val ='loss'
 ):
 
     # Number of GPUs
+    ngpus_max = torch.cuda.device_count()
     if ngpus is None:
-        ngpus = torch.cuda.device_count()
+        ngpus = ngpus_max
+    else:
+        ngpus = min(ngpus_max, ngpus)
+
+    # Validation criterion (loss/min or SDR/max)
+    monitor_val = "val_" + monitor_val
+    mode = 'min'
+    if 'sdr' in monitor_val:
+        mode = 'max'
 
     # Callbacks
     early_stop_callback = pl.callbacks.EarlyStopping(
-        monitor="val_loss", patience=cfg_optim.patience, verbose=False, mode="min"
+        monitor=monitor_val, patience=cfg_optim.patience, verbose=False, mode=mode
     )
     checkpoint_callback = pl.callbacks.ModelCheckpoint(
-        monitor="val_loss",
-        mode="min",
+        monitor=monitor_val,
+        mode=mode,
         save_top_k=1,
         dirpath=ckpt_dir,
         filename=ckpt_name,
@@ -52,6 +63,7 @@ def create_trainer(
         devices=ngpus,
         overfit_batches=overfit_batches,
         num_sanity_val_steps=1,
+        sync_batchnorm=sync_bn
     )
 
     return trainer
