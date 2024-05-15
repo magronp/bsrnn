@@ -13,7 +13,7 @@ First, we quickly check the impact of the learning rate. In the original paper, 
 |  0.001        |   7.4  |
 |  0.0005       |   7.5  |
 
-Both learning rates yield similar results, though with a slight advantage of using a smaller learning rate, and therefore being consistent with the paper. Therefore, we use this value in the following experiments. 
+Both learning rates yield similar results, though the small one performs slightly better and is consistent with the paper (as explained above), thus we use this value in the following experiments. 
 
 
 ### Loss and model size

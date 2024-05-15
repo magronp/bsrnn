@@ -12,25 +12,22 @@ def train(args: DictConfig):
     # Set random seed for reproducibility
     pl.seed_everything(args.seed, workers=True)
 
+    # Get the target to train
     target = args.src_mod.target
-    ckpt_path = args.ckpt_path
 
     # Data samplers
     tr_sampler, val_sampler = build_training_samplers(
         target, args.dset, fast_tr=args.fast_tr
     )
 
-    # Method name
-    src_mod_name = args.src_mod.name
-    method_name = src_mod_name + "-" + target
-    model_dir = args.out_dir + src_mod_name + "/"
-
-    # Display the method's name
+    # Method name/dir
+    method_name = args.src_mod.name + "-" + target
+    model_dir = args.out_dir + args.src_mod.name + "/"
     print("Method: ", method_name)
 
     # Instanciate model
     model = instanciate_src_model(
-        args.optim, args.scheduler, args.eval, args.src_mod, pretrained_src_path=ckpt_path
+        args.optim, args.scheduler, args.eval, args.src_mod, pretrained_src_path=args.ckpt_path
     )
     print("Number of parameters: ", model.count_params())
 
@@ -47,7 +44,7 @@ def train(args: DictConfig):
     )
 
     # Fit
-    trainer.fit(model, tr_sampler, val_sampler, ckpt_path=ckpt_path)
+    trainer.fit(model, tr_sampler, val_sampler, ckpt_path=args.ckpt_path)
 
     return
 

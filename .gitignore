@@ -16,3 +16,4 @@ outputs/*
 !outputs/.dummy.txt
 data/*
 !data/.dummy.txt
+jobs/params_bass.txt
