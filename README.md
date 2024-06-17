@@ -1,7 +1,3 @@
----
-google-site-verification: lLdQLxVzN75s98OondpQ8bVOY-R_Zo9hIfQdK5HrGi4
----
-
 # Band-Split RNN for music separation - yet another unofficial implementation
 
 This repository contains an unofficial implementation of the [BSRNN](https://arxiv.org/pdf/2209.15174.pdf) model for music separation. This project is based on [PyTorch](https://pytorch.org/) ([Ligthning](https://lightning.ai/docs/pytorch/stable/)) and [Hydra](https://hydra.cc/), and uses the HQ version of the freely available [MUSDB18](https://sigsep.github.io/datasets/musdb.html) dataset.
