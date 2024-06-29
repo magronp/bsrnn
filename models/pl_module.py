@@ -446,10 +446,21 @@ if __name__ == "__main__":
     # Params
     cfg_optim = OmegaConf.create({"lr": 0.001, "loss_type": "L1", "loss_domain": "t"})
     cfg_scheduler = OmegaConf.create({"name": "plateau", "factor": 0.5, "patience": 3})
-
+    cfg_eval = OmegaConf.create(
+        {
+            "device": "cpu",
+            "segment_len": 10,
+            "overlap": 0.1,
+            "hop_size": None,
+            "sdr_type": "global",
+            "win_dur": 1.0,
+            "verbose_per_track": True,
+            "rec_dir": None,
+        }
+    )
     # Instanciate model
     model = PLModule(
-        cfg_optim, cfg_scheduler, eval_device="cpu", verbose_per_track=False
+        cfg_optim, cfg_scheduler, cfg_eval
     )
     model.eval_segment_len = 1
 

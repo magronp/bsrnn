@@ -373,6 +373,7 @@ class BSRNN(PLModule):
         self.band_width.append(self.enc_dim - np.sum(self.band_width))
         self.nband = len(self.band_width)
 
+        # Band split module
         self.BN = nn.ModuleList([])
         for i in range(self.nband):
             self.BN.append(
@@ -382,6 +383,7 @@ class BSRNN(PLModule):
                 )
             )
 
+        # Separator module
         self.separator = []
         for i in range(num_repeat):
             self.separator.append(
@@ -397,6 +399,7 @@ class BSRNN(PLModule):
             )
         self.separator = nn.Sequential(*self.separator)
 
+        # Mask estimation module
         self.mask = nn.ModuleList([])
         for i in range(self.nband):
             self.mask.append(
@@ -410,27 +413,11 @@ class BSRNN(PLModule):
                 )
             )
 
-    def pad_input(self, input, window, stride):
-        """
-        Zero-padding input according to window/stride size.
-        """
-        batch_size, nsample = input.shape
-
-        # pad the signals at the end for matching the window/stride size
-        rest = window - (stride + nsample % window) % window
-        if rest > 0:
-            pad = torch.zeros(batch_size, rest).type(input.type())
-            input = torch.cat([input, pad], 1)
-        pad_aux = torch.zeros(batch_size, stride).type(input.type())
-        input = torch.cat([pad_aux, input, pad_aux], 1)
-
-        return input, rest
-
     def forward(self, input):
         # input shape: (B, nch, n_samples)
 
-        batch_size, nch, nsample = input.shape
-        input = input.view(batch_size * nch, -1)
+        B, nch, nsample = input.shape
+        input = input.view(B * nch, -1)
 
         spec = self.stft(input)
 
@@ -452,43 +439,41 @@ class BSRNN(PLModule):
         subband_feature = []
         for i in range(len(self.band_width)):
             subband_feature.append(
-                self.BN[i](
-                    subband_spec[i].view(batch_size * nch, self.band_width[i] * 2, -1)
-                )
+                self.BN[i](subband_spec[i].view(B * nch, self.band_width[i] * 2, -1))
             )
         subband_feature = torch.stack(subband_feature, 1)  # B, nband, N, T
 
         # separator
         sep_output = self.separator(subband_feature)
-        sep_output = sep_output.view(batch_size * nch, self.nband, self.feature_dim, -1)
+        sep_output = sep_output.view(B * nch, self.nband, self.feature_dim, -1)
 
         # masking
         sep_subband_spec = []
         for i in range(len(self.band_width)):
-            this_output = self.mask[i](sep_output[:, i]).view(
-                batch_size * nch, 2, 2, self.band_width[i], -1
-            )
-            this_mask = this_output[:, 0] * torch.sigmoid(
-                this_output[:, 1]
-            )  # B*nch, 2, K, BW, T
-            this_mask_real = this_mask[:, 0]  # B*nch, K, BW, T
-            this_mask_imag = this_mask[:, 1]  # B*nch, K, BW, T
+            # Compute the mask, reshape, and compute GLU
+            out = self.mask[i](sep_output[:, i])  # B*nch, BW*4, T
+            out = out.view(B * nch, 2, 2, self.band_width[i], -1)  # B*nch, 2, 2, BW, T
+            mask = out[:, 0] * torch.sigmoid(out[:, 1])  # B*nch, 2, K, BW, T
+
+            # Apply the mask
+            mask_real = mask[:, 0]  # B*nch, K, BW, T
+            mask_imag = mask[:, 1]  # B*nch, K, BW, T
             est_spec_real = (
-                subband_mix_spec[i].real * this_mask_real
-                - subband_mix_spec[i].imag * this_mask_imag
+                subband_mix_spec[i].real * mask_real
+                - subband_mix_spec[i].imag * mask_imag
             )  # B*nch, BW, T
             est_spec_imag = (
-                subband_mix_spec[i].real * this_mask_imag
-                + subband_mix_spec[i].imag * this_mask_real
+                subband_mix_spec[i].real * mask_imag
+                + subband_mix_spec[i].imag * mask_real
             )  # B*nch, BW, T
             sep_subband_spec.append(torch.complex(est_spec_real, est_spec_imag))
         est_spec = torch.cat(sep_subband_spec, 1)  # B*nch, F, T
 
         output = self.istft(est_spec, length=nsample)
-        output = output.view(batch_size, nch, -1)
+        output = output.view(B, nch, -1)
 
         # adjust to proper sizes
-        est_spec = est_spec.view(batch_size, nch, self.enc_dim, -1)
+        est_spec = est_spec.view(B, nch, self.enc_dim, -1)
         est_spec = est_spec.unsqueeze(1)  # B, 1, nch, F, T
         output = output.unsqueeze(1)  # B, 1, nch, n_samples
 
@@ -499,10 +484,23 @@ if __name__ == "__main__":
 
     cfg_optim = OmegaConf.create({"lr": 0.001, "loss_type": "L1", "loss_domain": "t"})
     cfg_scheduler = OmegaConf.create({"name": "plateau", "factor": 0.5, "patience": 3})
+    cfg_eval = OmegaConf.create(
+        {
+            "device": "cpu",
+            "segment_len": 10,
+            "overlap": 0.1,
+            "hop_size": None,
+            "sdr_type": "global",
+            "win_dur": 1.0,
+            "verbose_per_track": True,
+            "rec_dir": None,
+        }
+    )
 
     model = BSRNN(
         cfg_optim,
         cfg_scheduler,
+        cfg_eval,
         sample_rate=44100,
         n_fft=2048,
         n_hop=512,
