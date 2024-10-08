@@ -11,12 +11,12 @@ This repository contains an unofficial implementation of the [BSRNN](https://arx
 
 Unfortunately, we are unable to achieve the performance reported in the paper (we are still about [0.6 dB SDR bellow](#test-results)). Therefore, if you spot an error in the code, or something that differs from the description in the paper, please feel free to reach out, send a message, or open an issue. :slightly_smiling_face:
 
-This project is based on [PyTorch](https://pytorch.org/) ([Ligthning](https://lightning.ai/docs/pytorch/stable/)) and [Hydra](https://hydra.cc/), and uses the HQ version of the freely available [MUSDB18](https://sigsep.github.io/datasets/musdb.html) dataset. We provide pretrained models on a [Zenodo repository](https://zenodo.org/records/10992913), which you can use for [separating your own song](#inference--demo).
+This project is based on [PyTorch](https://pytorch.org/) ([Ligthning](https://lightning.ai/docs/pytorch/stable/)) and [Hydra](https://hydra.cc/), and uses the HQ version of the freely available [MUSDB18](https://sigsep.github.io/datasets/musdb.html) dataset. We provide pretrained models on a [Zenodo repository](https://zenodo.org/records/13903584), which you can use for [separating your own song](#inference--demo).
 
 ## Updates
 
 - 08/10/2024: We made some significant improvements in the code, which allowed to improve the results of the reference BSRNN. We also added an [optimized](tuning.md#optimized-model) model that outperforms the paper's results. 
-- 18/04/2024: We added an `inference.py` file to easily [apply BSRNN to your own song](#inference--demo). We also uploaded the pretrained models on [Zenodo](https://zenodo.org/records/10992913).
+- 18/04/2024: We added an `inference.py` file to easily [apply BSRNN to your own song](#inference--demo). We also uploaded the pretrained models on [Zenodo](https://zenodo.org/records/13903584).
 
 
 ##  Test results
@@ -60,7 +60,7 @@ Clone this repo, create and activate a virtual environment, and install the requ
 pip install -r requirements.txt
 ```
 
-Then, download the [MUSDB18HQ](https://zenodo.org/records/3338373) dataset and unzip it in the `data/` folder (or change the strucure and path accordingly in the config file). If you want to skip training and simply perform [evaluation](#evaluation) or [inference](#inference--demo) for a quick demo, you can download pretrained models on the [Zenodo repository](https://zenodo.org/records/10992913).
+Then, download the [MUSDB18HQ](https://zenodo.org/records/3338373) dataset and unzip it in the `data/` folder (or change the strucure and path accordingly in the config file). If you want to skip training and simply perform [evaluation](#evaluation) or [inference](#inference--demo) for a quick demo, you can download pretrained models on the [Zenodo repository](https://zenodo.org/records/13903584).
 
 To speed up data loading at training, you need to pre-process the dataset in order to extract non-silent segment indices using a [source activity detector](https://github.com/amanteur/BandSplitRNN-Pytorch). To that end, simply run:
 ```
@@ -129,14 +129,14 @@ The function loads checkpoints as for the evaluation process described [above](#
 ```
 python inference.py +file_path=path/to/my/file.wav model_dir=bsrnn-large
 ```
-Keep in mind that pretrained checkpoints are available from the [Zenodo repository](https://zenodo.org/records/10992913) to experiment right away, using either our implementation of BSRNN, or the optimized model :)
+Keep in mind that pretrained checkpoints are available from the [Zenodo repository](https://zenodo.org/records/13903584) to experiment right away, using either our implementation of BSRNN, or the optimized model :)
 
 
 ## Hardware
 
 All computation were carried out using the [Grid5000](https://www.grid5000.fr) testbed, supported by a French scientific interest group hosted by Inria and including CNRS, RENATER and several Universities as well as other organizations.
 
-Most models are trained using either 4 Nvidia RTX 2080 Ti (11 GiB) or 4 Nvidia Tesla T4 (15 GiB) GPUs. The [larger](##large-model) / [optimized](#optimized-model) models are trained using 2 Nvidia A40 (45 GiB) GPUs.
+Most models are trained using either 4 Nvidia RTX 2080 Ti (11 GiB) or 4 Nvidia Tesla T4 (15 GiB) GPUs. The [larger](tuning.md#large-model) / [optimized](tuning.md#optimized-model) models are trained using 2 Nvidia A40 (45 GiB) GPUs.
 
 
 ## Acknowledgments
