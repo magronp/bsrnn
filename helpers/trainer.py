@@ -4,17 +4,14 @@ import lightning.pytorch as pl
 
 def create_trainer(
     cfg_optim,
-    method_name="dummy",
     ckpt_dir="outputs/",
     ckpt_name="separator",
     log_dir="tb_logs/",
     fast_tr=False,
-    ngpus=None,
-    sync_bn=True,
-    monitor_val ='loss'
 ):
 
     # Number of GPUs
+    ngpus = cfg_optim.ngpus
     ngpus_max = torch.cuda.device_count()
     if ngpus is None:
         ngpus = ngpus_max
@@ -22,16 +19,16 @@ def create_trainer(
         ngpus = min(ngpus_max, ngpus)
 
     # Validation criterion (loss/min or SDR/max)
-    monitor_val = "val_" + monitor_val
-    mode = 'min'
-    if 'sdr' in monitor_val:
-        mode = 'max'
+    monitor_val = "val_" + cfg_optim.monitor_val
+    mode = "min"
+    if "sdr" in monitor_val:
+        mode = "max"
 
     # Callbacks
     early_stop_callback = pl.callbacks.EarlyStopping(
         monitor=monitor_val, patience=cfg_optim.patience, verbose=False, mode=mode
     )
-    checkpoint_callback = pl.callbacks.ModelCheckpoint(
+    val_checkpoint_callback = pl.callbacks.ModelCheckpoint(
         monitor=monitor_val,
         mode=mode,
         save_top_k=1,
@@ -39,11 +36,16 @@ def create_trainer(
         filename=ckpt_name,
     )
 
+    last_checkpoint_callback = pl.callbacks.ModelCheckpoint(
+        dirpath=ckpt_dir,
+        filename="last-" + ckpt_name,
+    )
+
     # Tensorboard logger
-    if log_dir is None:
-        my_logger = False
+    if log_dir is not None:
+        my_logger = pl.loggers.TensorBoardLogger(save_dir=log_dir, name="")
     else:
-        my_logger = pl.loggers.TensorBoardLogger(save_dir=log_dir, name=method_name)
+        my_logger = False
 
     # For debugging, use the overfit_batches flag
     if fast_tr:
@@ -55,7 +57,11 @@ def create_trainer(
     trainer = pl.Trainer(
         max_epochs=cfg_optim.max_epochs,
         gradient_clip_val=cfg_optim.grad_clip_norm,
-        callbacks=[early_stop_callback, checkpoint_callback],
+        callbacks=[
+            early_stop_callback,
+            val_checkpoint_callback,
+            last_checkpoint_callback,
+        ],
         logger=my_logger,
         accelerator="gpu",
         strategy="ddp",
@@ -63,9 +69,11 @@ def create_trainer(
         devices=ngpus,
         overfit_batches=overfit_batches,
         num_sanity_val_steps=1,
-        sync_batchnorm=sync_bn
+        sync_batchnorm=cfg_optim.sync_bn,
+        accumulate_grad_batches=cfg_optim.accumulate_grad_batches,
     )
 
-    return trainer
+    return trainer, ngpus
+
 
 # EOF

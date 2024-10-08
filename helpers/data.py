@@ -2,15 +2,15 @@ import torch
 from torch.utils.data import Dataset
 import torchaudio
 import random
-import musdb
 from typing import Optional
 import tqdm
 import os
-import yaml
 from torch.utils.data import DataLoader
 import pandas as pd
 from pathlib import Path
 from omegaconf import OmegaConf
+import musdb
+import yaml
 
 tqdm.monitor_interval = 0
 
@@ -19,6 +19,9 @@ def rec_estimates(estimates, track_rec_dir, targets, sample_rate):
     """
     estimates: [n_targets, n_channels, n_samples]
     """
+
+    if track_rec_dir is None:
+        track_rec_dir = os.getcwd()
 
     # Make sure the estimates tensor is detached and on cpu
     estimates = estimates.cpu().detach()
@@ -103,10 +106,28 @@ def get_track_list(root, subset, split=None):
 
     # for the training subset, need to keep or filter out val tracks
     if subset == "train":
-        # list of validation tracks (predefined in musdb)
+        # list of validation tracks, predefined in musdb
         setup_path = os.path.join(musdb.__path__[0], "configs", "mus.yaml")
         with open(setup_path, "r") as f:
             list_tracks_val = yaml.safe_load(f)["validation_tracks"]
+
+        # list: see https://github.com/sigsep/sigsep-mus-db/blob/master/musdb/configs/mus.yaml)
+        # list_tracks_val = [
+        #    "Actions - One Minute Smile",
+        #    "Clara Berry And Wooldog - Waltz For My Victims",
+        #    "Johnny Lokke - Promises & Lies",
+        #    "Patrick Talbot - A Reason To Leave",
+        #    "Triviul - Angelsaint",
+        #    "Alexander Ross - Goodbye Bolero",
+        #    "Fergessen - Nos Palpitants",
+        #    "Leaf - Summerghost",
+        #    "Skelpolu - Human Mistakes",
+        #    "Young Griffo - Pennies",
+        #    "ANiMAL - Rockshow",
+        #    "James May - On The Line",
+        #    "Meaxic - Take A Step",
+        #    "Traffic Experiment - Sirens",
+        # ]
 
         # either keep the val tracks or remove them from the whole list of train tracks
         if split == "valid":
@@ -216,7 +237,7 @@ class MUSDBDataset(Dataset):
 
                 # Check wether a duration is provided or not
                 if self.seq_duration:
-                     # Load random chunks of seq_duration only if not deterministic chunks
+                    # Load random chunks of seq_duration only if not deterministic chunks
                     if self.random_chunk:
                         frame_offset = int(
                             random.uniform(0, track_duration - self.seq_duration)
@@ -259,7 +280,7 @@ class MUSDBDataset(Dataset):
         # Only keep the targets to be estimated
         ind_trg = [self.sources.index(x) for x in self.targets]
         y = stems[ind_trg, ...]
-        
+
         return x, y, track_name
 
     def __len__(self):
@@ -392,8 +413,8 @@ class MUSDBDatasetSAD(Dataset):
         y = y[ind_trg, ...]
         # y = y[self.sources.index(self.targets), ...].unsqueeze(0)
 
-        # Normalization w.r.t. the norm of the mixture
-        max_norm = x.abs().max()
+        # Normalization w.r.t. the max of the max of mixture / targets
+        max_norm = torch.maximum(x.abs().max(), y.abs().max())
         max_norm = (
             1 if max_norm == 0 else max_norm
         )  # avoid problem in the (rare) case where all sources are silent
@@ -423,7 +444,7 @@ def build_training_samplers(targets, cfg_dset, ngpus=None, fast_tr=False):
         ngpus = torch.cuda.device_count()
 
     # Training dataset
-    if 'sad_dir' in cfg_dset.keys():
+    if "sad_dir" in cfg_dset.keys():
         train_db = MUSDBDatasetSAD(
             targets=targets,
             sources=cfg_dset.sources,
@@ -483,7 +504,7 @@ def build_training_samplers(targets, cfg_dset, ngpus=None, fast_tr=False):
     )
     valid_sampler = DataLoader(
         valid_db,
-        batch_size=1, # =1 since full tracks, but can be changed if using chunks
+        batch_size=1,  # =1 since full tracks, but can be changed if using chunks
         **splr_kwargs,
     )
 
@@ -513,15 +534,14 @@ def build_fulltrack_sampler(targets, cfg_dset, subset="train", split="valid"):
 if __name__ == "__main__":
 
     # Dataset
-    train_db = MUSDBDataset(
+    train_db = MUSDBDatasetSAD(
         targets="vocals",
-        root="data/musdb18hq/",
+        data_dir="data/musdb18hq/",
         subset="train",
         split="train",
         sample_rate=44100,
         seq_duration=6.0,
         source_augmentations=[],
-        random_track_mix=False,
         seed=42,
     )
 

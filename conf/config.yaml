@@ -9,7 +9,7 @@ defaults:
   - override hydra/hydra_logging: disabled  
   - override hydra/job_logging: disabled  
 
-# Targets to separate (for preprocessing / evaluation)
+# Targets to separate (for preprocessing / evaluation / inference)
 targets:
   - vocals
   - bass
@@ -20,6 +20,7 @@ targets:
 seed: 42
 eps: 1e-7
 out_dir: outputs/
+tblog_dir: tb_logs/
 data_dir: data/musdb18hq/
 
 # Audio / STFT
@@ -30,20 +31,19 @@ n_hop: 512
 # Training-related
 fast_tr: False  # for overfitting on one batch (useful for debugging)
 ckpt_path: 
-ngpus:
-sync_bn: True
-monitor_val: 'loss'
 
-# when instanciating the separator
+# When instanciating the separator
 load_pretrained_sources: True
 
-# For evaluation
+# Evaluation
 parallel_cpu: false
 only_append_res: false
 
-# For inference (leave blank for processing the whole song)
+# Inference parameters
 max_len:
 offset:
+rec_dir:
+model_dir: bsrnn-opt
 
 # Hydra-related
 hydra:  

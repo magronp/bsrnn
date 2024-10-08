@@ -35,6 +35,7 @@ class PLModule(pl.LightningModule):
         self.lr = cfg_optim.lr
         self.loss_type = cfg_optim.loss_type
         self.loss_domain = cfg_optim.loss_domain
+        self.monitor_val = cfg_optim.monitor_val
 
         # Scheduler-related attributes
         self.cfg_scheduler = cfg_scheduler
@@ -76,7 +77,7 @@ class PLModule(pl.LightningModule):
 
         # If true sources are not provided, do not compute the loss
         if y is None:
-            comp_loss=False
+            comp_loss = False
 
         # Compute the loss for training and validation (but no need for testing)
         if comp_loss:
@@ -113,7 +114,8 @@ class PLModule(pl.LightningModule):
     def validation_step(self, batch, batch_idx):
         # Load the data
         x, y, _ = batch
-    
+        bsize = x.shape[0]
+
         # Get the estimates and validation loss
         y_hat, val_loss = self._apply_model_to_track(x, y, comp_loss=True)
 
@@ -124,7 +126,7 @@ class PLModule(pl.LightningModule):
             on_epoch=True,
             prog_bar=False,
             sync_dist=True,
-            batch_size=x.shape[0],
+            batch_size=bsize,
         )
 
         # Validation SDR
@@ -140,31 +142,33 @@ class PLModule(pl.LightningModule):
             on_epoch=True,
             prog_bar=True,
             sync_dist=True,
-            batch_size=x.shape[0],
+            batch_size=bsize,
         )
 
         return val_loss, val_sdr
-
 
     def _apply_model_to_track(self, mix, true_sources=None, comp_loss=True):
 
         # Apply either the fader or OLA, depending if hop size is provided
         if self.eval_hop_size is None:
-            output_sig = self._apply_model_to_track_fader(mix, true_sources, comp_loss=comp_loss)
+            output_sig = self._apply_model_to_track_fader(
+                mix, true_sources, comp_loss=comp_loss
+            )
         else:
-            output_sig = self._apply_model_to_track_ola(mix, true_sources, comp_loss=comp_loss)
+            output_sig = self._apply_model_to_track_ola(
+                mix, true_sources, comp_loss=comp_loss
+            )
 
         return output_sig
-
 
     def _apply_model_to_track_ola(self, mix, true_sources=None, comp_loss=True):
 
         # mix: [B, num_channels, n_samples]
         # true_sources: [B, num_sources, num_channels, n_samples]
-        
+
         # If true sources are not provided, do not compute the loss
         if true_sources is None:
-            comp_loss=False
+            comp_loss = False
 
         # Place model on eval device
         self.to(self.eval_device)
@@ -177,7 +181,7 @@ class PLModule(pl.LightningModule):
         eval_frames = int(self.sample_rate * self.eval_segment_len)
         hop_frames = int(self.sample_rate * self.eval_hop_size)
         fact_ol = self.eval_hop_size / self.eval_segment_len
-        
+
         if self.targets is not None:
             n_targets = len(self.targets)
         else:
@@ -204,7 +208,7 @@ class PLModule(pl.LightningModule):
         else:
             loss = []
 
-            # add 0s at the begining and end 
+            # add 0s at the begining and end
             mix = torch.cat(
                 (
                     torch.zeros((bsize, nb_channels, eval_frames), device=in_device),
@@ -216,18 +220,19 @@ class PLModule(pl.LightningModule):
 
             # init output sig (same as mix but with n_targets)
             final = torch.zeros(
-                (bsize, n_targets, nb_channels, nsamples + 2 * eval_frames), device=in_device
+                (bsize, n_targets, nb_channels, nsamples + 2 * eval_frames),
+                device=in_device,
             )
 
             start = 0
             while start < nsamples + eval_frames:
                 # extract current mix chunk and move to eval device
-                mix_chunk = mix[..., start:start + eval_frames]
+                mix_chunk = mix[..., start : start + eval_frames]
                 mix_chunk = mix_chunk.to(self.eval_device)
 
                 # Chunk the true sources and move to eval device
                 if true_sources is not None:
-                    true_sources_chunk = true_sources[..., start:start + eval_frames]
+                    true_sources_chunk = true_sources[..., start : start + eval_frames]
                     true_sources_chunk = true_sources_chunk.to(self.eval_device)
                 else:
                     true_sources_chunk = None
@@ -241,7 +246,7 @@ class PLModule(pl.LightningModule):
                 y_hat = y_hat.to(in_device)
 
                 # OLA
-                final[:, :, :, start:start + eval_frames]  += y_hat * fact_ol
+                final[:, :, :, start : start + eval_frames] += y_hat * fact_ol
 
                 # Store loss over chunks
                 loss.append(loss_chunk)
@@ -256,10 +261,9 @@ class PLModule(pl.LightningModule):
                 loss = None
 
         # remove the meaningless samples at the beg and end
-        final = final[...,eval_frames:-eval_frames]
-        
+        final = final[..., eval_frames:-eval_frames]
+
         return final, loss
-    
 
     def _apply_model_to_track_fader(self, mix, true_sources=None, comp_loss=True):
 
@@ -268,8 +272,8 @@ class PLModule(pl.LightningModule):
 
         # If true sources are not provided, do not compute the loss
         if true_sources is None:
-            comp_loss=False
-            
+            comp_loss = False
+
         # Place model on eval device
         self.to(self.eval_device)
 
@@ -428,7 +432,7 @@ class PLModule(pl.LightningModule):
         return {
             "optimizer": optimizer,
             "lr_scheduler": scheduler,
-            "monitor": "val_loss",
+            "monitor": "val_" + self.monitor_val,
         }
 
     def count_params(self):
@@ -459,9 +463,7 @@ if __name__ == "__main__":
         }
     )
     # Instanciate model
-    model = PLModule(
-        cfg_optim, cfg_scheduler, cfg_eval
-    )
+    model = PLModule(cfg_optim, cfg_scheduler, cfg_eval)
     model.eval_segment_len = 1
 
     # Forward pass

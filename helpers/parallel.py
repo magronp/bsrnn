@@ -10,12 +10,7 @@ import tqdm
 from models.separator import Separator
 
 
-def process_all_tracks_parallel(
-    args,
-    subset="test",
-    split=None,
-    num_cpus=None
-):
+def process_all_tracks_parallel(args, subset="test", split=None, num_cpus=None):
 
     # List of tracks to process
     list_tracks = get_track_list(args.data_dir, subset=subset, split=split)
@@ -25,11 +20,7 @@ def process_all_tracks_parallel(
         num_cpus = len(sched_getaffinity(0)) // 4 - 1
 
     # Defined the simplified function (freeze the non track-specific arguments)
-    myfun = functools.partial(
-        process_track_and_evaluate,
-        args=args,
-        subset=subset
-    )
+    myfun = functools.partial(process_track_and_evaluate, args=args, subset=subset)
 
     # If parallel, use multi-CPU to perform evaluation
     if num_cpus > 1:
@@ -62,11 +53,7 @@ def process_all_tracks_parallel(
     return test_results
 
 
-def process_track_and_evaluate(
-    track_name,
-    args,
-    subset="test"
-):
+def process_track_and_evaluate(track_name, args, subset="test"):
 
     # Process only part of the track if needed (mostly for debugging)
     if args.dset.eval_seq_duration is None:

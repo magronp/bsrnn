@@ -1,11 +1,17 @@
-# General details
-max_epochs: 100
+# General
+max_epochs: 200
 patience: 10
+monitor_val: sdr # either "loss" or "sdr"
 
 # Algo-related
-lr: 0.0005
+lr: 0.001
 grad_clip_norm: 5
 
 # Loss
 loss_type: L1
 loss_domain: t+tf
+
+# Multi GPU parameters
+ngpus:  # leave None for using all available GPUs
+sync_bn: True
+accumulate_grad_batches: 1

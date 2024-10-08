@@ -5,7 +5,7 @@ then
 	full_command="oarsub -vv -l /nodes=1,walltime=00:25:00 -p grvingt -q production -I"
 elif [ $1 == "graffiti" ] || [ $1 == "grue" ] || [ $1 == "grele" ] || [ $1 == "gruss" ] || [ $1 == "graphique" ]
 then
-	full_command="oarsub -v -l nodes=1,walltime=2 -p $1 -q production -I"
+	full_command="oarsub -v -l nodes=1,walltime=4 -p $1 -q production -I"
 else
 	full_command="oarsub -v -l gpu=1,walltime=00:30:00 -q production -I"
 fi

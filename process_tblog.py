@@ -3,6 +3,8 @@ from tensorboard.backend.event_processing.event_accumulator import EventAccumula
 from tensorboard.plugins.hparams.plugin_data_pb2 import HParamsPluginData
 from os import path, walk
 import fnmatch
+import hydra
+from omegaconf import DictConfig
 
 
 def find_files(directory, pattern="events*"):
@@ -17,10 +19,13 @@ def find_files(directory, pattern="events*"):
     return filespaths, filenames_list
 
 
-def display_from_tb(method_name, tblogdir="tb_logs/", outdir="outputs/", monitor_val='loss'):
+@hydra.main(version_base=None, config_name="config", config_path="conf")
+def process_tblog(args: DictConfig):
+
     # Path to scan / record results
-    tblogdir_model = path.join(tblogdir, method_name)
-    path_res_file = path.join(outdir, "val_" + method_name + ".csv")
+    method_name = args.src_mod.name_tblog_dir + "-" + args.src_mod.target
+    tblogdir_model = path.join(args.tblog_dir, method_name)
+    path_res_file = path.join(args.out_dir, "val_" + method_name + ".csv")
 
     # Init result dataframe
     param_keys = [
@@ -33,33 +38,30 @@ def display_from_tb(method_name, tblogdir="tb_logs/", outdir="outputs/", monitor
         "n_att_head",
         "attn_enc_dim",
     ]
-    all_results = pd.DataFrame(columns=param_keys + ["val_sdr", "exp_name",  "tb_version"])
+    all_results = pd.DataFrame(
+        columns=param_keys + ["val_sdr", "exp_name", "tb_version"]
+    )
 
     # Iterate over experiments
     all_tb_paths, all_tb_names = find_files(tblogdir_model)
 
     for i, tbpath in enumerate(all_tb_paths):
 
+        print(tbpath)
         # Initialize the result df
         curr_res = {}
         expname = all_tb_names[i]
         curr_res["exp_name"] = expname.replace("events.out.tfevents.", "")
-        curr_res["tb_version"] = int(tbpath.replace(expname,'').replace(tblogdir_model,'').replace('/','').replace('version_',''))
+        curr_res["tb_version"] = (
+            tbpath.replace(expname, "")
+            .replace(tblogdir_model, "")
+            .replace("/", "")
+            .replace("version_", "")
+        )
 
         # Load the TB log
         event_acc = EventAccumulator(tbpath)
         event_acc.Reload()
-
-        # Get the SDR corresponding to the optimal model, depending on the monitoring strategy
-        df_valsdr = pd.DataFrame(event_acc.Scalars("val_sdr_epoch"))
-        if monitor_val == 'loss':
-            df_valloss = pd.DataFrame(event_acc.Scalars("val_loss_epoch"))
-            idx_opt = df_valloss.idxmin()['value']
-        elif monitor_val == 'sdr':
-            idx_opt = df_valsdr.idxmax()['value']
-        else:
-            raise NameError("Unknown monitoring type")
-        curr_res["val_sdr"] = df_valsdr["value"][idx_opt]
 
         # Load the hyperparameters
         data = event_acc._plugin_to_tag_to_content["hparams"][
@@ -69,6 +71,25 @@ def display_from_tb(method_name, tblogdir="tb_logs/", outdir="outputs/", monitor
         hparam_dict = {
             key: hparam_data[key].ListFields()[0][1] for key in hparam_data.keys()
         }
+
+        # Check whether monitoring is done with SDR or loss
+        if "cfg_optim/monitor_val" in hparam_dict.keys():
+            monitor_val = hparam_dict["cfg_optim/monitor_val"]
+        else:
+            monitor_val = (
+                "loss"  # by default, assume the ckpt was monitored with val loss
+            )
+
+        # Get the optimal model's SDR
+        df_valsdr = pd.DataFrame(event_acc.Scalars("val_sdr_epoch"))
+        if monitor_val == "loss":
+            df_valloss = pd.DataFrame(event_acc.Scalars("val_loss_epoch"))
+            idx_opt = df_valloss.idxmin()["value"]
+        elif monitor_val == "sdr":
+            idx_opt = df_valsdr.idxmax()["value"]
+        else:
+            raise NameError("Unknown monitoring type")
+        curr_res["val_sdr"] = df_valsdr["value"][idx_opt]
 
         # Add the relevent ones in the df
         for k in param_keys:
@@ -84,11 +105,10 @@ def display_from_tb(method_name, tblogdir="tb_logs/", outdir="outputs/", monitor
     all_results.to_csv(path_res_file)
     print(all_results.drop(columns=["exp_name"]))
 
-    return all_results
+    return
 
 
 if __name__ == "__main__":
-    method_name = "bsrnn-vocals"
-    all_results = display_from_tb(method_name)
+    process_tblog()
 
 # EOF

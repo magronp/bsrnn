@@ -12,9 +12,8 @@ tqdm.monitor_interval = 0
 @hydra.main(version_base=None, config_name="config", config_path="conf")
 def inference(args: DictConfig):
 
-    # Additional arguments: file path and recording dir
+    # Additional argument: path to the track to separate
     track_path = args.file_path
-    rec_dir = args.rec_dir
 
     # Process only part of the track: offset and max duration
     if args.max_len is None:
@@ -26,10 +25,13 @@ def inference(args: DictConfig):
     else:
         fr_offst = int(args.offset * args.sample_rate)
 
-    # Load the mix and add batch dim [1,, n_channels, n_samples]
+    # Load the mix and add batch dim [1, n_channels, n_samples]
     mix = torchaudio.load(track_path, num_frames=nfr, frame_offset=fr_offst)[
         0
     ].unsqueeze(0)
+
+    # Define the folder where the model ckpt are located
+    args.src_mod.name_out_dir = args.model_dir
 
     # Load the model
     model = Separator(args)
@@ -44,7 +46,7 @@ def inference(args: DictConfig):
     estimates = model._apply_model_to_track(mix)[0]
 
     # Record estimates
-    rec_estimates(estimates[0], rec_dir, args.targets, args.sample_rate)
+    rec_estimates(estimates[0], args.rec_dir, args.targets, args.sample_rate)
 
 
 if __name__ == "__main__":

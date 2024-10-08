@@ -1,0 +1,80 @@
+### Uncomment the config(s) below that you want to run when booking jobs
+
+#-------------- Loss domains
+#"src_mod.target=vocals optim.monitor_val=loss optim.loss_domain=t+tf" #v0
+#"src_mod.target=vocals optim.monitor_val=loss optim.loss_domain=t" #v1
+#"src_mod.target=vocals optim.monitor_val=loss optim.loss_domain=tf" #v2
+
+#"src_mod.target=bass optim.monitor_val=loss optim.loss_domain=t+tf" #v0
+#"src_mod.target=bass optim.monitor_val=loss optim.loss_domain=t" #v1
+#"src_mod.target=bass optim.monitor_val=loss optim.loss_domain=tf" #v2
+
+#"src_mod.target=drums optim.monitor_val=loss optim.loss_domain=t+tf" #v0-1
+#"src_mod.target=drums optim.monitor_val=loss optim.loss_domain=t" #v2-3
+#"src_mod.target=drums optim.monitor_val=loss optim.loss_domain=tf" #v4-5
+
+#"src_mod.target=other optim.monitor_val=loss optim.loss_domain=t+tf" #v0-1
+#"src_mod.target=other optim.monitor_val=loss optim.loss_domain=t" #v2-3
+#"src_mod.target=other optim.monitor_val=loss optim.loss_domain=tf" #v4
+
+
+#-------------- FFT size (increase batch size consequently)
+#"src_mod.target=vocals optim.monitor_val=loss n_fft=4096 n_hop=1024 dset.batch_size=4" #v3
+#"src_mod.target=bass optim.monitor_val=loss n_fft=4096 n_hop=1024 dset.batch_size=4" #v3
+#"src_mod.target=drums optim.monitor_val=loss n_fft=4096 n_hop=1024 dset.batch_size=4" #v6
+#"src_mod.target=other optim.monitor_val=loss n_fft=4096 n_hop=1024 dset.batch_size=4" #v5
+
+
+#-------------- Monitoring with max SDR
+#"src_mod.target=vocals optim.monitor_val=sdr" # v4-5
+#"src_mod.target=bass optim.monitor_val=sdr" #v4
+#"src_mod.target=drums optim.monitor_val=sdr" # v7-8
+#"src_mod.target=other optim.monitor_val=sdr" # already max'ed
+
+
+#-------------- Large model
+#"src_mod=bsrnn-large src_mod.target=vocals ckpt_path=outputs/bsrnn-large/last-vocals.ckpt" #v6-11
+#"src_mod=bsrnn-large src_mod.target=bass ckpt_path=outputs/bsrnn-large/bass.ckpt" #v5-7
+#"src_mod=bsrnn-large src_mod.target=drums ckpt_path=outputs/bsrnn-large/drums.ckpt" #v9-11
+#"src_mod=bsrnn-large src_mod.target=other ckpt_path=outputs/bsrnn-large/last-other-v1.ckpt" #v6-14
+
+
+#-------------- Layer type (vocals): LSTM vs. GRU vs. CONV
+#"src_mod.time_layer=gru"  #v12-13
+#"src_mod.time_layer=conv" #v14
+#"src_mod.band_layer=gru" #v15-16
+#"src_mod.band_layer=conv" #v17
+
+
+#-------------- Attention (vocals)
+#"src_mod.n_att_head=1 src_mod.attn_enc_dim=4 src_mode.name_tblog_dir=bsrnn-attn"  #v10-11
+#"src_mod.n_att_head=1 src_mod.attn_enc_dim=8 src_mode.name_tblog_dir=bsrnn-attn"  #v12-14
+#"src_mod.n_att_head=1 src_mod.attn_enc_dim=16 src_mode.name_tblog_dir=bsrnn-attn" #v15-17
+#"src_mod.n_att_head=1 src_mod.attn_enc_dim=32 src_mode.name_tblog_dir=bsrnn-attn" #v18-20
+#"src_mod.n_att_head=2 src_mod.attn_enc_dim=4 src_mode.name_tblog_dir=bsrnn-attn" #v21-22
+#"src_mod.n_att_head=2 src_mod.attn_enc_dim=8 src_mode.name_tblog_dir=bsrnn-attn" #v23-25
+#"src_mod.n_att_head=2 src_mod.attn_enc_dim=16 src_mode.name_tblog_dir=bsrnn-attn" #v26-29
+#"src_mod.n_att_head=2 src_mod.attn_enc_dim=32 src_mode.name_tblog_dir=bsrnn-attn" #v30-32
+#"src_mod.n_att_head=4 src_mod.attn_enc_dim=4 src_mode.name_tblog_dir=bsrnn-attn" #v33-37
+#"src_mod.n_att_head=4 src_mod.attn_enc_dim=8 src_mode.name_tblog_dir=bsrnn-attn" #v38-42
+#"src_mod.n_att_head=4 src_mod.attn_enc_dim=16 src_mode.name_tblog_dir=bsrnn-attn" #v43-47
+
+
+#------------- Attention for the other sources
+#"src_mod.target=bass src_mod.n_att_head=2 src_mod.attn_enc_dim=16" #v8-9
+#"src_mod.target=drums src_mod.n_att_head=2 src_mod.attn_enc_dim=16" # v12-17
+#"src_mod.target=other src_mod.n_att_head=2 src_mod.attn_enc_dim=16" #v15-17
+
+
+#-------------- Dataset: no SAD preprocessing
+#"src_mod.target=vocals dset=musdb18hq" #v18-19
+#"src_mod.target=bass dset=musdb18hq" #v10-11
+#"src_mod.target=drums dset=musdb18hq" #v18-23
+#"src_mod.target=other dset=musdb18hq" #v18-20
+
+
+#------- Optimized models (attention + unprocessed dataset)
+#"src_mod=bsrnn-opt src_mod.target=vocals dset=musdb18hq" #v20-24
+#"src_mod=bsrnn-opt src_mod.target=bass dset=musdb18hq"  #v12-14
+#"src_mod=bsrnn-opt src_mod.target=drums dset=musdb18hq" #v24-27
+#"src_mod=bsrnn-opt src_mod.target=other dset=musdb18hq" #v21-27

@@ -36,7 +36,7 @@ class Separator(PLModule):
                     cfg_eval,
                     cfg_src_mod,
                     pretrained_src_path=os.path.join(
-                        cfg_src_mod.out_dir, cfg_src_mod.name, t + ".ckpt"
+                        args.out_dir, cfg_src_mod.name_out_dir, t + ".ckpt"
                     ),
                 )
                 for t in targets
@@ -50,5 +50,6 @@ class Separator(PLModule):
         s_est = torch.cat(s_est, dim=1)
 
         return {"waveforms": s_est}
+
 
 # EOF

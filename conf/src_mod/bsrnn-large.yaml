@@ -1,6 +1,6 @@
 name: bsrnn
-name_out_dir: bsrnn   # =name by default
-name_tblog_dir: bsrnn # =name by default
+name_out_dir: bsrnn-large
+name_tblog_dir: bsrnn
 
 target: vocals
 sample_rate: ${sample_rate}
@@ -8,8 +8,8 @@ n_fft: ${n_fft}
 n_hop: ${n_hop}
 
 # Model parameters
-feature_dim: 64
-num_repeat: 8
+feature_dim: 128
+num_repeat: 12
 time_layer: lstm
 band_layer: lstm
 n_att_head: 0

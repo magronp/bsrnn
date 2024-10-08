@@ -1,7 +1,9 @@
 """
-The 'LayerNormalization4DCF', 'get_layer', and 'AttentionBlock' functions are adapted from the TFGridNet implementation in the ESPNET toolbox (https://github.com/espnet/espnet/blob/35c2e2b13026ba212a2ba5e454e1621d30f2d8b9/espnet2/enh/separator/tfgridnet_separator.py#L18)
+The 'LayerNormalization4DCF', 'get_layer', and 'AttentionBlock' functions are adapted from the TFGridNet implementation in the ESPNET toolbox:
+https://github.com/espnet/espnet/blob/35c2e2b13026ba212a2ba5e454e1621d30f2d8b9/espnet2/enh/separator/tfgridnet_separator.py#L18
 
-BSRNN-related classes (ResNet, BSNet, BSRNN) are adapted from the authors' version (http://gitlab.aicrowd.com/Tomasyu/sdx-2023-music-demixing-track-starter-kit )
+BSRNN-related classes (ResNet, BSNet, BSRNN) are adapted from the authors' version:
+http://gitlab.aicrowd.com/Tomasyu/sdx-2023-music-demixing-track-starter-kit
 
 Main modifications:
 - using the ligthning module, and adding the stft/istft as attributes in BSRNN

@@ -22,10 +22,11 @@ def evaluate(args: DictConfig):
 
     sdr_type = args.eval.sdr_type
     targets = args.targets
-    src_mod = args.src_mod.name
 
-    model_dir = join(args.out_dir, src_mod)
+    model_dir = join(args.out_dir, args.src_mod.name_out_dir)
     args.eval.rec_dir = join(model_dir, "audio")
+    method_name_full = args.src_mod.name_out_dir
+    print(" Method:", method_name_full)
 
     # Evaluation results file
     path_eval_file = join(model_dir, "test_results_" + sdr_type + ".csv")
@@ -57,7 +58,7 @@ def evaluate(args: DictConfig):
         test_results.to_csv(path_eval_file, index=False)
 
     # Aggregate the results over tracks, display it, and append the the main file
-    df = aggregate_res_over_tracks(path_eval_file, src_mod, sdr_type)
+    df = aggregate_res_over_tracks(path_eval_file, method_name_full, sdr_type)
     print(df)
     append_df_to_main_file(path_main_file, df)
 
