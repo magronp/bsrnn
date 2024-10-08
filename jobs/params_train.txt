@@ -1,4 +1,5 @@
 ### Uncomment the config(s) below that you want to run when booking jobs
+### (ignore the 'vx' comments, which correspond to tensorboard folders)
 
 #-------------- Loss domains
 #"src_mod.target=vocals optim.monitor_val=loss optim.loss_domain=t+tf" #v0
