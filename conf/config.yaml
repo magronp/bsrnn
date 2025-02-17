@@ -2,19 +2,28 @@
 defaults:
   - _self_
   - dset: musdb18hq_sad
+  - sad: default
   - optim: default
   - scheduler: step
   - eval: default
   - src_mod: bsrnn
-  - override hydra/hydra_logging: disabled  
-  - override hydra/job_logging: disabled  
+  - override hydra/hydra_logging: disabled
+  - override hydra/job_logging: disabled
 
-# Targets to separate (for preprocessing / evaluation / inference)
+# Targets (= estimates), either a string (for training) or a list (evaluation/inference)
 targets:
   - vocals
   - bass
   - drums
   - other
+
+# Sources to build the dataset
+sources:
+  - vocals
+  - bass
+  - drums
+  - other
+
 
 # General parameters
 seed: 42
@@ -22,6 +31,7 @@ eps: 1e-7
 out_dir: outputs/
 tblog_dir: tb_logs/
 data_dir: data/musdb18hq/
+sad_dir: data/
 
 # Audio / STFT
 sample_rate: 44100

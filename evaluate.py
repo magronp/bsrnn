@@ -2,16 +2,13 @@ import hydra
 from omegaconf import DictConfig
 from os.path import join
 import lightning.pytorch as pl
-import tqdm
 from models.separator import Separator
-from helpers.data import build_fulltrack_sampler
+from helpers.data import build_eval_sampler
 from helpers.parallel import process_all_tracks_parallel
 from helpers.eval import (
     aggregate_res_over_tracks,
     append_df_to_main_file,
 )
-
-tqdm.monitor_interval = 0
 
 
 @hydra.main(version_base=None, config_name="config", config_path="conf")
@@ -47,7 +44,7 @@ def evaluate(args: DictConfig):
             model = Separator(args)
 
             # Test dataloader
-            test_sampler = build_fulltrack_sampler(targets, args.dset, subset="test")
+            test_sampler = build_eval_sampler(targets, args.dset, subset="test")
 
             # Testing
             trainer = pl.Trainer(num_nodes=1, devices=1, logger=False)

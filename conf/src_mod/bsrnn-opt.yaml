@@ -2,7 +2,7 @@ name: bsrnn
 name_out_dir: bsrnn-opt
 name_tblog_dir: bsrnn
 
-target: vocals
+target: ${targets}
 sample_rate: ${sample_rate}
 n_fft: ${n_fft}
 n_hop: ${n_hop}
@@ -12,5 +12,9 @@ feature_dim: 128
 num_repeat: 12
 time_layer: lstm
 band_layer: lstm
+bidirectional: True
+n_heads: 1
+group_num: 1
 n_att_head: 2
 attn_enc_dim: 16
+fac_mask: 4

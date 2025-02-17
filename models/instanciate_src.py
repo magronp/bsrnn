@@ -1,12 +1,18 @@
 import os
 import torch
 from models.bsrnn import BSRNN
+from models.bsrnnstereo import BSRNNstereo
+from models.bscnn import BSCNN
 
 
 # A general function to return the model class: thus any other model can be added here
 def get_class_from_str(model_name):
     if model_name == "bsrnn":
         Model = BSRNN
+    elif model_name == "bsrnnstereo":
+        Model = BSRNNstereo
+    elif model_name == "bscnn":
+        Model = BSCNN
     else:
         raise NameError("Unknown model type")
 

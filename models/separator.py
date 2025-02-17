@@ -14,7 +14,11 @@ class Separator(PLModule):
         cfg_scheduler = args.scheduler
         cfg_eval = args.eval
         cfg_src_mod = args.src_mod
+
+        # Targets
         targets = args.targets
+        if isinstance(targets, str):
+            targets = [targets]
 
         # Inherit from the PLModule
         super().__init__(

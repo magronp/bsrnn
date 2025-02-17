@@ -5,8 +5,8 @@
 #"src_mod=bsrnn-large eval.sdr_type=museval"
 
 # Optimized model (uSDR and cSDR)
-#"src_mod=bsrnn-opt"
-#"src_mod=bsrnn-opt eval.sdr_type=museval"
+"src_mod=bsrnn-opt"  #oar858
+"src_mod=bsrnn-opt eval.sdr_type=museval" #oar859
 
 # Trying different overlapp-add strategy for chunking full songs (uSDR)
 #"src_mod=bsrnn-large eval.segment_len=3 eval.hop_size=1.5"

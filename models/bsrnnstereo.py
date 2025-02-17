@@ -1,14 +1,3 @@
-"""
-The BSRNN main module below is adapted from the authors' version:
-http://gitlab.aicrowd.com/Tomasyu/sdx-2023-music-demixing-track-starter-kit
-
-Main modifications:
-- using our own ligthning module, and adding the stft/istft as attributes in BSRNN
-- some reshaping in the forward function to allow for more flexibility in defining BSNets / ResNets
-- output both the stft and the waveform, since both are needed to compute the loss mentioned in the BSRNN paper
-- add several inputs to control the architecture (layer types, fac_mask, attention...)
-"""
-
 from omegaconf import OmegaConf
 import torch
 import torch.nn as nn
@@ -18,7 +7,7 @@ from models.pl_module import PLModule
 from models.bs import BSNet
 
 
-class BSRNN(PLModule):
+class BSRNNstereo(PLModule):
 
     def __init__(
         self,
@@ -36,6 +25,7 @@ class BSRNN(PLModule):
         group_num=1,
         feature_dim=128,
         num_repeat=12,
+        nb_channels=2,
         fac_mask=4,
         n_att_head=0,
         attn_enc_dim=20,
@@ -55,9 +45,12 @@ class BSRNN(PLModule):
         )
 
         instrument = target
+        sr = sample_rate
+
         self.sr = sample_rate
         self.n_fft = n_fft
         self.n_hop = n_hop
+        self.nb_channels = nb_channels
         self.enc_dim = self.n_fft // 2 + 1
         self.feature_dim = feature_dim
         self.num_repeat = num_repeat
@@ -69,12 +62,12 @@ class BSRNN(PLModule):
         self.istft = myISTFT(n_fft=n_fft, n_hop=n_hop)
 
         # 0-1k (100 hop), 1k-4k (250 hop), 4k-8k (500 hop), 8k-16k (1k hop), 16k-20k (2k hop), 20k-inf
-        bandwidth_50 = int(np.floor(50 / (self.sr / 2.0) * self.enc_dim))
-        bandwidth_100 = int(np.floor(100 / (self.sr / 2.0) * self.enc_dim))
-        bandwidth_250 = int(np.floor(250 / (self.sr / 2.0) * self.enc_dim))
-        bandwidth_500 = int(np.floor(500 / (self.sr / 2.0) * self.enc_dim))
-        bandwidth_1k = int(np.floor(1000 / (self.sr / 2.0) * self.enc_dim))
-        bandwidth_2k = int(np.floor(2000 / (self.sr / 2.0) * self.enc_dim))
+        bandwidth_50 = int(np.floor(50 / (sr / 2.0) * self.enc_dim))
+        bandwidth_100 = int(np.floor(100 / (sr / 2.0) * self.enc_dim))
+        bandwidth_250 = int(np.floor(250 / (sr / 2.0) * self.enc_dim))
+        bandwidth_500 = int(np.floor(500 / (sr / 2.0) * self.enc_dim))
+        bandwidth_1k = int(np.floor(1000 / (sr / 2.0) * self.enc_dim))
+        bandwidth_2k = int(np.floor(2000 / (sr / 2.0) * self.enc_dim))
 
         if instrument == "vocals" or instrument == "other":
             self.band_width = [bandwidth_100] * 10
@@ -106,8 +99,12 @@ class BSRNN(PLModule):
         for i in range(self.nband):
             self.BN.append(
                 nn.Sequential(
-                    nn.GroupNorm(1, self.band_width[i] * 2, self.eps),
-                    nn.Conv1d(self.band_width[i] * 2, self.feature_dim, 1),
+                    nn.GroupNorm(
+                        1, self.band_width[i] * 2 * self.nb_channels, self.eps
+                    ),
+                    nn.Conv1d(
+                        self.band_width[i] * 2 * self.nb_channels, self.feature_dim, 1
+                    ),
                 )
             )
 
@@ -130,7 +127,6 @@ class BSRNN(PLModule):
             )
         self.separator = nn.Sequential(*self.separator)
 
-        # Mask estimation module
         self.mask = nn.ModuleList([])
         self.fac_mask = fac_mask
         for i in range(self.nband):
@@ -146,74 +142,71 @@ class BSRNN(PLModule):
                     ),
                     nn.Tanh(),
                     nn.Conv1d(
-                        self.feature_dim * self.fac_mask, self.band_width[i] * 4, 1
+                        self.feature_dim * self.fac_mask,
+                        self.band_width[i] * 4 * self.nb_channels,
+                        1,
                     ),
                 )
             )
 
     def forward(self, input):
-        # input shape: (bsize, nch, n_samples)
+        # input shape: (B, nch, n_samples)
 
-        bsize, nch, nsample = input.shape
-        B = bsize * nch
-        input = input.view(B, -1)
-
-        spec = self.stft(input)  # B, F, T
+        B, nch, nsample = input.shape
+        spec = self.stft(input)
 
         # concat real and imag, split to subbands
-        spec_RI = torch.stack([spec.real, spec.imag], 1)  # B, 2, F, T
+        spec_RI = torch.stack([spec.real, spec.imag], 2)  # B, nch, 2, F, T
         subband_spec = []
         subband_mix_spec = []
         band_idx = 0
         for i in range(len(self.band_width)):
             subband_spec.append(
-                spec_RI[:, :, band_idx : band_idx + self.band_width[i]].contiguous()
-            )
+                spec_RI[:, :, :, band_idx : band_idx + self.band_width[i]].contiguous()
+            )  # B, nch, 2, BW, T
             subband_mix_spec.append(
-                spec[:, band_idx : band_idx + self.band_width[i]]
-            )  # B, BW, T
+                spec[:, :, band_idx : band_idx + self.band_width[i]]
+            )  # B, nch, BW, T
             band_idx += self.band_width[i]
 
         # normalization and bottleneck
         subband_feature = []
         for i in range(len(self.band_width)):
             subband_feature.append(
-                self.BN[i](subband_spec[i].view(B, self.band_width[i] * 2, -1))
+                self.BN[i](subband_spec[i].view(B, self.band_width[i] * 2 * nch, -1))
             )
         subband_feature = torch.stack(subband_feature, 1)  # B, nband, N, T
 
         # separator
-        sep_output = self.separator(subband_feature)  # B, nband, N, T
+        sep_output = self.separator(subband_feature)
+        sep_output = sep_output.view(B, self.nband, self.feature_dim, -1)
 
         # masking
         sep_subband_spec = []
         for i in range(len(self.band_width)):
             # Compute the mask, reshape, and compute GLU
-            out = self.mask[i](sep_output[:, i])  # B, BW*4, T
-            out = out.view(B, 2, 2, self.band_width[i], -1)  # B, 2, 2, BW, T
-            mask = out[:, 0] * torch.sigmoid(out[:, 1])  # B, 2, BW, T
-
+            out = self.mask[i](sep_output[:, i])  # B, BW*4*nch, T
+            out = out.view(B, nch, 2, 2, self.band_width[i], -1)  # B, nch, 2, 2, BW, T
+            mask = out[:, :, 0] * torch.sigmoid(out[:, :, 1])  # B, nch, 2, BW, T
             # Apply the mask
-            mask_real = mask[:, 0]  # B, BW, T
-            mask_imag = mask[:, 1]  # B, BW, T
+            mask_real = mask[:, :, 0]  # B, nch, BW, T
+            mask_imag = mask[:, :, 1]  # B, nch, BW, T
             est_spec_real = (
                 subband_mix_spec[i].real * mask_real
                 - subband_mix_spec[i].imag * mask_imag
-            )  # B, BW, T
+            )  # B, nch, BW, T
             est_spec_imag = (
                 subband_mix_spec[i].real * mask_imag
                 + subband_mix_spec[i].imag * mask_real
-            )  # B, BW, T
+            )  # B, nch, BW, T
             sep_subband_spec.append(torch.complex(est_spec_real, est_spec_imag))
-        est_spec = torch.cat(sep_subband_spec, 1)  # B, F, T
+        est_spec = torch.cat(sep_subband_spec, 2)  # B, nch, F, T
 
         output = self.istft(est_spec, length=nsample)
-        output = output.view(bsize, nch, -1)
 
-        # adjust to proper sizes
-        est_spec = est_spec.view(bsize, nch, self.enc_dim, -1)
-        est_spec = est_spec.unsqueeze(1)  # bsize, 1, nch, F, T
-        output = output.unsqueeze(1)  # bsize, 1, nch, n_samples
+        # add the "n_target" dimension
+        est_spec = est_spec.unsqueeze(1)  # B, 1, nch, F, T
+        output = output.unsqueeze(1)  # B, 1, nch, n_samples
 
         return {"waveforms": output, "stfts": est_spec}
 
@@ -244,7 +237,7 @@ if __name__ == "__main__":
         }
     )
 
-    model = BSRNN(
+    model = BSRNNstereo(
         cfg_optim,
         cfg_scheduler,
         cfg_eval,

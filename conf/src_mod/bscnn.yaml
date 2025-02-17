@@ -1,0 +1,22 @@
+name: bscnn
+name_out_dir: bscnn
+name_tblog_dir: bscnn
+
+target: vocals
+sample_rate: ${sample_rate}
+n_fft: ${n_fft}
+n_hop: ${n_hop}
+
+# Model parameters
+feature_dim: 32
+num_repeat: 4
+time_layer:
+  n_dil_conv: 3
+  ks: 3
+  hs_fac: 1
+band_layer:
+  n_dil_conv: 3
+  ks: 3
+  hs_fac: 1
+n_att_head: 0
+attn_enc_dim: 0

@@ -1,6 +1,6 @@
-name: bsrnn
-name_out_dir: bsrnn   # =name by default
-name_tblog_dir: bsrnn # =name by default
+name: bsrnnstereo
+name_out_dir: bsrnnstereo
+name_tblog_dir: bsrnn
 
 target: ${targets}
 sample_rate: ${sample_rate}

@@ -28,7 +28,7 @@ def create_trainer(
     early_stop_callback = pl.callbacks.EarlyStopping(
         monitor=monitor_val, patience=cfg_optim.patience, verbose=False, mode=mode
     )
-    val_checkpoint_callback = pl.callbacks.ModelCheckpoint(
+    best_checkpoint_callback = pl.callbacks.ModelCheckpoint(
         monitor=monitor_val,
         mode=mode,
         save_top_k=1,
@@ -59,7 +59,7 @@ def create_trainer(
         gradient_clip_val=cfg_optim.grad_clip_norm,
         callbacks=[
             early_stop_callback,
-            val_checkpoint_callback,
+            best_checkpoint_callback,
             last_checkpoint_callback,
         ],
         logger=my_logger,
@@ -71,6 +71,7 @@ def create_trainer(
         num_sanity_val_steps=1,
         sync_batchnorm=cfg_optim.sync_bn,
         accumulate_grad_batches=cfg_optim.accumulate_grad_batches,
+        deterministic=cfg_optim.deterministic,
     )
 
     return trainer, ngpus

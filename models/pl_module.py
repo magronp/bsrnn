@@ -32,6 +32,7 @@ class PLModule(pl.LightningModule):
             self.targets = [targets]
 
         # Training/optimizer attributes
+        self.optim_algo = cfg_optim.algo
         self.lr = cfg_optim.lr
         self.loss_type = cfg_optim.loss_type
         self.loss_domain = cfg_optim.loss_domain
@@ -96,6 +97,14 @@ class PLModule(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         x, y, _ = batch
         train_loss, _ = self._shared_step(x, y)
+
+        # TODO a virer si tout ok
+        # train_loss, y_hat = self._shared_step(x, y)
+        # print(torch.linalg.norm(y_hat))
+        # torchaudio.save('tr_mix.wav', x[0].detach().cpu(), 44100)
+        # torchaudio.save('tr_truetarget.wav', y[0, 0].detach().cpu(), 44100)
+        # torchaudio.save('tr_esttarget.wav', y_hat[0, 0].detach().cpu(), 44100)
+
         self.log(
             "train_loss",
             train_loss,
@@ -105,6 +114,7 @@ class PLModule(pl.LightningModule):
             sync_dist=True,
             batch_size=x.shape[0],
         )
+
         return train_loss
 
     def on_train_epoch_end(self):
@@ -118,6 +128,12 @@ class PLModule(pl.LightningModule):
 
         # Get the estimates and validation loss
         y_hat, val_loss = self._apply_model_to_track(x, y, comp_loss=True)
+
+        # TODO a virer si tout ok
+        # print(torch.linalg.norm(y_hat))
+        # torchaudio.save('val_mix.wav', x[0].detach().cpu(), 44100)
+        # torchaudio.save('val_truetarget.wav', y[0, 0].detach().cpu(), 44100)
+        # torchaudio.save('val_esttarget.wav', y_hat[0, 0].detach().cpu(), 44100)
 
         self.log(
             "val_loss",
@@ -412,7 +428,13 @@ class PLModule(pl.LightningModule):
         return
 
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.parameters(), lr=self.lr)
+
+        if self.optim_algo == "adam":
+            optimizer = torch.optim.Adam(self.parameters(), lr=self.lr)
+        elif self.optim_algo == "adamw":
+            optimizer = torch.optim.AdamW(self.parameters(), lr=self.lr)
+        else:
+            raise NameError("Unknown optimizer type ")
 
         if self.cfg_scheduler.name == "plateau":
             scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(

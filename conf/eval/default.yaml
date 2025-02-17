@@ -2,7 +2,7 @@
 device: cuda
 segment_len: 10.0
 overlap: 0.1
-hop_size: # leave it to None for using the fader - if specify a value, it will use the OLA
+hop_size: # leave it to None for using the linear fader - if specify a value, it will use the OLA
 verbose_per_track: True
 sdr_type: global # 'global' or 'museval' (so-called uSDR or cSDR)
 win_dur: 1.0 # used for the museval SDR

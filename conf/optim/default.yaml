@@ -2,8 +2,10 @@
 max_epochs: 200
 patience: 10
 monitor_val: sdr # either "loss" or "sdr"
+deterministic: False
 
 # Algo-related
+algo: adam
 lr: 0.001
 grad_clip_norm: 5
 

@@ -19,24 +19,25 @@ class SAD:
 
     def __init__(
         self,
-        sample_rate: int,
-        sad_win_size: int = 6,
-        sad_overlap_ratio: float = 0.5,
+        win_size: int = 6,
+        overlap_ratio: float = 0.5,
         n_chunks_per_segment: int = 10,
         gamma: float = 1e-3,
         threshold_max_quantile: float = 0.15,
         threshold_segment: float = 0.5,
         eps: float = 1e-5,
+        *args,
+        **kwargs,
     ):
-        self.sample_rate = sample_rate
         self.n_chunks_per_segment = n_chunks_per_segment
         self.eps = eps
         self.gamma = gamma
         self.threshold_max_quantile = threshold_max_quantile
         self.threshold_segment = threshold_segment
 
-        self.window_size = int(sample_rate * sad_win_size)
-        self.step_size = int(self.window_size * sad_overlap_ratio)
+        self.orig_sample_rate = 44100  # musdb has a fixed sample rate
+        self.window_size = int(self.orig_sample_rate * win_size)
+        self.step_size = int(self.window_size * overlap_ratio)
 
     def chunk(self, y: torch.Tensor):
         """
@@ -113,8 +114,8 @@ class SAD:
         return indices.tolist()
 
 
-def get_indices_trg(
-    target,
+def get_indices(
+    src,
     subset,
     split,
     input_dir,
@@ -130,7 +131,7 @@ def get_indices_trg(
     for track_name in tqdm(list_tracks):
         # load the audio
         track_dir = join(input_dir, subset, track_name)
-        src_path = join(track_dir, target + ".wav")
+        src_path = join(track_dir, src + ".wav")
         y = torchaudio.load(src_path)[0]
 
         # find indices of salient segments
@@ -147,7 +148,7 @@ def get_indices_trg(
 
     # Record the df as a .csv file
     subset_name = "test" if subset == "test" else split
-    file_path = output_dir / f"{target}_{subset_name}.csv"
+    file_path = output_dir / f"{src}_{subset_name}.csv"
     all_ind.to_csv(file_path)
 
     return None
@@ -156,29 +157,21 @@ def get_indices_trg(
 @hydra.main(version_base=None, config_name="config", config_path="conf")
 def prepare_dset(args: DictConfig):
 
-    targets = args.targets
-    args = args.dset
+    # Get the relevant parameters
+    cfg_sad = args.sad
 
     # initialize Source Activity Detector
-    sad = SAD(
-        sample_rate=args.sample_rate,
-        sad_win_size=args.sad_win_size,
-        sad_overlap_ratio=args.sad_overlap_ratio,
-        n_chunks_per_segment=args.sad_n_chunks_per_segment,
-        gamma=args.sad_gamma,
-        threshold_max_quantile=args.threshold_max_quantile,
-        threshold_segment=args.threshold_segment,
-    )
+    sad = SAD(**cfg_sad)
 
     # initialize directories where to save indices
-    input_dir = args.data_dir
-    output_dir = Path(args.sad_dir)
+    input_dir = cfg_sad.data_dir
+    output_dir = Path(cfg_sad.prep_dir)
     output_dir.mkdir(exist_ok=True)
 
-    # get active indices for all targets
-    for target in targets:
-        print(target)
-        get_indices_trg(target, "train", "train", input_dir, output_dir, sad)
+    # get active indices for all sources
+    for src in cfg_sad.sources:
+        print(src)
+        get_indices(src, "train", "train", input_dir, output_dir, sad)
 
     return
 

@@ -1,26 +1,31 @@
 name: musdb18hq
-seed: ${seed}
-data_dir: ${data_dir}
+sources: ${sources}
 sample_rate: ${sample_rate}
 nb_channels: 2
-sources:
-- vocals
-- bass
-- drums
-- other
-seq_duration: 3.0
-samples_per_track: 256
+seed: ${seed}
+data_dir: ${data_dir}
+sad_dir:
 
-eval_seq_duration:
+# Dataset parameters
+n_samples_tr: 20000
+seq_duration_tr: 3.0
+n_samples_eval:
+seq_duration_eval:
 
 # Augmentations
-random_track_mix: true
-source_augmentations:
+aug_list:
+- random_chunk
+- random_track_mix
 - rescale
 - channelswap
-min_gain: 0.25
-max_gain: 1.25
-p_channelswap: 0.5
+
+aug_params:
+  gain_dB_min: -10.0
+  gain_dB_max: 10.0
+  p_silent: 0.1
+  rescale_min: 0.25
+  rescale_max: 1.25
+  p_channelswap: 0.5
 
 # Samplers
 batch_size: 2

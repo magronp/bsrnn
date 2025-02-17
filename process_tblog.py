@@ -28,18 +28,27 @@ def process_tblog(args: DictConfig):
     path_res_file = path.join(args.out_dir, "val_" + method_name + ".csv")
 
     # Init result dataframe
-    param_keys = [
-        "cfg_optim/loss_domain",
-        "cfg_optim/lr",
-        "feature_dim",
-        "num_repeat",
-        "time_layer",
-        "band_layer",
-        "n_att_head",
-        "attn_enc_dim",
-    ]
+    if "bscnn" in method_name:
+        param_keys = ["time_layer/n_dil_conv", "time_layer/ks", "time_layer/hs_fac"]
+    else:
+        param_keys = [
+            "cfg_optim/loss_domain",
+            "cfg_optim/lr",
+            "cfg_optim/accumulate_grad_batches",
+            "feature_dim",
+            "num_repeat",
+            "time_layer",
+            "band_layer",
+            "n_att_head",
+            "attn_enc_dim",
+            "n_fft",
+            "fac_mask",
+            "n_heads",
+            "group_num",
+        ]
+
     all_results = pd.DataFrame(
-        columns=param_keys + ["val_sdr", "exp_name", "tb_version"]
+        columns=["tb_version"] + param_keys + ["val_sdr", "exp_name"]
     )
 
     # Iterate over experiments
@@ -52,7 +61,7 @@ def process_tblog(args: DictConfig):
         curr_res = {}
         expname = all_tb_names[i]
         curr_res["exp_name"] = expname.replace("events.out.tfevents.", "")
-        curr_res["tb_version"] = (
+        curr_res["tb_version"] = int(
             tbpath.replace(expname, "")
             .replace(tblogdir_model, "")
             .replace("/", "")
@@ -76,9 +85,8 @@ def process_tblog(args: DictConfig):
         if "cfg_optim/monitor_val" in hparam_dict.keys():
             monitor_val = hparam_dict["cfg_optim/monitor_val"]
         else:
-            monitor_val = (
-                "loss"  # by default, assume the ckpt was monitored with val loss
-            )
+            # by default, assume the ckpt was monitored with val loss
+            monitor_val = "loss"
 
         # Get the optimal model's SDR
         df_valsdr = pd.DataFrame(event_acc.Scalars("val_sdr_epoch"))
@@ -93,7 +101,8 @@ def process_tblog(args: DictConfig):
 
         # Add the relevent ones in the df
         for k in param_keys:
-            curr_res[k] = hparam_dict[k]
+            if k in hparam_dict.keys():
+                curr_res[k] = hparam_dict[k]
 
         # Add a new entry to the frame containing all results
         all_results.loc[len(all_results)] = curr_res
@@ -102,8 +111,8 @@ def process_tblog(args: DictConfig):
     all_results.sort_values(by=["tb_version"], inplace=True)
 
     # Record and display the results
-    all_results.to_csv(path_res_file)
-    print(all_results.drop(columns=["exp_name"]))
+    all_results.to_csv(path_res_file, index=False)
+    print(all_results.drop(columns=["exp_name"]).to_string(index=False))
 
     return
 

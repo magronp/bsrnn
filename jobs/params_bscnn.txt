@@ -1,0 +1,31 @@
+### ------ BSCNN, 'vocals' track only, time-layer only, using a smaller model (32/4) and a large batch size (16 or 8)
+
+#"src_mod=bscnn src_mod.band_layer=null dset.batch_size=16 src_mod.time_layer.n_dil_conv=0 src_mod.time_layer.ks=3 src_mod.time_layer.hs_fac=1"
+#"src_mod=bscnn src_mod.band_layer=null dset.batch_size=16 src_mod.time_layer.n_dil_conv=0 src_mod.time_layer.ks=5 src_mod.time_layer.hs_fac=1"
+#"src_mod=bscnn src_mod.band_layer=null dset.batch_size=16 src_mod.time_layer.n_dil_conv=0 src_mod.time_layer.ks=3 src_mod.time_layer.hs_fac=2"
+#"src_mod=bscnn src_mod.band_layer=null dset.batch_size=16 src_mod.time_layer.n_dil_conv=0 src_mod.time_layer.ks=5 src_mod.time_layer.hs_fac=2"
+
+#"src_mod=bscnn src_mod.band_layer=null dset.batch_size=16 src_mod.time_layer.n_dil_conv=1 src_mod.time_layer.ks=3 src_mod.time_layer.hs_fac=1"
+#"src_mod=bscnn src_mod.band_layer=null dset.batch_size=16 src_mod.time_layer.n_dil_conv=1 src_mod.time_layer.ks=5 src_mod.time_layer.hs_fac=1"
+#"src_mod=bscnn src_mod.band_layer=null dset.batch_size=16 src_mod.time_layer.n_dil_conv=1 src_mod.time_layer.ks=3 src_mod.time_layer.hs_fac=2"
+#"src_mod=bscnn src_mod.band_layer=null dset.batch_size=16 src_mod.time_layer.n_dil_conv=1 src_mod.time_layer.ks=5 src_mod.time_layer.hs_fac=2"
+
+#"src_mod=bscnn src_mod.band_layer=null dset.batch_size=16 src_mod.time_layer.n_dil_conv=2 src_mod.time_layer.ks=3 src_mod.time_layer.hs_fac=1"
+#"src_mod=bscnn src_mod.band_layer=null dset.batch_size=16 src_mod.time_layer.n_dil_conv=2 src_mod.time_layer.ks=5 src_mod.time_layer.hs_fac=1"
+#"src_mod=bscnn src_mod.band_layer=null dset.batch_size=16 src_mod.time_layer.n_dil_conv=2 src_mod.time_layer.ks=3 src_mod.time_layer.hs_fac=2"
+#"src_mod=bscnn src_mod.band_layer=null dset.batch_size=16 src_mod.time_layer.n_dil_conv=2 src_mod.time_layer.ks=5 src_mod.time_layer.hs_fac=2"
+
+#"src_mod=bscnn src_mod.band_layer=null dset.batch_size=16 src_mod.time_layer.n_dil_conv=3 src_mod.time_layer.ks=3 src_mod.time_layer.hs_fac=1"
+#"src_mod=bscnn src_mod.band_layer=null dset.batch_size=16 src_mod.time_layer.n_dil_conv=3 src_mod.time_layer.ks=5 src_mod.time_layer.hs_fac=1"
+#"src_mod=bscnn src_mod.band_layer=null dset.batch_size=8 src_mod.time_layer.n_dil_conv=3 src_mod.time_layer.ks=3 src_mod.time_layer.hs_fac=2"
+#"src_mod=bscnn src_mod.band_layer=null dset.batch_size=8 src_mod.time_layer.n_dil_conv=3 src_mod.time_layer.ks=5 src_mod.time_layer.hs_fac=2"
+
+#"src_mod=bscnn src_mod.band_layer=null dset.batch_size=16 src_mod.time_layer.n_dil_conv=4 src_mod.time_layer.ks=3 src_mod.time_layer.hs_fac=1"
+#"src_mod=bscnn src_mod.band_layer=null dset.batch_size=16 src_mod.time_layer.n_dil_conv=4 src_mod.time_layer.ks=5 src_mod.time_layer.hs_fac=1"
+#"src_mod=bscnn src_mod.band_layer=null dset.batch_size=8 src_mod.time_layer.n_dil_conv=4 src_mod.time_layer.ks=3 src_mod.time_layer.hs_fac=2"
+#"src_mod=bscnn src_mod.band_layer=null dset.batch_size=8 src_mod.time_layer.n_dil_conv=4 src_mod.time_layer.ks=5 src_mod.time_layer.hs_fac=2"
+
+#"src_mod=bscnn src_mod.band_layer=null dset.batch_size=8 src_mod.time_layer.n_dil_conv=5 src_mod.time_layer.ks=3 src_mod.time_layer.hs_fac=1"
+#"src_mod=bscnn src_mod.band_layer=null dset.batch_size=8 src_mod.time_layer.n_dil_conv=5 src_mod.time_layer.ks=5 src_mod.time_layer.hs_fac=1"
+#"src_mod=bscnn src_mod.band_layer=null dset.batch_size=8 src_mod.time_layer.n_dil_conv=5 src_mod.time_layer.ks=3 src_mod.time_layer.hs_fac=2"
+#"src_mod=bscnn src_mod.band_layer=null dset.batch_size=8 src_mod.time_layer.n_dil_conv=5 src_mod.time_layer.ks=5 src_mod.time_layer.hs_fac=2"

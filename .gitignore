@@ -18,3 +18,4 @@ data/*
 !data/.dummy.txt
 
 ckpt.py
+visualization.ipynb
