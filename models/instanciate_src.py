@@ -24,6 +24,7 @@ def instanciate_src_model(
     cfg_scheduler,
     cfg_eval,
     cfg_src_mod,
+    target="vocals",
     pretrained_src_path=None,
 ):
     device = torch.device("cpu")
@@ -49,7 +50,7 @@ def instanciate_src_model(
 
     # Otherwise, instanciate the model from scratch
     else:
-        model = Model(cfg_optim, cfg_scheduler, cfg_eval, **cfg_src_mod)
+        model = Model(cfg_optim, cfg_scheduler, cfg_eval, target, **cfg_src_mod)
 
     return model
 

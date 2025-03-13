@@ -36,7 +36,7 @@ def evaluate(args: DictConfig):
         if args.parallel_cpu:
             args.eval.device = "cpu"  # make sure the device is CPU
             test_results = process_all_tracks_parallel(
-                args, subset="test", split=None, num_cpus=10
+                args, subset="test", split=None, num_cpus=args.num_cpus
             )
 
         else:

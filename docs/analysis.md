@@ -7,21 +7,23 @@ For speed, we display results on the validation set in terms of uSDR, as it is m
 
 ## Preliminary tests
 
-This first series of test investigate basic parameters to train the model. Unless specified otherwise, the model is trained by minimizing the same loss as in the paper, using an adjusted learning rate as described [below](#learning-rate--batch-size), and training is monitored by maximizing the uSDR on the validation set.
+This first series of test consists of basic experiments to train the model. Unless specified otherwise, the model is trained by minimizing the same loss as in the paper, using an adjusted learning rate as described [below](#learning-rate--batch-size), and training is monitored by maximizing the uSDR on the validation set. We set the maximum number of epochs at 200 (which is larger than in the paper, but needed to ensure convergence).
 
-### Random seed
+### Randomness, convergence, and patience
 
-The random seed is important, as it might strongly impact the results. We run 3 different training and display the mean $\pm$ std.
+The random seed is important, as it might strongly impact the results. We run 3 different training and display the results below.
 
-|                   |      vocals     |      bass       |      drums      |      other      |      average    |
-|-------------------|-----------------|-----------------|-----------------|-----------------|-----------------|
-|  mean $\pm$ std   |   7.7 $\pm$ 0.3 |   6.1 $\pm$ 0.2 |   9.7 $\pm$ 0.1 |   4.8 $\pm$ 0.1 |   7.1 $\pm$ 0.1 |
+|         | vocals |  bass  |  drums |  other | average|
+|---------|--------|--------|--------|--------|--------|
+|  run 1  |   7.7  |   5.9  |   9.5  |   4.9  |   7.1  |
+|  run 2  |   8.1  |   6.0  |   9.7  |   4.8  |   7.1  |
+|  run 3  |   7.4  |   6.4  |   9.8  |   4.6  |   7.1  |
+|  mean   |   7.7  |   6.1  |   9.7  |   4.8  |   7.1  |
+|  std    |   0.3  |   0.2  |   0.1  |   0.1  |   0.1  |
 
+We observe some variability in the results, which could become problematic when comparing model variants (as done below). A good practice would consist in [tuning the random seed as a hyperparamer](https://arxiv.org/pdf/2210.13393) in all experiements, but this would be way too computationally demanding. Alternatively, one can increase the patience parameter to ensure proper convergence and reduce the impact of the random seed. We run 3 other training with a patience parameter of 30 on the vocals track. We observe that the mean SDR is increased from 7.7 to 8.3, but more importantly, the std is reduced to 0.03. This shows that increasing patience is effective to reduce the variance between runs. Unfortuntately, this is computationaly demanding, thus we keep it to 10 as in the paper.
 
-Variability is mostly due to a monitored quantity that is a bit unstable, so depending on the patience parameter, training can stop more or less soon. To compensate for this variability, one could increase the patience parameter, but this would be even more computationaly demanding. Besides, we keep it to 10 as per the paper.
-
-While good practice would consist in [tuning the random as a hyperparamer](https://arxiv.org/pdf/2210.13393) in all next experiements, this would be way too computationally demanding. Instead, we resort to performing only one run for each subsequent hyperparameter, and see if results are very different or not from this mean value above, which serves as a reference.
-
+We report hereafter the mean results over these 3 runs above which serves as a reference, and will perform only one run of each experiment to save some computational time. We will outline when a variant performs significantly better or worse based on the overall trend of the validation score (rather than the "best" value).
 
 
 ### Learning rate / batch size
@@ -37,14 +39,12 @@ In the original paper, the model is trained using a learning rate of $10^{-3}$, 
 |  accumulating gradients   |   8.0  |   5.8  |   9.6  |   4.9  |   7.1  |
 
 
-
 The results above show that both strategies yield similar results. We therefore retain adjusting the learning rate, since when training the [large](#large-model) model, we noted a more pronounced gap in favor of this strategy.
 
 
 ### Monitoring criterion
 
-
-We study here the impact of the monitoring criterion on the validation set. Indeed, it is not clear from the paper which quantity is used: the authors mention that "early stopping is applied when the *best validation* is not found in 10 consecutive epochs". Then we consider either minimizing the validation loss, or maximizing the validation SDR (here: the uSDR, as computing the cSDR at each epoch is very time-consumming).
+We study here the impact of the monitoring criterion on the validation set. Indeed, it is not clear from the paper which quantity is used: the authors mention that "early stopping is applied when the *best validation* is not found in 10 consecutive epochs". Then we consider either minimizing the validation loss, or maximizing the validation uSDR.
 
 |          | vocals |  bass  |  drums |  other | average|
 |----------|--------|--------|--------|--------|--------|
@@ -113,9 +113,7 @@ Note that an even larger FFT size of 6144 along with a hop size of 1024 (to matc
 | fac_mask=4 |   7.7  |   6.1  |   9.7  |   4.8  |   7.1  |
 | fac_mask=2 |   7.9  |   6.8  |   9.4  |   4.4  |   7.1  |
 
-We observe that while similar results are obtained on average, it depends on the source: while drums and other should retain a large masker size, vocals and bass could benefit from a lighter one while maintaining (or evne improving) performance.
-
-However, further decreasing `fac_mask` to 1 decreases performance more significantly.
+We observe that while similar results are obtained on average, it depends on the source: while reducing the masker size might negatively affect performance for drums and other, it might slightly (vocals) or more substantially (bass) improve performance for some tracks. Note however that further decreasing `fac_mask` to 1 decreases performance more significantly.
 
 
 ### Sequence modeling (time/band layers)
@@ -144,17 +142,33 @@ On the other hand, Conv1D layers induce a large performance drop, although they 
 
 We now use the original paper's architecture by increasing the model size, i.e., a hidden dimension of 128 and a number of repeat of 12 (vs. 64 and 8 for the small model used above).
 
-|           | vocals |  bass  |  drums |  other | average|
-|-----------|--------|--------|--------|--------|--------|
-|   small   |   7.7  |   6.1  |   9.7  |   4.8  |   7.1  |
-|   large   |   9.2  |   7.7  |   9.9  |   6.2  |   8.3  |
+|                        | vocals |  bass  |  drums |  other | average|
+|------------------------|--------|--------|--------|--------|--------|
+|   small                |   7.7  |   6.1  |   9.7  |   4.8  |   7.1  |
+|   large                |   9.2  |   7.3  |  10.3  |   5.9  |   8.2  |
+|   large (patience=30)  |   9.5  |   7.8  |  10.3  |   6.3  |   8.5  |
 
-We observe a large improvement when using this larger model for most sources; note that the drums track does not benefit as much as the other sources from this increase in number of parameters. We report the test results using this model in the main [readme document](README.md) as our implementation of the original BSRNN model.
+
+We observe a large improvement of 1.1 dB on average when using this larger model. This improvement is slightly more important for the vocals track, and less for the drums track.
+
+When checking at the validation SDR over epoch, we observe that the model has not fully converged (as in this [previous experiment](#randomness-convergence-and-patience)). As a result, we increase the patience parameter at 30 in order to allow training to continue and ensure convergence. However, note that the maximum number of epochs is set at 200 to prevent from excessive computation time. The drums and bass models converge before reaching that limit, and the vocals and other models reach a plateau by 200 epochs. While the drums track does not benefit from this larger training time (overfitting is observed sooner), the remaining models exhibit some improvement. We report the test results using this model in the [readme document](README.md) as our implementation of the original BSRNN model.
 
 
 ## Further architecture variants
 
 We now suggest several potential directions for further improving the performance of BSRNN.
+
+### Stereo modeling
+
+Even though BSRNN is applied to stereo music, it is inherently a monochannel modeling technique, since it is apply to each channel individually. We propose instead a first naive extension to [stereo modeling](models/bsrnnstereo.py) by jointly projecting the two channels into a common latent representation, rather than treating each channel independently. 
+
+|              | vocals |  bass  |  drums |  other | average|
+|--------------|--------|--------|--------|--------|--------|
+|   "mono"     |   7.7  |   6.1  |   9.7  |   4.8  |   7.1  |
+|   stereo     |   7.7  |   6.6  |   8.4  |   4.0  |   6.7  |
+
+Unfortunately, this approach results in a performence decrease, especially for the drums and other tracks (on the other hand it might be interesting for the bass track), and at the cost of an increase in terms of model size (9.2M vs. 8.0M parameters for the vocals track). One way to bridge this gap is by increasing the masker size via `fac_mask` (to be consistent with the subsequent increase in number of outputs - two channels need to be recovered instead of 1). This bridges the performance gap and yields a 7.9 dB SDR for the vocal tracks, but the model becomes too large (20M parameters) for usage when increasing feature_dim and num_repeat subsequently. Overall, this approach is not effective, although one advantage is the possibility to double the batch size for faster training.
+
 
 ### BSCNN
 
@@ -188,18 +202,6 @@ Overall, using attention is beneficial, except for the other track. In particula
 **Note**: Following this idea, a recent approach called [Band-Split RoPE Transformer](https://arxiv.org/abs/2309.02612) replaced the LSTM+Attention mechanism with transformers, and obtained significantly better results. This is in line with a trend that consists in completely replacing recurrent networks with transformers.
 
 
-### Stereo modeling
-
-Even though BSRNN is applied to stereo music, it is inherently a monochannel modeling technique, since it is apply to each channel individually. We propose instead a first naive extension to [stereo modeling](models/bsrnnstereo.py) by jointly projecting the two channels into a common latent representation, rather than treating each channel independently. 
-
-|              | vocals |  bass  |  drums |  other | average|
-|--------------|--------|--------|--------|--------|--------|
-|   "mono"     |   7.7  |   6.1  |   9.7  |   4.8  |   7.1  |
-|   stereo     |   7.7  |   6.6  |   8.4  |   4.0  |   6.7  |
-
-Unfortunately, this approach results in a performence decrease, especially for the drums and other tracks (on the other hand it might be interesting for the bass track), and at the cost of an increase in terms of model size (9.2M vs. 8.0M parameters for the vocals track). One way to bridge this gap is by increasing the masker size via `fac_mask` (to be consistent with the subsequent increase in number of outputs - two channels need to be recovered instead of 1). This bridges the performance gap and yields a 7.9 dB SDR for the vocal tracks, but the model becomes too large (20M parameters) for usage when increasing feature_dim and num_repeat subsequently. Overall, this approach is not effective, although one advantage is the possibility to double the batch size for faster training.
-
-
 ### Multi-head sequence module
 
 We took inspiration from the [DTTNet](https://arxiv.org/abs/2309.08684) model who proposed a so-called "improved" sequence module, based on splitting the latent representation into several heads for parallel processing. This allows for reducing the number of parameters and performance improvement.
@@ -230,14 +232,14 @@ We obtain slightly better results with no preprocessing. This suggests that the 
 
 ## Optimized model
 
-Following the results above, we train a large network (faeture dim 128 and num_repeats 12) that is optimized considering the experiments above, that is, using the non-preprocessed dataset, monitoring with validation SDR, adding some attention heads.
+Following the results above, we train a large network (faeture dim 128 and num_repeats 12) that is optimized considering the experiments above, that is, using the non-preprocessed dataset, incorporating attention heads, and an increase patience for ensuring convergence.
 
 |                   | vocals |  bass  |  drums |  other | average|
 |-------------------|--------|--------|--------|--------|--------|
-|  as in the paper  |   9.2  |   7.7  |   9.9  |  6.2   |   8.3  |
-|  optimized        |   9.6  |   8.4  |  10.9  |  6.4   |   8.9  |
+|  as in the paper  |   9.5  |   7.8  |  10.3  |   6.3  |   8.5  |
+|  optimized        |   10.1 |   9.1  |  11.0  |   6.7  |   9.2  |
 
-It should be noted that using this large model for the drums track yields roughly the same performance as a [lighter model](#attention-mechanism). Thus, the optimization for the drums model is mostly due to using the attention mechanism, rather than a large model. This should be considered if reducing the computational cost is important.
+This so-called optimized version of the model largely improves performance over our implementation of the paper's model. It should be noted that the drums model mostly benefits from using the attention mechanism, rather than increasing the model size via the feature_dim and num_repeats parameters. This should be considered if reducing the computational cost is important.
 
 
 ## A note on the chunking process for evaluation

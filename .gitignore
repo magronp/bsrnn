@@ -17,5 +17,6 @@ outputs/*
 data/*
 !data/.dummy.txt
 
-ckpt.py
+ckpt_check.py
+ckpt_up.py
 visualization.ipynb

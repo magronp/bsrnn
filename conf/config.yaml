@@ -24,7 +24,6 @@ sources:
   - drums
   - other
 
-
 # General parameters
 seed: 42
 eps: 1e-7
@@ -32,6 +31,7 @@ out_dir: outputs/
 tblog_dir: tb_logs/
 data_dir: data/musdb18hq/
 sad_dir: data/
+track_emissions: False
 
 # Audio / STFT
 sample_rate: 44100
@@ -47,6 +47,7 @@ load_pretrained_sources: True
 
 # Evaluation
 parallel_cpu: false
+num_cpus: 10
 only_append_res: false
 
 # Inference parameters

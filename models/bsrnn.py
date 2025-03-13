@@ -54,7 +54,6 @@ class BSRNN(PLModule):
             eps=eps,
         )
 
-        instrument = target
         self.sr = sample_rate
         self.n_fft = n_fft
         self.n_hop = n_hop
@@ -76,26 +75,26 @@ class BSRNN(PLModule):
         bandwidth_1k = int(np.floor(1000 / (self.sr / 2.0) * self.enc_dim))
         bandwidth_2k = int(np.floor(2000 / (self.sr / 2.0) * self.enc_dim))
 
-        if instrument == "vocals" or instrument == "other":
+        if target == "vocals" or target == "other":
             self.band_width = [bandwidth_100] * 10
             self.band_width += [bandwidth_250] * 12
             self.band_width += [bandwidth_500] * 8
             self.band_width += [bandwidth_1k] * 8
             self.band_width += [bandwidth_2k] * 2
-        elif instrument == "bass":
+        elif target == "bass":
             self.band_width = [bandwidth_50] * 10
             self.band_width += [bandwidth_100] * 5
             self.band_width += [bandwidth_500] * 6
             self.band_width += [bandwidth_1k] * 4
             self.band_width += [bandwidth_2k] * 4
-        elif instrument == "drums":
+        elif target == "drums":
             self.band_width = [bandwidth_50] * 20
             self.band_width += [bandwidth_100] * 10
             self.band_width += [bandwidth_250] * 8
             self.band_width += [bandwidth_500] * 8
             self.band_width += [bandwidth_1k] * 8
         else:
-            print("Unknown Instrument {}".format(instrument))
+            print("Unknown Instrument {}".format(target))
             raise NotImplementedError
 
         self.band_width.append(self.enc_dim - np.sum(self.band_width))

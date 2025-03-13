@@ -29,21 +29,22 @@ We report the results on the test set in terms of signal-to-distortion ratio (SD
 |                      | vocals |  bass  |  drums |  other | average|
 |----------------------|--------|--------|--------|--------|--------|
 |  paper's results     |  10.0  |   6.8  |   8.9  |   6.0  |   7.9  |
-|  our implementation  |   9.1  |   6.4  |   8.3  |   5.3  |   7.3  |
-|  optimized           |   9.5  |   7.2  |   9.6  |   5.7  |   8.0  |
+|  our implementation  |   9.2  |   6.5  |   8.6  |   5.4  |   7.4  |
+|  optimized           |   9.7  |   7.4  |   9.6  |   5.8  |   8.1  |
+
 
 **cSDR**: The *chunk* SDR was used as metric in the [SiSEC 2018](https://sisec.inria.fr/2018-professionally-produced-music-recordings/) challenge. This SDR allows for a global distortion filter, and it is computed by taking the median over 1s-long chunks, and median over tracks. In practice, computation is performed using the [museval](https://github.com/sigsep/sigsep-mus-eval) tooblox.
 
 |                      | vocals |  bass  |  drums |  other | average|
 |----------------------|--------|--------|--------|--------|--------|
 |  paper's results     |  10.0  |   7.2  |   9.0  |   6.7  |   8.2  |
-|  our implementation  |   8.8  |   7.8  |   8.3  |   5.5  |   7.6  |
-|  optimized           |   9.4  |   8.4  |   9.6  |   6.2  |   8.4  |
+|  our implementation  |   9.1  |   7.7  |   8.1  |   5.7  |   7.7  |
+|  optimized           |   9.9  |   8.9  |   9.2  |   6.1  |   8.5  |
 
 
-Our implementation is about 0.6 dB SDR on average bellow the results reported in the paper. This is significantly better than [another unofficial implementation](https://github.com/amanteur/BandSplitRNN-Pytorch) whose results are available, but some efforts are still needed to reproduce the BSRNN results.
+Our implementation is about 0.5 dB SDR on average below the results reported in the paper. This is significantly better than [another unofficial implementation](https://github.com/amanteur/BandSplitRNN-Pytorch) whose results are available, but some efforts are still needed to reproduce the BSRNN results.
 
-We also report the performance obtained an *optimized* BSRNN model. More precisely, it includes a multi-head attention mechanism, and it is trained using a non-preprocessed dataset (see [here](docs/analysis.md#optimized-model) for more details). This significantly improves performance over our initial BSRNN implementation, and outperforms the paper's results by ~0.2 dB. This performance is mostly due to improvement in the bass and drums estimates, while the vocals and other results are still below the original paper.
+We also report the performance of an *optimized* BSRNN model. More precisely, it includes a multi-head attention mechanism, and it is trained using a non-preprocessed dataset (see [here](docs/analysis.md#optimized-model) for more details). This largely improves performance over our initial BSRNN implementation, and outperforms the paper's results by ~0.2 dB. This performance is mostly due to improvement in the bass and drums estimates, while the vocals and other results are still inferior to those in the original paper.
 
 
 ## Tuning and optimizing the model

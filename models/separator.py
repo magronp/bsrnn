@@ -39,6 +39,7 @@ class Separator(PLModule):
                     cfg_scheduler,
                     cfg_eval,
                     cfg_src_mod,
+                    target=t,
                     pretrained_src_path=os.path.join(
                         args.out_dir, cfg_src_mod.name_out_dir, t + ".ckpt"
                     ),

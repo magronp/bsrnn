@@ -2,15 +2,25 @@
 ### (ignore the 'vx' comments, which correspond to tensorboard folders 'version_x')
 
 
-#-------------- Basic models - monitoring with validation SDR
+"targets=vocals optim.patience=30 dset.n_samples_tr=10000"
+"targets=vocals optim.patience=30 dset.n_samples_tr=10000 optim.loss_domain=t"
+"targets=vocals optim.patience=30 dset.n_samples_tr=10000 optim.loss_domain=tf"
+"targets=vocals optim.patience=30 dset.n_samples_tr=10000 optim.monitor_val=loss"
+"targets=vocals optim.patience=30 dset.n_samples_tr=10000 optim.monitor_val=loss optim.loss_domain=t"
+"targets=vocals optim.patience=30 dset.n_samples_tr=10000 optim.monitor_val=loss optim.loss_domain=tf"
+
+
+
+
+#-------------- Basic models - monitoring with validation SDR (3 runs)
 #"targets=vocals" #v0,1,2
 #"targets=bass" #v0,1,2
 #"targets=drums" #v0,1,2-3
 #"targets=other" #v0,1,2
 
 
-# ------------- Increase the patience to see if it compensate for the randomness in stopping oar561-563
-#"targets=vocals optim.patience=30"  #v42, 43, 43
+# ------------- Increase the patience to see continue training and compensate for the randomness (3 runs)
+#"targets=vocals optim.patience=30"  #v39-43
 
 
 #-------------- Accumulating gradients
@@ -74,72 +84,77 @@
 
 
 #-------------- Large model (as in the paper)
-#"src_mod=bsrnn-large targets=vocals" #v21-26
-#"src_mod=bsrnn-large targets=bass" #v11-13
-#"src_mod=bsrnn-large targets=drums" #v17-19
-#"src_mod=bsrnn-large targets=other" #v13-21
+#"src_mod=bsrnn-large targets=vocals" #v21
+#"src_mod=bsrnn-large targets=bass" #v11
+#"src_mod=bsrnn-large targets=drums" #v17
+#"src_mod=bsrnn-large targets=other" #v13
+
+
+#-------------- Large model with increased patience (30) to ensure convergence
+#"src_mod=bsrnn-large targets=vocals optim.patience=30 ckpt_path=outputs/bsrnn-large/last-vocals.ckpt" #v22
+#"src_mod=bsrnn-large targets=bass optim.patience=30 ckpt_path=outputs/bsrnn-large/last-bass.ckpt" #v12
+#"src_mod=bsrnn-large targets=drums optim.patience=30 ckpt_path=outputs/bsrnn-large/last-drums.ckpt" #v18
+#"src_mod=bsrnn-large targets=other optim.patience=30 ckpt_path=outputs/bsrnn-large/last-other.ckpt" #v14
 
 
 #------------- BSCNN
-#"src_mod=bscnn targets=vocals src_mod.feature_dim=64 src_mod.num_repeat=8" #v27-28
-#"src_mod=bscnn targets=bass src_mod.feature_dim=64 src_mod.num_repeat=8" #14
-#"src_mod=bscnn targets=drums src_mod.feature_dim=64 src_mod.num_repeat=8" #v20-21
-#"src_mod=bscnn targets=other src_mod.feature_dim=64 src_mod.num_repeat=8" #v22
+#"src_mod=bscnn targets=vocals src_mod.feature_dim=64 src_mod.num_repeat=8" #v23-24
+#"src_mod=bscnn targets=bass src_mod.feature_dim=64 src_mod.num_repeat=8" #13
+#"src_mod=bscnn targets=drums src_mod.feature_dim=64 src_mod.num_repeat=8" #v19-20
+#"src_mod=bscnn targets=other src_mod.feature_dim=64 src_mod.num_repeat=8" #v15
 
 
 #------------- Attention
-#"targets=vocals src_mod.n_att_head=1 src_mod.attn_enc_dim=8" #v29
-#"targets=vocals src_mod.n_att_head=2 src_mod.attn_enc_dim=16" #v30-31
-#"targets=bass src_mod.n_att_head=1 src_mod.attn_enc_dim=8" #v15
-#"targets=bass src_mod.n_att_head=2 src_mod.attn_enc_dim=16" #v16
-#"targets=drums src_mod.n_att_head=1 src_mod.attn_enc_dim=8" # v22-23
-#"targets=drums src_mod.n_att_head=2 src_mod.attn_enc_dim=16" #v24-25
-#"targets=other src_mod.n_att_head=1 src_mod.attn_enc_dim=8" #v23
-#"targets=other src_mod.n_att_head=2 src_mod.attn_enc_dim=16" #v24
+#"targets=vocals src_mod.n_att_head=1 src_mod.attn_enc_dim=8" #v25
+#"targets=vocals src_mod.n_att_head=2 src_mod.attn_enc_dim=16" #v26-27
+#"targets=bass src_mod.n_att_head=1 src_mod.attn_enc_dim=8" #v14
+#"targets=bass src_mod.n_att_head=2 src_mod.attn_enc_dim=16" #v15
+#"targets=drums src_mod.n_att_head=1 src_mod.attn_enc_dim=8" # v21-22
+#"targets=drums src_mod.n_att_head=2 src_mod.attn_enc_dim=16" #v23-24
+#"targets=other src_mod.n_att_head=1 src_mod.attn_enc_dim=8" #v16
+#"targets=other src_mod.n_att_head=2 src_mod.attn_enc_dim=16" #v17
 
 
 #------------- Stereo model
-#"src_mod=bsrnnstereo targets=vocals" #v32
-#"src_mod=bsrnnstereo targets=vocals src_mod.fac_mask=8"  #v33
-#"src_mod=bsrnnstereo targets=bass" #v17
-#"src_mod=bsrnnstereo targets=drums" #v26
-#"src_mod=bsrnnstereo targets=other" #v25
+#"src_mod=bsrnnstereo targets=vocals" #v28
+#"src_mod=bsrnnstereo targets=vocals src_mod.fac_mask=8"  #v29
+#"src_mod=bsrnnstereo targets=bass" #v16
+#"src_mod=bsrnnstereo targets=drums" #v25
+#"src_mod=bsrnnstereo targets=other" #v18
 
 
 #------------- Multi-head BS module
-#"targets=vocals src_mod.n_heads=2"  #v34-35
-#"targets=vocals src_mod.n_heads=2 src_mod.group_num=null"  #v36-37
-#"targets=vocals src_mod.num_repeat=4 src_mod.n_heads=2" #v38
-#"targets=bass src_mod.n_heads=2" #v18
-#"targets=drums src_mod.n_heads=2" #v27
-#"targets=other src_mod.n_heads=2" #v26
+#"targets=vocals src_mod.n_heads=2"  #v30-31
+#"targets=vocals src_mod.n_heads=2 src_mod.group_num=null"  #v32-33
+#"targets=vocals src_mod.num_repeat=4 src_mod.n_heads=2" #v34
+#"targets=bass src_mod.n_heads=2" #v17
+#"targets=drums src_mod.n_heads=2" #v26
+#"targets=other src_mod.n_heads=2" #v19
 
 
 #-------------- Dataset
 # random_track_mix et silenttarget (instead of silentsource)
-#"targets=vocals dset.aug_list=[random_chunk,random_track_mix,rescale_db,silenttarget]" #v39
-#"targets=bass dset.aug_list=[random_chunk,random_track_mix,rescale_db,silenttarget]" #v19
-#"targets=drums dset.aug_list=[random_chunk,random_track_mix,rescale_db,silenttarget]" #v28
-#"targets=other dset.aug_list=[random_chunk,random_track_mix,rescale_db,silenttarget]" #v27
+#"targets=vocals dset.aug_list=[random_chunk,random_track_mix,rescale_db,silenttarget]" #v35
+#"targets=bass dset.aug_list=[random_chunk,random_track_mix,rescale_db,silenttarget]" #v18
+#"targets=drums dset.aug_list=[random_chunk,random_track_mix,rescale_db,silenttarget]" #v27
+#"targets=other dset.aug_list=[random_chunk,random_track_mix,rescale_db,silenttarget]" #v20
 
-# no SAD, augmentations like UMX
-#"targets=vocals dset=musdb18hq" #v40
-#"targets=bass dset=musdb18hq" #v20
-#"targets=drums dset=musdb18hq" #v29
-#"targets=other dset=musdb18hq" #v28
-
-
-#------------- Optimized models (attention + no SAD preprocessing)
-#"src_mod=bsrnn-opt targets=vocals dset=musdb18hq" #v41
-#"src_mod=bsrnn-opt targets=bass dset=musdb18hq ckpt_path=outputs/bsrnn-opt/last-bass.ckpt"  #v21-22
-#"src_mod=bsrnn-opt targets=drums dset=musdb18hq ckpt_path=outputs/bsrnn-opt/last-drums.ckpt" #v30-31
-#"src_mod=bsrnn-opt targets=other dset=musdb18hq ckpt_path=outputs/bsrnn-opt/last-other.ckpt" #v29-30
+# no SAD, augmentations like in UMX
+#"targets=vocals dset=musdb18hq" #v36
+#"targets=bass dset=musdb18hq" #v19
+#"targets=drums dset=musdb18hq" #v28
+#"targets=other dset=musdb18hq" #v21
 
 
+#------------- Optimized models (attention + no SAD preprocessing + large patience)
+#"src_mod=bsrnn-opt targets=vocals dset=musdb18hq optim.patience=30" #v37
+#"src_mod=bsrnn-opt targets=bass dset=musdb18hq optim.patience=30"  #v20
+#"src_mod=bsrnn-opt targets=drums dset=musdb18hq optim.patience=30" #v29
+#"src_mod=bsrnn-opt targets=other dset=musdb18hq optim.patience=30" #v22
 
 
-#------------- OLD Optimized models (attention + no SAD preprocessing)
-#"src_mod=bsrnn-opt targets=vocals dset=musdb18hq" #42-46
-#"src_mod=bsrnn-opt targets=bass dset=musdb18hq"  #v23-25
-#"src_mod=bsrnn-opt targets=drums dset=musdb18hq" #v24-27opt
-#"src_mod=bsrnn-opt targets=other dset=musdb18hq" #v21-27opt
+# checking the emission with codecarbon for a few epochs
+#"src_mod=bsrnn-opt targets=vocals dset=musdb18hq track_emissions=true optim.max_epochs=3" #v44
+#"src_mod=bsrnn-opt targets=bass dset=musdb18hq track_emissions=true optim.max_epochs=3" #v
+#"src_mod=bsrnn-opt targets=drums dset=musdb18hq track_emissions=true optim.max_epochs=3" #v
+#"src_mod=bsrnn-opt targets=other dset=musdb18hq track_emissions=true optim.max_epochs=3" #v
