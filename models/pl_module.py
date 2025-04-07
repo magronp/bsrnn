@@ -98,13 +98,6 @@ class PLModule(pl.LightningModule):
         x, y, _ = batch
         train_loss, _ = self._shared_step(x, y)
 
-        # TODO a virer si tout ok
-        # train_loss, y_hat = self._shared_step(x, y)
-        # print(torch.linalg.norm(y_hat))
-        # torchaudio.save('tr_mix.wav', x[0].detach().cpu(), 44100)
-        # torchaudio.save('tr_truetarget.wav', y[0, 0].detach().cpu(), 44100)
-        # torchaudio.save('tr_esttarget.wav', y_hat[0, 0].detach().cpu(), 44100)
-
         self.log(
             "train_loss",
             train_loss,
@@ -128,12 +121,6 @@ class PLModule(pl.LightningModule):
 
         # Get the estimates and validation loss
         y_hat, val_loss = self._apply_model_to_track(x, y, comp_loss=True)
-
-        # TODO a virer si tout ok
-        # print(torch.linalg.norm(y_hat))
-        # torchaudio.save('val_mix.wav', x[0].detach().cpu(), 44100)
-        # torchaudio.save('val_truetarget.wav', y[0, 0].detach().cpu(), 44100)
-        # torchaudio.save('val_esttarget.wav', y_hat[0, 0].detach().cpu(), 44100)
 
         self.log(
             "val_loss",
@@ -478,7 +465,7 @@ if __name__ == "__main__":
             "segment_len": 10,
             "overlap": 0.1,
             "hop_size": None,
-            "sdr_type": "global",
+            "sdr_type": "usdr",
             "win_dur": 1.0,
             "verbose_per_track": True,
             "rec_dir": None,

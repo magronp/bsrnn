@@ -1,6 +1,4 @@
-# Reproducing and Improving Band-Split RNN for music separation
-
-This repository contains an unofficial implementation of the [BSRNN](https://arxiv.org/pdf/2209.15174.pdf) model for music separation, with the goal of reproducing the original results from the BSRNN paper.
+# Replicating Band-Split RNN for music separation
 
 <div style="align: center; text-align:center;">
     <img src="https://gitlab.aicrowd.com/Tomasyu/sdx-2023-music-demixing-track-starter-kit/-/raw/master/Figure/BSRNN.png" width="500px" />
@@ -9,31 +7,43 @@ This repository contains an unofficial implementation of the [BSRNN](https://arx
 
 &nbsp;
 
-Unfortunately, we are unable to achieve the performance reported in the paper (we are still about [0.6 dB SDR bellow](#test-results)). Therefore, if you spot an error in the code, or something that differs from the description in the paper, please feel free to reach out, send a message, or open an issue. :slightly_smiling_face:
+This repository is an unofficial implementation of the [BSRNN](https://arxiv.org/pdf/2209.15174.pdf) model for music separation. It complements our paper.
 
-This project is based on [PyTorch](https://pytorch.org/) ([Ligthning](https://lightning.ai/docs/pytorch/stable/)) and [Hydra](https://hydra.cc/), and uses the HQ version of the freely available [MUSDB18](https://sigsep.github.io/datasets/musdb.html) dataset. We provide pretrained models on a [Zenodo repository](https://zenodo.org/records/13903584), which you can use for [separating your own song](#inference--demo).
-
-## Updates
-
-- xx/xx/xxxx: We tested additional architecture variants, including a fully convolutional network called [BSCNN](models/bscnn.py) based on stacked dilated convolutions, a naïve [stereo](models/bsrnnstereo.py) BSRNN, and a multi-head mechanism inspired from [DTTNet](https://github.com/junyuchen-cjy/DTTNet-Pytorch).
-- 08/10/2024: We made some significant improvements in the code, which allowed to improve the results of the reference BSRNN. We also added an [optimized](docs/analysis.md#optimized-model) model that outperforms the paper's results. 
-- 18/04/2024: We added an `inference.py` file to easily [apply BSRNN to your own song](#inference--demo). We also uploaded the pretrained models on [Zenodo](https://zenodo.org/records/13903584).
+Our primary goal is to reproduce the original results from the BSRNN paper, but we are currently about [0.5 dB SDR bellow](#test-results), (which is why we proposed an "optimized" variant that yields competitive results). Therefore, efforts are still needed to match the original results: if you spot an error, or something that differs from the description in the paper, please feel free to reach out, send a message, or open an issue. :slightly_smiling_face:
 
 
-##  Test results
+This project is based on [PyTorch](https://pytorch.org/) ([Ligthning](https://lightning.ai/docs/pytorch/stable/)) and [Hydra](https://hydra.cc/), and uses the HQ version of the freely available [MUSDB18](https://sigsep.github.io/datasets/musdb.html) dataset. We provide pretrained models on a [Zenodo repository](https://zenodo.org/records/13903584), which you can use for [separating your own song](#separation--demo).
 
-We report the results on the test set in terms of signal-to-distortion ratio (SDR). As in the original BSRNN paper, we consider two variants of the SDR.
 
-**uSDR**: The *utterance* SDR is used as metric in the latest [MDX challenges](https://www.aicrowd.com/challenges/sound-demixing-challenge-2023/problems/music-demixing-track-mdx-23). This SDR does not allow any distortion filter (thus it is similar to a basic signal-to-noise ratio), and it is computed on entire tracks (no chunking) and averaged over tracks.
-&
+## Contents
+
+1. [Performance](#performance)
+   1. [Test results](#test-results)
+   2. [Model variants](#model-variants)
+2. [How to use](#how-to-use)
+   1. [Setup](#setup)
+   2. [Training and evaluation](#training-and-evaluation)
+   3. [Separation / demo](#separation--demo)
+3. [Hardware](#hardware)
+4. [Acknowledgments](#acknowledgments)
+5. [Referenced repositories](#referenced-repositories)
+
+
+## Performance
+
+### Test results
+
+Below we report the results on the MUSDB18-HQ test set in terms of signal-to-distortion ratio (SDR). As in the original BSRNN paper, we consider two variants of the SDR:
+
+**uSDR**: The utterance SDR is used as metric in the latest [MDX challenges](https://www.aicrowd.com/challenges/sound-demixing-challenge-2023/problems/music-demixing-track-mdx-23). This SDR does not allow any distortion filter (thus it is similar to a basic signal-to-noise ratio), and it is computed on entire tracks (no chunking) and averaged over tracks.
+
 |                      | vocals |  bass  |  drums |  other | average|
 |----------------------|--------|--------|--------|--------|--------|
 |  paper's results     |  10.0  |   6.8  |   8.9  |   6.0  |   7.9  |
 |  our implementation  |   9.2  |   6.5  |   8.6  |   5.4  |   7.4  |
 |  optimized           |   9.7  |   7.4  |   9.6  |   5.8  |   8.1  |
 
-
-**cSDR**: The *chunk* SDR was used as metric in the [SiSEC 2018](https://sisec.inria.fr/2018-professionally-produced-music-recordings/) challenge. This SDR allows for a global distortion filter, and it is computed by taking the median over 1s-long chunks, and median over tracks. In practice, computation is performed using the [museval](https://github.com/sigsep/sigsep-mus-eval) tooblox.
+**cSDR**: The chunk SDR was used as metric in the [SiSEC 2018](https://sisec.inria.fr/2018-professionally-produced-music-recordings/) challenge. This SDR allows for a global distortion filter, and it is computed by taking the median over 1s-long chunks, and median over tracks. In practice, computation is performed using the [museval](https://github.com/sigsep/sigsep-mus-eval) tooblox.
 
 |                      | vocals |  bass  |  drums |  other | average|
 |----------------------|--------|--------|--------|--------|--------|
@@ -42,26 +52,46 @@ We report the results on the test set in terms of signal-to-distortion ratio (SD
 |  optimized           |   9.9  |   8.9  |   9.2  |   6.1  |   8.5  |
 
 
-Our implementation is about 0.5 dB SDR on average below the results reported in the paper. This is significantly better than [another unofficial implementation](https://github.com/amanteur/BandSplitRNN-Pytorch) whose results are available, but some efforts are still needed to reproduce the BSRNN results.
+The optimized BSRNN model includes a multi-head attention mechanism, and it is trained using a non-preprocessed dataset (see [here](docs/analysis.md#optimized-model) for more details). This largely improves performance over our initial BSRNN implementation, and outperforms the paper's results by ~0.2 dB. This performance is mostly due to improvement in the bass and drums estimates, while the vocals and other results are still inferior to those in the original paper.
 
-We also report the performance of an *optimized* BSRNN model. More precisely, it includes a multi-head attention mechanism, and it is trained using a non-preprocessed dataset (see [here](docs/analysis.md#optimized-model) for more details). This largely improves performance over our initial BSRNN implementation, and outperforms the paper's results by ~0.2 dB. This performance is mostly due to improvement in the bass and drums estimates, while the vocals and other results are still inferior to those in the original paper.
+## Model variants
 
+We extensively experiment with model variants, and we report and analyze the results in a [separate document](docs/analysis.md). Beyond reproducing the paper's results, we provide several suggestions to further improving the results by additional architecture variants, as well as optimizing the data preparation and training process.
 
-## Tuning and optimizing the model
-
-We report the results obtained with several variants (training loss, FFT size, architecture...) in a [separate document](docs/analysis.md). Beyond reproducing the paper's results, we provide several suggestions to further improving the results by additional architecture variants, as well as optimizing the data preparation and training process.
 
 ## How to use
 
-A guide to use this repository for model training, evaluation, and inference, is provided in a [separate document](docs/how-to-use.md).
+### Setup
+Start by cloning this repository, creating/activating a virtual environment, and installing the required packages:
+
+```
+pip install -r requirements.txt
+```
+
+### Training and evaluation
+For clarity, we provie a guide for model training and evaluation in a [separate document](docs/training.md).
+
+### Separation / demo
+
+If you simply want to apply BSRNN to separate your favorite song, then make sure to download the pretrained checkpoints from the [Zenodo repository](https://zenodo.org/records/13903584), and place them in the `outputs/` folder. Then, perform separation as follows:
+```
+python separate.py file=path/to/my/file.wav
+```
+You can specify:
+- an offset and a maximum duration (in seconds) with the `offset` and `max_len` parameters (by default, the whole song is processed).
+- the directory where the separated tracks will be stored `rec_dir` (by default, it is the current working directory).
+- which `targets` to estimate (by default, all four tracks `vocals`, `bass`, `drums`, and `other`).
+- the folder where checkpoints are located, which is `<out_dir>/<model_dir>/`. You can change both `out_dir` (default: `outputs`) and `model_dir` (default: `bsrnn-opt`).
+
+
+
 
 
 ## Hardware
 
 All computation were carried out using the [Grid5000](https://www.grid5000.fr) testbed, supported by a French scientific interest group hosted by Inria and including CNRS, RENATER and several Universities as well as other organizations.
 
-Most models are trained using either 4 Nvidia RTX 2080 Ti (11 GiB), except for the small [drums model with attention](docs/analysis.md#attention-mechanism), which uses 4 Nvidia Tesla T4 (15 GiB) GPUs. The [larger](docs/analysis.md#large-model) / [optimized](docs/analysis.md#optimized-model) models are trained using 2 Nvidia A40 or Tesla L40S (45 GiB) GPUs.
-
+Most models are trained using either 4 Nvidia RTX 2080 Ti (11 GiB), except for the small [drums model with attention](docs/analysis.md#attention-mechanism), which uses 4 Nvidia Tesla T4 (15 GiB) GPUs. The [larger](docs/analysis.md#large-model) / [optimized](docs/analysis.md#optimized-model) models are trained using 2 Nvidia Tesla L40S (45 GiB) GPUs.
 
 ## Referenced repositories
 
@@ -86,3 +116,9 @@ We provide two sets of weights:
 
 bsrnn-large, which correspond to our implementation of the original BSRNN paper
 bsrnn-opt, which correspond to an optimized version of BSRNN (using a non preprocessed dataset, and additional attention heads)
+
+
+
+
+
+#TODO: éditer le sad preprocessing

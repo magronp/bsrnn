@@ -3,7 +3,6 @@ import museval
 import pandas as pd
 import math
 import time
-from os.path import exists
 
 
 def mypad(input_tensor, tot_len):
@@ -13,10 +12,10 @@ def mypad(input_tensor, tot_len):
     return input_tensor
 
 
-def sdr_global(ref, est, eps=1e-7):
+def usdr(ref, est, eps=1e-7):
     """
-    The global SDR is a basic SNR (no distortion filter, no framewise computation), as in MDX21/23 challenges.
-    It's also called "new SDR" (nSDR) in DEMUCS or "utterance SDR" (uSDR) in BSRNN.
+    The utterance SDR is a basic SNR (no distortion filter, no framewise computation), as in MDX21/23 challenges.
+    It's also called "new SDR" (nSDR) in DEMUCS
     ref / est: [batch_size, n_targets, n_channels, n_samples]
     output: [n_targets]
     """
@@ -76,7 +75,7 @@ def sdr_framewise(ref, est, win_bss=44100, eps=1e-7):
     return sdr_med, sdr_frames
 
 
-def compute_sdr(references, estimates, win_bss=44100, sdr_type="global", eps=1e-7):
+def compute_sdr(references, estimates, win_bss=44100, sdr_type="usdr", eps=1e-7):
     """
     references / estimates: [batch_size, n_targets, n_channels, n_samples]
     sdr: [n_targets]
@@ -88,19 +87,18 @@ def compute_sdr(references, estimates, win_bss=44100, sdr_type="global", eps=1e-
     if sdr_type == "framewise":
         sdr, sdr_frames = sdr_framewise(references, estimates, win_bss=win_bss, eps=eps)
 
-    elif sdr_type == "global":
-        sdr_frames = sdr_global(references, estimates, eps=eps)
+    elif sdr_type == "usdr":
+        sdr_frames = usdr(references, estimates, eps=eps)
         # here, we get the mean in case each sample in the batch corresponds to a different track... but in practice there will be only 1
         sdr = torch.nanmean(sdr_frames, dim=1)
 
-    elif sdr_type == "museval":
+    elif sdr_type == "csdr":
         # To use museval, need to remove the batch dim, reshape to appropriate size [n_targets, n_samples, n_channels]
         # and back to numpy
         references = references.cpu().squeeze(0).transpose(1, 2).numpy()
         estimates = estimates.cpu().squeeze(0).transpose(1, 2).numpy()
 
         # SISEC 2018 style (museval)
-        # TO DO: à implémenter en torch + plus de rapidité ?
         sdr_frames = museval.metrics.bss_eval(
             references,
             estimates,
@@ -154,7 +152,7 @@ def compute_loss(refs, est, loss_type="L1", loss_domain="t"):
     return loss
 
 
-def aggregate_res_over_tracks(path_or_df, method_name=None, sdr_type="global"):
+def aggregate_res_over_tracks(path_or_df, method_name=None, sdr_type="usdr"):
 
     # The results are either directly provided, or as a path to a file
     if isinstance(path_or_df, str):
@@ -162,8 +160,8 @@ def aggregate_res_over_tracks(path_or_df, method_name=None, sdr_type="global"):
     else:
         test_results = path_or_df
 
-    # Aggregate scores over tracks (mean for the global  SDR, median otherwise)
-    if sdr_type == "global":
+    # Aggregate scores over tracks (mean for the uSDR, median otherwise)
+    if sdr_type == "usdr":
         test_results_agg = test_results.mean(numeric_only=True, axis=0)
     else:
         test_results_agg = test_results.median(numeric_only=True, axis=0)
@@ -180,25 +178,6 @@ def aggregate_res_over_tracks(path_or_df, method_name=None, sdr_type="global"):
         test_results_agg.insert(loc=0, column="method", value=method_name)
 
     return test_results_agg
-
-
-def append_df_to_main_file(path_main_file, df):
-
-    # Load the file containing all results if it exists
-    if exists(path_main_file):
-        all_test_results = pd.read_csv(path_main_file, index_col=0)
-    # Otherwise, create it
-    else:
-        cols = list(df.columns.values)
-        all_test_results = pd.DataFrame(columns=cols)
-
-    # Add a new entry to the frame containing all results
-    all_test_results = pd.concat([all_test_results, df], ignore_index=True)
-
-    # Record the results
-    all_test_results.to_csv(path_main_file)
-
-    return
 
 
 if __name__ == "__main__":
@@ -221,10 +200,10 @@ if __name__ == "__main__":
     ]
     print("Framewise SDR :", time.time() - ts)
     ts = time.time()
-    sdr_gl = compute_sdr(references, estimates, win_bss=win_bss, sdr_type="global")[0]
-    print("Global SDR :", time.time() - ts)
+    sdr_gl = compute_sdr(references, estimates, win_bss=win_bss, sdr_type="usdr")[0]
+    print("Utterance SDR :", time.time() - ts)
     ts = time.time()
-    sdr_v4 = compute_sdr(references, estimates, win_bss=win_bss, sdr_type="museval")[0]
-    print("Museval SDR :", time.time() - ts)
+    sdr_v4 = compute_sdr(references, estimates, win_bss=win_bss, sdr_type="csdr")[0]
+    print("Chunk SDR :", time.time() - ts)
 
 # EOF

@@ -1,0 +1,68 @@
+### Uncomment the config(s) below that you want to run when submitting jobs
+# checking the emissions with 'codecarbon' for a few epochs
+
+
+#--------- Small models
+
+#"targets=vocals track_emissions=true tblog_dir=null"
+#"targets=bass track_emissions=true tblog_dir=null"
+#"targets=drums track_emissions=true tblog_dir=null"
+#"targets=other track_emissions=true tblog_dir=null"
+
+#"targets=vocals track_emissions=true tblog_dir=null n_fft=4096 n_hop=1024"
+#"targets=bass track_emissions=true tblog_dir=null n_fft=4096 n_hop=1024"
+#"targets=drums track_emissions=true tblog_dir=null n_fft=4096 n_hop=1024"
+#"targets=other track_emissions=true tblog_dir=null n_fft=4096 n_hop=1024"
+
+#"targets=vocals track_emissions=true tblog_dir=null src_mod.fac_mask=2"
+#"targets=bass track_emissions=true tblog_dir=null src_mod.fac_mask=2"
+#"targets=drums track_emissions=true tblog_dir=null src_mod.fac_mask=2"
+#"targets=other track_emissions=true tblog_dir=null src_mod.fac_mask=2"
+
+#"targets=vocals track_emissions=true tblog_dir=null src_mod.fac_mask=1"
+#"targets=bass track_emissions=true tblog_dir=null src_mod.fac_mask=1"
+#"targets=drums track_emissions=true tblog_dir=null src_mod.fac_mask=1"
+#"targets=other track_emissions=true tblog_dir=null src_mod.fac_mask=1"
+
+#"src_mod=bsrnnstereo targets=vocals track_emissions=true tblog_dir=null"
+#"src_mod=bsrnnstereo targets=bass track_emissions=true tblog_dir=null"
+#"src_mod=bsrnnstereo targets=drums track_emissions=true tblog_dir=null"
+#"src_mod=bsrnnstereo targets=other track_emissions=true tblog_dir=null"
+
+#"src_mod=bsrnnstereo targets=vocals track_emissions=true tblog_dir=null src_mod.fac_mask=8"
+#"src_mod=bsrnnstereo targets=bass track_emissions=true tblog_dir=null src_mod.fac_mask=8"
+#"src_mod=bsrnnstereo targets=drums track_emissions=true tblog_dir=null src_mod.fac_mask=8"
+#"src_mod=bsrnnstereo targets=other track_emissions=true tblog_dir=null src_mod.fac_mask=8"
+
+#"src_mod=bscnn targets=vocals track_emissions=true tblog_dir=null src_mod.feature_dim=64 src_mod.num_repeat=8"
+#"src_mod=bscnn targets=bass track_emissions=true tblog_dir=null src_mod.feature_dim=64 src_mod.num_repeat=8"
+#"src_mod=bscnn targets=drums track_emissions=true tblog_dir=null src_mod.feature_dim=64 src_mod.num_repeat=8"
+#"src_mod=bscnn targets=other track_emissions=true tblog_dir=null src_mod.feature_dim=64 src_mod.num_repeat=8"
+
+#"targets=vocals track_emissions=true tblog_dir=null src_mod.n_att_head=1 src_mod.attn_enc_dim=8"
+#"targets=bass track_emissions=true tblog_dir=null src_mod.n_att_head=1 src_mod.attn_enc_dim=8"
+#"targets=drums track_emissions=true tblog_dir=null src_mod.n_att_head=1 src_mod.attn_enc_dim=8"
+#"targets=other track_emissions=true tblog_dir=null src_mod.n_att_head=1 src_mod.attn_enc_dim=8"
+
+#"targets=vocals track_emissions=true tblog_dir=null src_mod.n_att_head=2 src_mod.attn_enc_dim=16"
+#"targets=bass track_emissions=true tblog_dir=null src_mod.n_att_head=2 src_mod.attn_enc_dim=16"
+#"targets=drums track_emissions=true tblog_dir=null src_mod.n_att_head=2 src_mod.attn_enc_dim=16"
+#"targets=other track_emissions=true tblog_dir=null src_mod.n_att_head=2 src_mod.attn_enc_dim=16"
+
+#"targets=vocals track_emissions=true tblog_dir=null src_mod.n_heads=2"
+#"targets=bass track_emissions=true tblog_dir=null src_mod.n_heads=2"
+#"targets=drums track_emissions=true tblog_dir=null src_mod.n_heads=2"
+#"targets=other track_emissions=true tblog_dir=null src_mod.n_heads=2"
+
+
+#--------- Large models
+
+#"src_mod=bsrnn-large targets=vocals track_emissions=true tblog_dir=null"
+#"src_mod=bsrnn-large targets=bass track_emissions=true tblog_dir=null"
+#"src_mod=bsrnn-large targets=drums track_emissions=true tblog_dir=null"
+#"src_mod=bsrnn-large targets=other track_emissions=true tblog_dir=null"
+
+#"src_mod=bsrnn-opt targets=vocals dset=musdb18hq track_emissions=true tblog_dir=null"
+#"src_mod=bsrnn-opt targets=bass dset=musdb18hq track_emissions=true tblog_dir=null"
+#"src_mod=bsrnn-opt targets=drums dset=musdb18hq track_emissions=true tblog_dir=null"
+#"src_mod=bsrnn-opt targets=other dset=musdb18hq track_emissions=true tblog_dir=null"

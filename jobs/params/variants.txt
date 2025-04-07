@@ -1,0 +1,148 @@
+### Uncomment the config(s) below that you want to run when submitting jobs
+
+#-------------- Base model (3 runs - note the graffiti cluster will change the seed anyway)
+#"targets=vocals seed=1"
+#"targets=bass seed=1"
+#"targets=drums seed=1"
+#"targets=other seed=1"
+#"targets=vocals seed=2"
+#"targets=bass seed=2"
+#"targets=drums seed=2"
+#"targets=other seed=2"
+#"targets=vocals seed=3"
+#"targets=bass seed=3"
+#"targets=drums seed=3"
+#"targets=other seed=3"
+
+
+# ------------- Increase the patience to continue training and compensate for the randomness (3 runs)
+#"targets=vocals optim.patience=30 seed=1"
+#"targets=vocals optim.patience=30 seed=2"
+#"targets=vocals optim.patience=30 seed=3"
+
+
+#-------------- Accumulating gradients
+#"targets=vocals optim.acc_grad=2"
+#"targets=bass optim.acc_grad=2"
+#"targets=drums optim.acc_grad=2"
+#"targets=other optim.acc_grad=2"
+
+
+#-------------- Monitoring with validation loss
+#"targets=vocals optim.monitor_val=loss"
+#"targets=bass optim.monitor_val=loss"
+#"targets=drums optim.monitor_val=loss"
+#"targets=other optim.monitor_val=loss"
+
+
+#-------------- Loss domains
+#"targets=vocals optim.loss_domain=t"
+#"targets=vocals optim.loss_domain=tf"
+#"targets=bass optim.loss_domain=t"
+#"targets=bass optim.loss_domain=tf"
+#"targets=drums optim.loss_domain=t"
+#"targets=drums optim.loss_domain=tf"
+#"targets=other optim.loss_domain=t"
+#"targets=other optim.loss_domain=tf"
+
+
+#-------------- Larger Fourier size
+#"targets=vocals n_fft=4096 n_hop=1024"
+#"targets=vocals n_fft=6144 n_hop=1024"
+#"targets=vocals n_fft=4096 n_hop=512"
+#"targets=bass n_fft=4096 n_hop=1024"
+#"targets=drums n_fft=4096 n_hop=1024"
+#"targets=other n_fft=4096 n_hop=1024"
+
+
+# -------- Masker size
+#"targets=vocals src_mod.fac_mask=2"
+#"targets=bass src_mod.fac_mask=2"
+#"targets=drums src_mod.fac_mask=2"
+#"targets=other src_mod.fac_mask=2"
+#"targets=vocals src_mod.fac_mask=1"
+#"targets=bass src_mod.fac_mask=1"
+#"targets=drums src_mod.fac_mask=1"
+#"targets=other src_mod.fac_mask=1"
+
+
+#-------------- Large model (as in the paper)
+#"src_mod=bsrnn-large targets=vocals"
+#"src_mod=bsrnn-large targets=bass"
+#"src_mod=bsrnn-large targets=drums"
+#"src_mod=bsrnn-large targets=other"
+
+
+#-------------- Large model with increased patience (30) to ensure convergence (#TODO include the ckpt editing?)
+#"src_mod=bsrnn-large targets=vocals optim.patience=30 ckpt_path=outputs/bsrnn-large/last-vocals.ckpt"
+#"src_mod=bsrnn-large targets=bass optim.patience=30 ckpt_path=outputs/bsrnn-large/last-bass.ckpt"
+#"src_mod=bsrnn-large targets=drums optim.patience=30 ckpt_path=outputs/bsrnn-large/last-drums.ckpt"
+#"src_mod=bsrnn-large targets=other optim.patience=30 ckpt_path=outputs/bsrnn-large/last-other.ckpt"
+
+
+#------------- Stereo model
+#"src_mod=bsrnnstereo targets=vocals"
+#"src_mod=bsrnnstereo targets=bass"
+#"src_mod=bsrnnstereo targets=drums"
+#"src_mod=bsrnnstereo targets=other"
+#"src_mod=bsrnnstereo targets=vocals src_mod.fac_mask=8"
+#"src_mod=bsrnnstereo targets=bass src_mod.fac_mask=8"
+#"src_mod=bsrnnstereo targets=drums src_mod.fac_mask=8"
+#"src_mod=bsrnnstereo targets=other src_mod.fac_mask=8"
+
+
+#-------------- Layer type LSTM vs. GRU vs. CONV (vocals only)
+#"targets=vocals src_mod.time_layer=gru"
+#"targets=vocals src_mod.time_layer=conv"
+#"targets=vocals src_mod.band_layer=gru"
+#"targets=vocals src_mod.band_layer=conv"
+#"targets=vocals src_mod.time_layer=gru src_mod.band_layer=gru"
+#"targets=vocals src_mod.time_layer=conv src_mod.band_layer=conv"
+
+
+#------------- BSCNN
+#"src_mod=bscnn targets=vocals src_mod.feature_dim=64 src_mod.num_repeat=8"
+#"src_mod=bscnn targets=bass src_mod.feature_dim=64 src_mod.num_repeat=8"
+#"src_mod=bscnn targets=drums src_mod.feature_dim=64 src_mod.num_repeat=8"
+#"src_mod=bscnn targets=other src_mod.feature_dim=64 src_mod.num_repeat=8"
+
+
+#------------- Attention
+#"targets=vocals src_mod.n_att_head=1 src_mod.attn_enc_dim=8"
+#"targets=vocals src_mod.n_att_head=2 src_mod.attn_enc_dim=16"
+#"targets=bass src_mod.n_att_head=1 src_mod.attn_enc_dim=8"
+#"targets=bass src_mod.n_att_head=2 src_mod.attn_enc_dim=16"
+#"targets=drums src_mod.n_att_head=1 src_mod.attn_enc_dim=8"
+#"targets=drums src_mod.n_att_head=2 src_mod.attn_enc_dim=16"
+#"targets=other src_mod.n_att_head=1 src_mod.attn_enc_dim=8"
+#"targets=other src_mod.n_att_head=2 src_mod.attn_enc_dim=16"
+
+
+#------------- "Improved" Multi-head BS module
+#"targets=vocals src_mod.n_heads=2"
+#"targets=vocals src_mod.n_heads=2 src_mod.group_num=null"
+#"targets=vocals src_mod.num_repeat=4 src_mod.n_heads=2"
+#"targets=bass src_mod.n_heads=2"
+#"targets=drums src_mod.n_heads=2"
+#"targets=other src_mod.n_heads=2"
+
+
+#-------------- Dataset
+# random_track_mix et silenttarget (instead of silentsource)
+#"targets=vocals dset.aug_list=[random_chunk,random_track_mix,rescale_db,silenttarget]"
+#"targets=bass dset.aug_list=[random_chunk,random_track_mix,rescale_db,silenttarget]"
+#"targets=drums dset.aug_list=[random_chunk,random_track_mix,rescale_db,silenttarget]"
+#"targets=other dset.aug_list=[random_chunk,random_track_mix,rescale_db,silenttarget]"
+
+# no SAD, augmentations like in UMX
+#"targets=vocals dset=musdb18hq"
+#"targets=bass dset=musdb18hq"
+#"targets=drums dset=musdb18hq"
+#"targets=other dset=musdb18hq"
+
+
+#------------- Optimized models (attention + no SAD preprocessing + large patience)
+#"src_mod=bsrnn-opt targets=vocals dset=musdb18hq optim.patience=30"
+#"src_mod=bsrnn-opt targets=bass dset=musdb18hq optim.patience=30"
+#"src_mod=bsrnn-opt targets=drums dset=musdb18hq optim.patience=30"
+#"src_mod=bsrnn-opt targets=other dset=musdb18hq optim.patience=30"

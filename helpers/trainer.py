@@ -44,8 +44,9 @@ def create_trainer(
     # Tensorboard logger
     if log_dir is not None:
         my_logger = pl.loggers.TensorBoardLogger(save_dir=log_dir, name="")
+        vnum = my_logger.log_dir.replace(log_dir + 'version_', '')
     else:
-        my_logger = False
+        my_logger, vnum = False, None
 
     # For debugging, use the overfit_batches flag
     if fast_tr:
@@ -70,11 +71,11 @@ def create_trainer(
         overfit_batches=overfit_batches,
         num_sanity_val_steps=1,
         sync_batchnorm=cfg_optim.sync_bn,
-        accumulate_grad_batches=cfg_optim.accumulate_grad_batches,
+        accumulate_grad_batches=cfg_optim.acc_grad,
         deterministic=cfg_optim.deterministic,
     )
 
-    return trainer, ngpus
+    return trainer, ngpus, vnum
 
 
 # EOF

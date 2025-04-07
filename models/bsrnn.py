@@ -236,7 +236,7 @@ if __name__ == "__main__":
             "segment_len": 10,
             "overlap": 0.1,
             "hop_size": None,
-            "sdr_type": "global",
+            "sdr_type": "usdr",
             "win_dur": 1.0,
             "verbose_per_track": True,
             "rec_dir": None,

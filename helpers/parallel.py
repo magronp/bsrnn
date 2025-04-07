@@ -22,9 +22,8 @@ def process_all_tracks_parallel(args, subset="test", split=None, num_cpus=None):
     else:
         num_cpus = min(num_cpus, max_cpus)
         
-
-    # Defined the simplified function (freeze the non track-specific arguments)
-    myfun = functools.partial(process_track_and_evaluate, args=args, subset=subset)
+    # Freeze the non track-specific arguments
+    myfun = functools.partial(sep_and_eval_track, args=args, subset=subset)
 
     # If parallel, use multi-CPU to perform evaluation
     if num_cpus > 1:
@@ -57,13 +56,13 @@ def process_all_tracks_parallel(args, subset="test", split=None, num_cpus=None):
     return test_results
 
 
-def process_track_and_evaluate(track_name, args, subset="test"):
+def sep_and_eval_track(track_name, args, subset="test"):
 
     # Process only part of the track if needed (mostly for debugging)
-    if args.dset.eval_seq_duration is None:
+    if args.dset.seq_duration_eval is None:
         nfr = -1
     else:
-        nfr = int(args.dset.eval_seq_duration * args.sample_rate)
+        nfr = int(args.dset.seq_duration_eval * args.sample_rate)
 
     # Folder where the track reference files are stored
     track_dir = join(args.data_dir, subset, track_name)
@@ -87,3 +86,5 @@ def process_track_and_evaluate(track_name, args, subset="test"):
     test_sdr = model.test_step(test_batch, 0)
 
     return test_sdr
+
+# EOF

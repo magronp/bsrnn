@@ -31,7 +31,6 @@ out_dir: outputs/
 tblog_dir: tb_logs/
 data_dir: data/musdb18hq/
 sad_dir: data/
-track_emissions: False
 
 # Audio / STFT
 sample_rate: 44100
@@ -42,6 +41,12 @@ n_hop: 512
 fast_tr: False  # for overfitting on one batch (useful for debugging)
 ckpt_path: 
 
+# Track consumed energy with codecarbon
+track_emissions: False
+country_iso_code: FRA
+pue: 1.5
+track_epochs: 3
+
 # When instanciating the separator
 load_pretrained_sources: True
 
@@ -50,8 +55,9 @@ parallel_cpu: false
 num_cpus: 10
 only_append_res: false
 
-# Inference parameters
-max_len:
+# Separation parameters
+file:
+duration:
 offset:
 rec_dir:
 model_dir: bsrnn-opt

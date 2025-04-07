@@ -1,4 +1,0 @@
-#!/bin/bash
-CLUSTER=${1:-"grele"}
-
-oarsub -vv -l /gpu=1,walltime=10 -p $CLUSTER -q production jobs/test.sh --array-param-file jobs/params_test.txt

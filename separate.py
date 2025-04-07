@@ -1,23 +1,23 @@
+import torch
+import torchaudio
 import hydra
 from omegaconf import DictConfig
 from models.separator import Separator
-import torchaudio
-import torch
 from helpers.data import rec_estimates
 
 
 @hydra.main(version_base=None, config_name="config", config_path="conf")
-def inference(args: DictConfig):
+def separate(args: DictConfig):
 
     # Additional argument: path to the track to separate
-    track_path = args.file_path
+    track_path = args.file
     orig_sr = torchaudio.info(track_path).sample_rate
 
-    # Process only part of the track: offset and max duration
-    if args.max_len is None:
+    # Process only part of the track if offset and/or duration are provided
+    if args.duration is None:
         nfr = -1
     else:
-        nfr = int(args.max_len * orig_sr)
+        nfr = int(args.duration * orig_sr)
     if args.offset is None:
         fr_offst = 0
     else:
@@ -54,6 +54,6 @@ def inference(args: DictConfig):
 
 
 if __name__ == "__main__":
-    inference()
+    separate()
 
 # EOF

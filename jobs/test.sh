@@ -1,4 +1,4 @@
 source .venv/bin/activate
 ARGS="$1"
 
-python3 evaluate.py ${ARGS}
+python3 test.py ${ARGS}

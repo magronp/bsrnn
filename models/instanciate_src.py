@@ -7,7 +7,7 @@ from models.bscnn import BSCNN
 
 # A general function to return the model class: thus any other model can be added here
 def get_class_from_str(model_name):
-    if model_name == "bsrnn":
+    if model_name in ["bsrnn", "bsrnn-large", "bsrnn-opt"]:
         Model = BSRNN
     elif model_name == "bsrnnstereo":
         Model = BSRNNstereo
