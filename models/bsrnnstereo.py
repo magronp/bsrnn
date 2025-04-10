@@ -88,7 +88,7 @@ class BSRNNstereo(PLModule):
             self.band_width += [bandwidth_500] * 8
             self.band_width += [bandwidth_1k] * 8
         else:
-            print("Unknown Instrument {}".format(instrument))
+            print(f"Unknown Instrument {target}")
             raise NotImplementedError
 
         self.band_width.append(self.enc_dim - np.sum(self.band_width))

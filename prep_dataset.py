@@ -168,9 +168,9 @@ def prepare_dset(args: DictConfig):
     output_dir = Path(cfg_sad.prep_dir)
     output_dir.mkdir(exist_ok=True)
 
-    # get active indices for all sources
+    # get active indices for all sources' training tracks
     for src in cfg_sad.sources:
-        print(src)
+        print(f"Preparing the '{src}' track")
         get_indices(src, "train", "train", input_dir, output_dir, sad)
 
     return

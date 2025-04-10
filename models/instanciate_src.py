@@ -39,6 +39,7 @@ def instanciate_src_model(
             ckpt_exists = True
 
     if ckpt_exists:
+        print(f"Loading checkpoint for the '{target}' track: {pretrained_src_path}")
         model = Model.load_from_checkpoint(
             pretrained_src_path,
             cfg_optim=cfg_optim,
@@ -50,6 +51,7 @@ def instanciate_src_model(
 
     # Otherwise, instanciate the model from scratch
     else:
+        print(f"Initializing model for the '{target}' track")
         model = Model(cfg_optim, cfg_scheduler, cfg_eval, target, **cfg_src_mod)
 
     return model

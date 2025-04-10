@@ -73,7 +73,7 @@
 #"src_mod=bsrnn-large targets=other"
 
 
-#-------------- Large model with increased patience (30) to ensure convergence (#TODO include the ckpt editing?)
+#-------------- Large model with increased patience (30) to ensure convergence (update the ckpt beforehand using the helpers/checkpoints.py script)
 #"src_mod=bsrnn-large targets=vocals optim.patience=30 ckpt_path=outputs/bsrnn-large/last-vocals.ckpt"
 #"src_mod=bsrnn-large targets=bass optim.patience=30 ckpt_path=outputs/bsrnn-large/last-bass.ckpt"
 #"src_mod=bsrnn-large targets=drums optim.patience=30 ckpt_path=outputs/bsrnn-large/last-drums.ckpt"

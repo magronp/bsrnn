@@ -54,7 +54,7 @@ Below we report the results on the MUSDB18-HQ test set in terms of signal-to-dis
 
 The optimized BSRNN model includes a multi-head attention mechanism, and it is trained using a non-preprocessed dataset (see [here](docs/analysis.md#optimized-model) for more details). This largely improves performance over our initial BSRNN implementation, and outperforms the paper's results by ~0.2 dB. This performance is mostly due to improvement in the bass and drums estimates, while the vocals and other results are still inferior to those in the original paper.
 
-## Model variants
+### Model variants
 
 We extensively experiment with model variants, and we report and analyze the results in a [separate document](docs/analysis.md). Beyond reproducing the paper's results, we provide several suggestions to further improving the results by additional architecture variants, as well as optimizing the data preparation and training process.
 
@@ -78,7 +78,7 @@ If you simply want to apply BSRNN to separate your favorite song, then make sure
 python separate.py file=path/to/my/file.wav
 ```
 You can specify:
-- an offset and a maximum duration (in seconds) with the `offset` and `max_len` parameters (by default, the whole song is processed).
+- an offset and a maximum duration (in seconds) with the `offset` and `duration` parameters (by default, the whole song is processed).
 - the directory where the separated tracks will be stored `rec_dir` (by default, it is the current working directory).
 - which `targets` to estimate (by default, all four tracks `vocals`, `bass`, `drums`, and `other`).
 - the folder where checkpoints are located, which is `<out_dir>/<model_dir>/`. You can change both `out_dir` (default: `outputs`) and `model_dir` (default: `bsrnn-opt`).
@@ -116,9 +116,3 @@ We provide two sets of weights:
 
 bsrnn-large, which correspond to our implementation of the original BSRNN paper
 bsrnn-opt, which correspond to an optimized version of BSRNN (using a non preprocessed dataset, and additional attention heads)
-
-
-
-
-
-#TODO: éditer le sad preprocessing
