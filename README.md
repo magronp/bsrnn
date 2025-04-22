@@ -5,8 +5,6 @@
     <div class="caption"><i>Image taken from the <a href="https://arxiv.org/pdf/2209.15174.pdf">BSRNN paper</a>.</i></div>
 </div>
 
-![totor_sos](https://homepages.laas.fr/vmagron/files/tssos/image5.png)
-
 &nbsp;
 
 This repository is an unofficial implementation of the [BSRNN](https://arxiv.org/pdf/2209.15174.pdf) model for music separation. It complements our paper.
