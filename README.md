@@ -1,7 +1,7 @@
 # Replicating Band-Split RNN for music separation
 
 <div style="align: center; text-align:center;">
-    <img src="https://gitlab.aicrowd.com/Tomasyu/sdx-2023-music-demixing-track-starter-kit/-/raw/master/Figure/BSRNN.png" width="500px" />
+    <img src="https://homepages.laas.fr/vmagron/files/tssos/image5.png" width="500px" />
     <div class="caption"><i>Image taken from the <a href="https://arxiv.org/pdf/2209.15174.pdf">BSRNN paper</a>.</i></div>
 </div>
 
@@ -35,7 +35,7 @@ This project is based on [PyTorch](https://pytorch.org/) ([Ligthning](https://li
 
 Below we report the results on the MUSDB18-HQ test set in terms of signal-to-distortion ratio (SDR). As in the original BSRNN paper, we consider two variants of the SDR:
 
-**uSDR**: The utterance SDR is used as metric in the latest [MDX challenges](https://www.aicrowd.com/challenges/sound-demixing-challenge-2023/problems/music-demixing-track-mdx-23). This SDR does not allow any distortion filter (thus it is similar to a basic signal-to-noise ratio), and it is computed on entire tracks (no chunking) and averaged over tracks.
+**uSDR**: The utterance SDR is used as metric in the latest [MDX challenges](https://www.aicrowd.com/challenges/sound-demixing-challenge-2023/problems/music-demixing-track-mdx-23). This SDR is equal to a basic signal-to-noise ratio. It is computed on entire tracks (no chunking) and averaged over tracks.
 
 |                      | vocals |  bass  |  drums |  other | average|
 |----------------------|--------|--------|--------|--------|--------|
@@ -43,7 +43,7 @@ Below we report the results on the MUSDB18-HQ test set in terms of signal-to-dis
 |  our implementation  |   9.2  |   6.5  |   8.6  |   5.4  |   7.4  |
 |  optimized           |   9.7  |   7.4  |   9.6  |   5.8  |   8.1  |
 
-**cSDR**: The chunk SDR was used as metric in the [SiSEC 2018](https://sisec.inria.fr/2018-professionally-produced-music-recordings/) challenge. This SDR allows for a global distortion filter, and it is computed by taking the median over 1s-long chunks, and median over tracks. In practice, computation is performed using the [museval](https://github.com/sigsep/sigsep-mus-eval) tooblox.
+**cSDR**: The chunk SDR was used as metric in the [SiSEC 2018](https://sisec.inria.fr/2018-professionally-produced-music-recordings/) challenge. It is computed by taking the median over 1s-long chunks, and median over tracks. In practice, computation is performed using the [museval](https://github.com/sigsep/sigsep-mus-eval) tooblox.
 
 |                      | vocals |  bass  |  drums |  other | average|
 |----------------------|--------|--------|--------|--------|--------|
@@ -116,3 +116,8 @@ We provide two sets of weights:
 
 bsrnn-large, which correspond to our implementation of the original BSRNN paper
 bsrnn-opt, which correspond to an optimized version of BSRNN (using a non preprocessed dataset, and additional attention heads)
+
+<div style="align: center; text-align:center;">
+    <img src="https://gitlab.aicrowd.com/Tomasyu/sdx-2023-music-demixing-track-starter-kit/-/raw/master/Figure/BSRNN.png" width="500px" />
+    <div class="caption"><i>Image taken from the <a href="https://arxiv.org/pdf/2209.15174.pdf">BSRNN paper</a>.</i></div>
+</div>
