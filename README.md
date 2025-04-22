@@ -1,13 +1,11 @@
 # Replicating Band-Split RNN for music separation
 
 <div style="align: center; text-align:center;">
-    <img src="https://homepages.laas.fr/vmagron/files/tssos/image5.png" width="500px" />
+    <img src="https://gitlab.aicrowd.com/Tomasyu/sdx-2023-music-demixing-track-starter-kit/-/raw/master/Figure/BSRNN.png" width="500px" />
     <div class="caption"><i>Image taken from the <a href="https://arxiv.org/pdf/2209.15174.pdf">BSRNN paper</a>.</i></div>
 </div>
 
-<div style="align: center; text-align:center;">
-    <img src="https://homepages.laas.fr/vmagron/files/tssos/image5.png" alt="Image approximation" style="width:40%; border:0;" />
-</div>
+![totor_sos](https://homepages.laas.fr/vmagron/files/tssos/image5.png)
 
 &nbsp;
 
@@ -121,7 +119,3 @@ We provide two sets of weights:
 bsrnn-large, which correspond to our implementation of the original BSRNN paper
 bsrnn-opt, which correspond to an optimized version of BSRNN (using a non preprocessed dataset, and additional attention heads)
 
-<div style="align: center; text-align:center;">
-    <img src="https://gitlab.aicrowd.com/Tomasyu/sdx-2023-music-demixing-track-starter-kit/-/raw/master/Figure/BSRNN.png" width="500px" />
-    <div class="caption"><i>Image taken from the <a href="https://arxiv.org/pdf/2209.15174.pdf">BSRNN paper</a>.</i></div>
-</div>
