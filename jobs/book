@@ -1,12 +1,12 @@
 #!/bin/sh
 
 JOBTYPE=${1:-"train"}
-CLUSTER=${2:-"grele"}
-PARAMARRAY=${3:-"variants"}
+CLUSTER=${2:-"graffiti"}
+PARAMARRAY=${3:-"bsrnn"}
 
 if [[ $JOBTYPE == "train" ]]
 then
-	full_command="oarsub -vv -l /nodes=1,walltime=48 -p $CLUSTER -q production jobs/train.sh --array-param-file jobs/params/${PARAMARRAY}.txt"
+	full_command="oarsub -vv -l /nodes=1,walltime=168 -p $CLUSTER -q production jobs/train.sh --array-param-file jobs/params/${PARAMARRAY}.txt"
 elif [[ $JOBTYPE == "test" ]]
 then
 	full_command="oarsub -vv -l /gpu=1,walltime=12 -p $CLUSTER -q production jobs/test.sh --array-param-file jobs/params/test.txt"

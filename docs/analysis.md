@@ -2,12 +2,14 @@
 
 In this document we investigate several model configurations and hyper parameters. Our primary goal is to reproduce the paper's results, but we conduct several additional experiments to study the behavior of the model and training process in more depth. We also seek to optimize the model in order to eventually improve the performance over the original BSRNN.
 
-For speed, we display results on the validation set in terms of uSDR, as it is much faster to compute than the cSDR (see [here](README.md#test-results) for the definitions of uSDR and cSDR). We consider a small model with a hidden dimension of 64 and a number of repeats of 8, except when trying the [larger](#large-model) or [optimized](#optimized-model) models.
+For speed, we display results on the validation set in terms of *utterance* SDR, as it is much faster to compute than the [chunk SDR](README.md#test-results). The utterance SDR is used as metric in the latest [MDX challenges](https://www.aicrowd.com/challenges/sound-demixing-challenge-2023/problems/music-demixing-track-mdx-23), and it is equal to a basic signal-to-noise ratio. It is computed on entire tracks and averaged over tracks.
+
+We consider a small model with a hidden dimension of 64 and a number of repeats of 8, except when trying the [larger](#large-model) or [optimized](#optimized-model) models.
 
 
 ## Preliminary tests
 
-This first series of test consists of basic experiments to train the model. Unless specified otherwise, the model is trained by minimizing the same loss as in the paper, using an adjusted learning rate as described [below](#learning-rate), and training is monitored by maximizing the uSDR on the validation set. We set the maximum number of epochs at 200 (which is larger than in the paper, but needed to ensure convergence).
+This first series of test consists of basic experiments to train the model. Unless specified otherwise, the model is trained by minimizing the same loss as in the paper, using an adjusted learning rate as described [below](#learning-rate), and training is monitored by maximizing the SDR on the validation set. We set the maximum number of epochs at 200 (which is larger than in the paper, but needed to ensure convergence).
 
 ### Randomness, convergence, and patience
 
@@ -44,7 +46,7 @@ The results above show that both strategies yield similar results. We therefore 
 
 ### Monitoring criterion
 
-We study here the impact of the monitoring criterion on the validation set. Indeed, it is not clear from the paper which quantity is used: the authors mention that "early stopping is applied when the *best validation* is not found in 10 consecutive epochs". Then we consider either minimizing the validation loss, or maximizing the validation uSDR.
+We study here the impact of the monitoring criterion on the validation set. Indeed, it is not clear from the paper which quantity is used: the authors mention that "early stopping is applied when the *best validation* is not found in 10 consecutive epochs". Then we consider either minimizing the validation loss, or maximizing the validation SDR.
 
 |          | vocals |  bass  |  drums |  other | average|
 |----------|--------|--------|--------|--------|--------|
@@ -98,8 +100,9 @@ Note that an even larger FFT size of 6144 along with a hop size of 1024 (to matc
 |------------|--------|--------|--------|--------|--------|
 | fac_mask=4 |   7.7  |   6.1  |   9.7  |   4.8  |   7.1  |
 | fac_mask=2 |   7.9  |   6.8  |   9.4  |   4.4  |   7.1  |
+| fac_mask=2 |   7.5  |   6.1  |   9.8  |   4.7  |   7.0  |
 
-We observe that while similar results are obtained on average, it depends on the source: while reducing the masker size might negatively affect performance for drums and other, it might slightly (vocals) or more substantially (bass) improve performance for some tracks. Note however that further decreasing `fac_mask` to 1 decreases performance more significantly.
+We observe that average results are similar, but the bahavior might depend on the source: while reducing the masker size might negatively affect performance for drums and other, it improves performance slightly for the vocals or more substantially for the bass. Further decreasing `fac_mask` to 1 slightly decreases the overall performance, although the model becomes much lighter in terms of number of parameters.
 
 
 ## Large model
@@ -127,12 +130,15 @@ We now suggest several potential directions for further improving the performanc
 
 Even though BSRNN is applied to stereo music, it is inherently a monochannel modeling technique, since it is apply to each channel individually. We propose instead a first naive extension to [stereo modeling](models/bsrnnstereo.py) by jointly projecting the two channels into a common latent representation, rather than treating each channel independently. 
 
-|              | vocals |  bass  |  drums |  other | average|
-|--------------|--------|--------|--------|--------|--------|
-|   "mono"     |   7.7  |   6.1  |   9.7  |   4.8  |   7.1  |
-|   stereo     |   7.7  |   6.6  |   ???  |   4.0  |   6.7  |
+|                  | vocals |  bass  |  drums |  other | average|
+|------------------|--------|--------|--------|--------|--------|
+|   "mono"         |   7.7  |   6.1  |   9.7  |   4.8  |   7.1  |
+|   stereo - naive |   7.7  |   6.6  |   ???  |   4.0  |   6.7  |
+|   stereo - TAC   |   7.7  |   6.6  |   ???  |   4.0  |   6.7  |
 
 Unfortunately, this approach results in a performance decrease, especially for the drums and other tracks (on the other hand it might be interesting for the bass track), and at the cost of an increase in terms of model size (9.2M vs. 8.0M parameters for the vocals track). One way to bridge this gap is by increasing the masker size via `fac_mask` (to be consistent with the subsequent increase in number of outputs - two channels need to be recovered instead of 1). This bridges the performance gap and yields a 7.9 dB SDR for the vocal tracks, but the model becomes too large (20M parameters) for usage when increasing feature_dim and num_repeat subsequently. Overall, this approach is not effective, although one advantage is the possibility to double the batch size for faster training.
+
+
 
 
 ### Sequence and band modeling layers
@@ -234,5 +240,3 @@ To do that, we use chunks of 10 s with a 1 s overlap and a [linear fader](https:
 While this matter might seem of limited importance at first glance (it is reasonable to assume that changing the chunking/OLA procedure will yield the same optimal model during training), it could actually be significant in terms of test results. Indeed, adjusting the hop size yield differences up to 0.3 dB (*cf* Table II in the paper), which is larger than the score difference between some competing methods. We implement a simple OLA method which uses rectangular windowing, and we compute the test results using a 3 s window and 0.5 s / 1.5 hop size. We don't observe any significant difference with the 10s-fader based chunking method. Nonetheless, considering the observations above, there might be some room for further improvement.
 
 Thus, this chunking/OLA procedure needs to be clarfied.
-
-

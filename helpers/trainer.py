@@ -5,10 +5,15 @@ import lightning.pytorch as pl
 def create_trainer(
     cfg_optim,
     ckpt_dir="outputs/",
-    ckpt_name="separator",
+    targets=["vocals"],
     log_dir="tb_logs/",
     fast_tr=False,
 ):
+    
+    if len(targets) == 1:
+        ckpt_name = targets[0]
+    else:
+        ckpt_name = "separator"
 
     # Number of GPUs
     ngpus = cfg_optim.ngpus
@@ -44,7 +49,7 @@ def create_trainer(
     # Tensorboard logger
     if log_dir is not None:
         my_logger = pl.loggers.TensorBoardLogger(save_dir=log_dir, name="")
-        vnum = my_logger.log_dir.replace(log_dir + 'version_', '')
+        vnum = my_logger.log_dir.split("_")[-1]
     else:
         my_logger, vnum = False, None
 

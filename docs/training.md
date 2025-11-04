@@ -40,15 +40,15 @@ It enables the [overfit_batches](https://lightning.ai/docs/pytorch/stable/common
 
 ### Training variants
 
-This project uses the hydra framework for structured configuration files, thus changing parameters (e.g., model size, number of layers, learning rate), is quite straightforward:
+This project uses the Hydra framework for structured configuration files, thus changing parameters (e.g., model size, number of layers, learning rate), is quite straightforward:
 ```
 python train.py targets=bass,vocals optim.loss_domain=t+tf src_mod.num_repeat=10
 ```
 Feel free to check the conf files to see all possible parameters and default values.
 
-### Lauching jobs
+### Launching jobs
 
-In practice, you will likely performing training (and testing) using a cluster of GPUs. Here, we use the [Grid5000](https://www.grid5000.fr/w/Grid5000:Home) testbed, which operates under the [OAR](https://oar.imag.fr/) task manager. You should be able to adapt it to the slurm job manager or another testbed with minor adjustments.
+In practice, you will likely performing training (and testing) using a cluster of GPUs. Here, we use the [Grid5000](https://www.grid5000.fr/w/Grid5000:Home) testbed, which operates under the [OAR](https://oar.imag.fr/) task manager. Adapting our script to operate with the [SLURM](https://slurm.schedmd.com/overview.html) job manager or another testbed should only require minor adjustments.
 
 For lauching jobs, simply run:
 ```
@@ -66,9 +66,9 @@ Then, to analyze validation results, run:
 ```
 python get_val_results.py
 ```
-This will aggregate results into several csv, including a summary of SDRs over targets and experiments, and a summary of energy consumption (see [below](#tracking-energy)). Note that if you didn't estimate energy consumption beforehand, you should comment the [corresponding line in this script](https://github.com/magronp/bsrnn/blob/main/models/get_val_results.py#L197). These results correspond to Table II in the paper.
+This will aggregate results into several CSV files, including a summary of SDRs over targets and experiments, and a summary of energy consumption (see [below](#tracking-energy)). Note that if you didn't estimate energy consumption beforehand, you should comment the [corresponding line in this script](https://github.com/magronp/bsrnn/blob/main/models/get_val_results.py#L197). These results correspond to Table II in the paper.
 
-You can also run the notebook `vizualization.ipynb` to produce plots (including Figure 1 from the paper)
+You can also run the notebook `vizualization.ipynb` to produce plots (including Figure 2 and 3 from the paper)
 
 
 
@@ -76,11 +76,18 @@ You can also run the notebook `vizualization.ipynb` to produce plots (including 
 
 ### Basic usage
 
-To perform evaluation on the test set, simply run the `test.py` script, optionally specifying the source model (default: `bsrnn`) and SDR type (default: `usdr`)
+To perform evaluation on the test set, simply run the `test.py` script, optionally specifying the source model (default: `bsrnn`) and SDR type (default: `usdr`):
 ```
 python test.py src_mod=bsrnn-large eval.sdr_type=csdr
 ```
-Note that when creating a Separator module, the code searches for target-specific checkpoints with the following path: `<out_dir>/<src_mod.name_out_dir>/<target>.ckpt`. If a certain checkpoint is not found, a model will be initialized from scratch with random weights instead. You can change the checkpoint location by overriding th `out_dir` and `src_mod.name_out_dir` parameters.
+The code will create a `Separator` module, for which it will search for target-specific checkpoints with the following path: `<out_dir>/<src_mod.name_out_dir>/<target>.ckpt`. If a certain checkpoint is not found, a model will be initialized from scratch with random weights instead. You can change the checkpoint location by overriding the `out_dir` and `src_mod.name_out_dir` parameters.
+
+**Note**: if you want to use the SIMO model, you need to add an extra flag `simo=true`, so that the code loads a multi-source checkpoint named `separator.ckpt` instead of multiple single-source checkpoints named `<target>.ckpt`, e.g.:
+```
+python test.py src_mod=simo-bsrnn-large simo=true
+```
+
+
 
 ### Inference procedure
 
@@ -92,7 +99,7 @@ By default, `eval.hop_size=null`, which uses the linear fader. Setting a value f
 
 ### Launching jobs
 
-You can perform multiple testing by editing the `jobs/params/test.txt` file (just like for training), and running the following command:
+You can perform multiple testing by editing the `jobs/params/test.txt` file (just like for [training](#launching-jobs)), and running the following command:
 ```
 jobs/book test <CLUSTER_NAME>
 ```
@@ -114,19 +121,19 @@ python train.py targets=vocals track_emissions=true
 ```
 which will save the energy (along with the experiment name) in a `<out_dir>/emissions.csv` file.
 
-In the paper, we track emission separately by running additional jobs (listed in the `jobs/params/carbon.txt` file), for a specific number of epochs set at `track_epochs=3`. Then, we estimate the global energy for each considered experiment by accounting for the corresponding total number of epochs (see [here](https://github.com/magronp/bsrnn/blob/main/models/get_val_results.py#L151)).
+In the paper, we track emission separately by running additional jobs (listed in the `jobs/params/carbon.txt` file), for a specific number of epochs set at `track_epochs=3`. Then, we estimate the global energy for each considered experiment by accounting for the actual total number of epochs (see [here](https://github.com/magronp/bsrnn/blob/main/models/get_val_results.py#L168)).
 
-If you prefer to estimate the consumption directly when training a model (rather than in separate experiments), then feel free to set `track_emissions=true` in the [config file](https://github.com/magronp/bsrnn/blob/main/conf/config.yaml#L45). Then, `<out_dir>/emissions.csv` will directly contain the overall estimated energy, thus you can edit the `get_val_results.py` script by [commenting the energy estimation line](https://github.com/magronp/bsrnn/blob/main/models/get_val_results.py#L197).
+If you prefer to estimate the consumption directly when training a model (rather than in separate experiments), then feel free to set `track_emissions=true` in the [config file](https://github.com/magronp/bsrnn/blob/main/conf/config.yaml#L45). Then, `<out_dir>/emissions.csv` will directly contain the overall estimated energy, thus you can edit the `get_val_results.py` script by [ignoring the energy estimation line](https://github.com/magronp/bsrnn/blob/main/models/get_val_results.py#L222).
 
 
 ## Use your own model
 
 Lastly, even though this project's primary goal is not to be a universal framework for music separation (as [UMX](https://github.com/sigsep/open-unmix-pytorch) or [Asteroid](https://github.com/asteroid-team/asteroid)), it is rather easy to add a custom model:
 - add a script, e.g., in the `models/` folder, that defines your model class
-- import the model class from your script so you can use it when [instanciating a model](https://github.com/magronp/bsrnn/blob/main/models/instanciate_src.py#L9)
 - add a corresponding yaml configuration file in the `conf/src_mod/` folder (e.g., `mycustommodel`)
+- import the model class from your script so you can use it when [instanciating a model](https://github.com/magronp/bsrnn/blob/main/models/instanciate_src.py#L9)
 
-Then, training and testing your model is a simple as 
+Then, training (and further testing) your model is a simple as: 
 ```
 python train.py targets=vocals src_mod=mycustommodel
 ```

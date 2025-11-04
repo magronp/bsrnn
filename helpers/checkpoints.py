@@ -21,7 +21,7 @@ def display_ckpt(model_dir="bsrnn", target="vocals", out_dir="outputs"):
     return
 
 
-def update_ckpt(
+def update_ckpt_param(
     model_dir="bsrnn", target="vocals", out_dir="outputs", param="patience", value=30
 ):
 
@@ -54,6 +54,38 @@ def update_ckpt(
     return
 
 
+def update_ckpt_key(
+    model_dir="bsrnn-large",
+    target="vocals",
+    out_dir="outputs",
+    key_old="mask.",
+    key_new="maskers.0.mask.",
+):
+
+    # Define paths
+    ckpt_path = join(out_dir, model_dir, target + ".ckpt")
+    ckpt_path_old = join(out_dir, model_dir, target + "-old.ckpt")
+
+    # Load checkpoint, and save a duplicate
+    checkpoint = torch.load(ckpt_path, map_location="cpu", weights_only=False)
+    torch.save(checkpoint, ckpt_path_old)
+
+    # Iterate over keys to update them
+    for key in list(checkpoint["state_dict"].keys()):
+        if key_old in key:
+            checkpoint["state_dict"][key.replace(key_old, key_new)] = checkpoint[
+                "state_dict"
+            ].pop(key)
+
+    # Record updated checkpoint
+    torch.save(checkpoint, ckpt_path)
+
+    print(f"Checkpoint updated at: {ckpt_path}")
+    print(f"Checkpoint backed-up at: {ckpt_path_old}")
+
+    return
+
+
 if __name__ == "__main__":
 
     # Get input arguments
@@ -64,10 +96,12 @@ if __name__ == "__main__":
     parser.add_argument("-t", "--target", default="vocals")
     parser.add_argument("-o", "--out_dir", default="outputs")
 
-    # update parameter
+    # update parameter / key
     parser.add_argument("-u", "--updateckpt", default=False)
     parser.add_argument("-p", "--param", default="patience")
     parser.add_argument("-v", "--value", default=30)
+    parser.add_argument("-k", "--updatekey", default=False)
+
     args = parser.parse_args()
 
     # Display config and last epoch
@@ -75,12 +109,19 @@ if __name__ == "__main__":
 
     # Update checkpoint
     if args.updateckpt:
-        update_ckpt(
+        update_ckpt_param(
             model_dir=args.model_dir,
             target=args.target,
             out_dir=args.out_dir,
             param=args.param,
             value=args.value,
+        )
+
+    if args.updatekey:
+        update_ckpt_key(
+            model_dir=args.model_dir,
+            target=args.target,
+            out_dir=args.out_dir,
         )
 
 # EOF

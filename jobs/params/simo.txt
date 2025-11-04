@@ -1,0 +1,25 @@
+### Uncomment the config(s) below that you want to run when booking jobs
+
+
+#-------------- Joint finer bandsplit scheme
+#"targets=vocals src_mod.joint_bandsplit=True"
+#"targets=bass src_mod.joint_bandsplit=True"
+#"targets=drums src_mod.joint_bandsplit=True"
+#"targets=other src_mod.joint_bandsplit=True"
+
+
+# -------- Masker context -> doesn't seem to work yet...
+#"targets=vocals src_mod.mask_ctxt=1"
+#"targets=bass src_mod.mask_ctxt=1"
+#"targets=drums src_mod.mask_ctxt=1"
+#"targets=other src_mod.mask_ctxt=1"
+
+
+#------------- Joint encoder
+#"src_mod=simo-bsrnn"
+#"src_mod=simo-bsrnn src_mod.subtract_last_trgt=False"
+
+
+#------------- Joint encoder - optimized
+#"src_mod=simo-bsrnn-opt dset=musdb18hq optim.patience=30 ckpt_path=outputs/simo-bsrnn-opt/last-separator.ckpt"
+

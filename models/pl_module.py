@@ -133,10 +133,10 @@ class PLModule(pl.LightningModule):
         )
 
         # Validation SDR
-        val_sdr = compute_sdr(
+        val_sdr_trgts = compute_sdr(
             y, y_hat, win_bss=self.win_bss, sdr_type=self.sdr_type, eps=self.eps
         )[0]
-        val_sdr = torch.nanmean(val_sdr)  # in case there are more than one source
+        val_sdr = torch.nanmean(val_sdr_trgts)  # in case there are more than one source
 
         self.log(
             "val_sdr",
@@ -147,6 +147,19 @@ class PLModule(pl.LightningModule):
             sync_dist=True,
             batch_size=bsize,
         )
+
+        # if there are many targets, log per-source SDR for monitoring
+        if len(self.targets) > 1:
+            for it, t in enumerate(self.targets):
+                self.log(
+                    "val_sdr_" + t,
+                    val_sdr_trgts[it],
+                    on_step=False,
+                    on_epoch=True,
+                    prog_bar=False,
+                    sync_dist=True,
+                    batch_size=bsize,
+                )
 
         return val_loss, val_sdr
 

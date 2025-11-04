@@ -17,4 +17,6 @@ outputs/*
 data/*
 !data/.dummy.txt
 
+annotations/*
+
 debug.py

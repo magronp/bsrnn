@@ -14,13 +14,16 @@ def train(args: DictConfig):
     # Set random seed for reproducibility
     pl.seed_everything(args.seed, workers=True)
 
-    # Get the target to train
-    target = args.targets
-    assert target in ["vocals", "bass", "drums", "other"], "Unknown instrument"
+    # Get the target(s) to train
+    targets = args.targets
+    if isinstance(targets, str):
+        targets = [targets]
+    str_targets = "-".join(targets)
 
     # Define the exp name from the input prompt, and model/target
     exp_params = get_exp_params_str()
-    exp_name = args.src_mod.name + exp_params + "-" + target
+    exp_name = args.src_mod.name + exp_params + "-" + str_targets
+    print(exp_name)
 
     # Instanciate and start an object to track emissions
     if args.track_emissions:
@@ -37,7 +40,7 @@ def train(args: DictConfig):
 
     # Data samplers
     tr_sampler, val_sampler = build_training_samplers(
-        target, args.dset, fast_tr=args.fast_tr
+        targets, args.dset, fast_tr=args.fast_tr
     )
 
     # Dir to record the model and tblogs
@@ -46,14 +49,14 @@ def train(args: DictConfig):
         tblog_dir = None
     else:
         tblog_dir = os.path.join(
-            args.tblog_dir, args.src_mod.name_tblog_dir + "-" + target + "/"
+            args.tblog_dir, args.src_mod.name_tblog_dir + "-" + str_targets + "/"
         )
 
     # Trainer
     trainer, ngpus, vnum = create_trainer(
         args.optim,
-        ckpt_name=target,
         ckpt_dir=ckpt_dir,
+        targets=targets,
         log_dir=tblog_dir,
         fast_tr=args.fast_tr,
     )
@@ -64,16 +67,13 @@ def train(args: DictConfig):
     # Instanciate model
     ckpt_path = args.ckpt_path
     model = instanciate_src_model(
-        args.optim,
-        args.scheduler,
-        args.eval,
-        args.src_mod,
-        target=target,
-        pretrained_src_path=ckpt_path,
+        args,
+        targets=targets,
+        ckpt_path=ckpt_path,
     )
     nparams = model.count_params()
 
-    # Display / store experiment only once (not on multiple GPUs)
+    # Display / store exp info only once (not on multiple GPUs)
     if "LOCAL_RANK" not in os.environ.keys() and "NODE_RANK" not in os.environ.keys():
 
         print("------------------")
@@ -86,11 +86,16 @@ def train(args: DictConfig):
         # Record exp info (name, target, tb version, and num params)
         if vnum:
             store_exp_info(
-                exp_name, target, vnum, nparams, tblog_dir, out_dir=args.out_dir
+                exp_name, targets, vnum, nparams, tblog_dir, out_dir=args.out_dir
             )
 
     # Fit
-    trainer.fit(model, tr_sampler, val_sampler, ckpt_path)
+    trainer.fit(
+        model,
+        train_dataloaders=tr_sampler,
+        val_dataloaders=val_sampler,
+        ckpt_path=ckpt_path,
+    )
 
     # Stop emission tracking and record the results
     if args.track_emissions:

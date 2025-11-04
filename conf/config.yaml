@@ -36,6 +36,7 @@ sad_dir: data/
 sample_rate: 44100
 n_fft: 2048
 n_hop: 512
+nb_channels: 2
 
 # Training-related
 fast_tr: False  # for overfitting on one batch (useful for debugging)
@@ -50,17 +51,17 @@ track_epochs: 3
 # When instanciating the separator
 load_pretrained_sources: True
 
-# Evaluation
+# Evaluation: test and separate
 parallel_cpu: false
 num_cpus: 10
 only_append_res: false
-
-# Separation parameters
+simo: false
 file:
 duration:
 offset:
 rec_dir:
 model_dir: bsrnn-opt
+
 
 # Hydra-related
 hydra:  

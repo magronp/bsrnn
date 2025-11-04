@@ -1,7 +1,7 @@
 name: musdb18hq
 sources: ${sources}
 sample_rate: ${sample_rate}
-nb_channels: 2
+nb_channels: ${nb_channels}
 seed: ${seed}
 data_dir: ${data_dir}
 sad_dir: ${sad_dir}

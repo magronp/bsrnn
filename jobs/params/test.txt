@@ -1,13 +1,25 @@
 ### Uncomment the config(s) below that you want to run when booking jobs
 
-# Large model, as in the paper (uSDR and cSDR)
+# Large model, as in the paper
 #"src_mod=bsrnn-large"
-#"src_mod=bsrnn-large eval.sdr_type=museval"
+#"src_mod=bsrnn-large eval.sdr_type=csdr"
 
-# Optimized model (uSDR and cSDR)
+# "Optimized" model (no TAC)
+#"src_mod=bsrnn-opt-notac"
+#"src_mod=bsrnn-opt-notac eval.sdr_type=csdr"
+
+# "Optimized" model with TAC
 #"src_mod=bsrnn-opt"
-#"src_mod=bsrnn-opt eval.sdr_type=museval"
+#"src_mod=bsrnn-opt eval.sdr_type=csdr"
 
 # Trying different overlapp-add strategy for chunking full songs (uSDR only)
 #"src_mod=bsrnn-large eval.segment_len=3 eval.hop_size=1.5"
 #"src_mod=bsrnn-large eval.segment_len=3 eval.hop_size=0.5"
+#"src_mod=bsrnn-opt-notac eval.segment_len=3 eval.hop_size=1.5"
+#"src_mod=bsrnn-opt-notac eval.segment_len=3 eval.hop_size=0.5"
+#"src_mod=bsrnn-opt eval.segment_len=3 eval.hop_size=1.5"
+#"src_mod=bsrnn-opt eval.segment_len=3 eval.hop_size=0.5"
+
+# SIMO model
+#"src_mod=simo-bsrnn-opt simo=true"
+#"src_mod=simo-bsrnn-opt simo=true eval.sdr_type=csdr"

@@ -21,24 +21,31 @@ def process_all_val_tblogs(out_dir="outputs/"):
         # Get info and all tb versions corresponding to the current exp
         df = exp_info.loc[exp_info["exp_name"] == exp_name]
         version_list = list(df["tb_version"])
-        target = df["target"].iloc[0]
+        targets = df["target"].iloc[0]
         tblogdir_model = df["tblog_dir"].iloc[0]
+        exp_name_str = exp_name.replace("-" + targets, "")
+        targets = targets.split("-")
 
-        # Get the best SDR for this exp
-        best_sdr, _, _, _, total_epochs = load_val_log(
-            version_list,
-            tblogdir_model,
-            monitor_val_loss="monitor_val=loss" in exp_name,
-        )
+        for t in targets:
 
-        # Store the results into the df
-        curr_res = {
-            "exp_name": exp_name.replace("-" + target, ""),
-            "target": target,
-            "best_sdr": best_sdr,
-            "total_epochs": total_epochs,
-        }
-        all_results.loc[len(all_results)] = curr_res
+            # Get the best SDR for this exp
+            best_sdr, _, _, _, total_epochs = load_val_log(
+                version_list,
+                tblogdir_model,
+                monitor_val_loss="monitor_val=loss" in exp_name,
+                monitor_target=t if len(targets) > 1 else "epoch",
+            )
+
+            # Store the results into a df
+            curr_res = {
+                "exp_name": exp_name_str,
+                "target": t,
+                "best_sdr": best_sdr,
+                "total_epochs": total_epochs,
+            }
+
+            # Append to the main result df
+            all_results.loc[len(all_results)] = curr_res
 
     # Save results (all)
     all_results.to_csv(join(out_dir, "val_results_all.csv"), index=False)
@@ -68,6 +75,8 @@ def get_val_sdr(targets, out_dir="outputs/"):
     bsrnnseeds = df.loc[indx_seeds].mean(numeric_only=True)
     df = df[~indx_seeds]
     bsrnnseeds["exp_name"] = "bsrnn"
+    
+    df.reset_index(inplace=True, drop=True) # avoid index issues
     df.loc[len(df)] = bsrnnseeds
 
     # Save results
@@ -86,7 +95,7 @@ def get_val_energy(targets, out_dir="outputs/", track_epochs=None):
         print("No energy log found")
         return
 
-    # List of experiments for the main Table (doesn't account for preliminary exp, layers, BSCNN hyperparameters... but accounts for the 3 runs of the base model (since we report the average value in the Table)
+    # List of experiments for the main Table + a few others (no preliminary exp / layers / BSCNN hyperparameters)
     exp_list = [
         "bsrnn-seed=1",
         "bsrnn-seed=2",
@@ -100,14 +109,17 @@ def get_val_energy(targets, out_dir="outputs/", track_epochs=None):
         "bsrnn-fac_mask=1",
         "bsrnn-large",
         "bsrnn-large-patience=30",
-        "bsrnnstereo",
-        "bsrnnstereo-fac_mask=8",
+        "bsrnn-stereo=naive",
+        "bsrnn-stereo=naive-fac_mask=8",
+        "bsrnn-stereo=tac",
+        "bsrnn-stereo=tac-act_tac=prelu",
         "bscnn-feature_dim=64-num_repeat=8",
         "bsrnn-n_att_head=1-attn_enc_dim=8",
         "bsrnn-n_att_head=2-attn_enc_dim=16",
         "bsrnn-n_heads=2",
         "bsrnn-dset.aug_list=[random_chunk,random_track_mix,rescale_db,silenttarget]",
         "bsrnn-dset=musdb18hq",
+        "bsrnn-opt-notac-dset=musdb18hq-patience=30",
         "bsrnn-opt-dset=musdb18hq-patience=30",
     ]
 
@@ -131,7 +143,9 @@ def get_val_energy(targets, out_dir="outputs/", track_epochs=None):
 
     all_energy = pd.DataFrame(columns=["exp_name", "target", "energy"])
 
+    el = {}
     for exp_name in exp_list:
+
         exp_name_emission = exp_name
         if exp_name in exp_name_base_model:
             exp_name_emission = "bsrnn"
@@ -150,9 +164,16 @@ def get_val_energy(targets, out_dir="outputs/", track_epochs=None):
             exp_t = exp_name_emission + "-" + t
             enrg_t = em[em["project_name"] == exp_t]["energy_consumed"].iloc[0]
 
-            # if emissions was computed separately with a given number of epochs
+            # if emissions were computed separately with a given number of epochs
             if track_epochs:
                 enrg_t = enrg_t / track_epochs * epoch_t
+
+            # Handle the case of the "large" BSRNN model, which was further trained with additional epochs
+            if exp_name == "bsrnn-large":
+                el[t] = enrg_t
+
+            if exp_name == "bsrnn-large-patience=30":
+                enrg_t += el[t]
 
             # Store the results into the df
             curr_res = {
@@ -174,7 +195,7 @@ def get_val_energy(targets, out_dir="outputs/", track_epochs=None):
     bsrnnseeds = all_energy.loc[indx_seeds].mean(numeric_only=True)
     all_energy = all_energy[~indx_seeds]
     bsrnnseeds["exp_name"] = "bsrnn"
-    all_energy.loc[len(all_energy)] = bsrnnseeds
+    all_energy.loc[all_energy.tail(1).index[0] + 1] = bsrnnseeds
 
     # Compute the total over targets and exp
     all_energy.loc["Column_Total"] = all_energy.sum(numeric_only=True, axis=0)
@@ -182,6 +203,8 @@ def get_val_energy(targets, out_dir="outputs/", track_epochs=None):
 
     # Save results
     all_energy.to_csv(join(out_dir, "val_results_energy.csv"), index=False)
+
+    return
 
 
 @hydra.main(version_base=None, config_name="config", config_path="conf")
@@ -195,7 +218,7 @@ def get_val_results(args: DictConfig):
     #process_all_val_tblogs(out_dir=out_dir)
 
     # Assemble the val uSDR results to aggregate sources per exp
-    #get_val_sdr(targets, out_dir=out_dir)
+    get_val_sdr(targets, out_dir=out_dir)
 
     # Combine it with codecarbon outputs to get energy consumption
     get_val_energy(targets, out_dir=out_dir, track_epochs=track_epochs)

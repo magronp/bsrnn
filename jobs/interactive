@@ -3,7 +3,7 @@
 if [ $1 == "cpu" ]
 then
 	full_command="oarsub -vv -l /nodes=1,walltime=00:25:00 -p grvingt -q production -I"
-elif [ $1 == "graffiti" ] || [ $1 == "grue" ] || [ $1 == "grele" ] || [ $1 == "gruss" ] || [ $1 == "graphique" ]
+elif [ $1 == "graffiti" ] || [ $1 == "grue" ] || [ $1 == "grele" ] || [ $1 == "gruss" ] || [ $1 == "gres" ]
 then
 	full_command="oarsub -v -l nodes=1,walltime=3 -p $1 -q production -I"
 else

@@ -1,7 +1,5 @@
 # General
 max_epochs: 200
-patience: 10
-monitor_val: sdr # either "loss" or "sdr"
 deterministic: False
 
 # Algo-related
@@ -12,6 +10,10 @@ grad_clip_norm: 5
 # Loss
 loss_type: L1
 loss_domain: t+tf
+monitor_val: sdr # either "loss" or "sdr"
+
+# Early stopping
+patience: 10
 
 # Multi GPU parameters
 ngpus:  # leave None for using all available GPUs

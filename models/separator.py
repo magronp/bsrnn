@@ -1,7 +1,7 @@
 import torch
 from models.pl_module import PLModule
 from models.instanciate_src import instanciate_src_model
-import os
+from os.path import join
 
 
 class Separator(PLModule):
@@ -9,11 +9,6 @@ class Separator(PLModule):
         self,
         args,
     ):
-        # Collect the appropriate cfg dicts
-        cfg_optim = args.optim
-        cfg_scheduler = args.scheduler
-        cfg_eval = args.eval
-        cfg_src_mod = args.src_mod
 
         # Targets
         targets = args.targets
@@ -22,9 +17,9 @@ class Separator(PLModule):
 
         # Inherit from the PLModule
         super().__init__(
-            cfg_optim,
-            cfg_scheduler,
-            cfg_eval,
+            args.optim,
+            args.scheduler,
+            args.eval,
             targets=targets,
             sample_rate=args.sample_rate,
             n_fft=args.n_fft,
@@ -32,27 +27,42 @@ class Separator(PLModule):
             eps=args.eps,
         )
 
-        self.source_models = torch.nn.ModuleDict(
-            {
-                t: instanciate_src_model(
-                    cfg_optim,
-                    cfg_scheduler,
-                    cfg_eval,
-                    cfg_src_mod,
-                    target=t,
-                    pretrained_src_path=os.path.join(
-                        args.out_dir, cfg_src_mod.name_out_dir, t + ".ckpt"
-                    ),
-                )
-                for t in targets
-            }
-        )
+        # SIMO or target-specific models
+        self.simo = args.simo
+
+        # Dir where to look for checkpoints
+        ckpt_dir = join(args.out_dir, args.src_mod.name_out_dir)
+
+        # Either instanciate a SIMO model from a separator checkpoint
+        if self.simo:
+            ckpt_path = join(ckpt_dir, "separator.ckpt")
+            self.model = instanciate_src_model(
+                args,
+                targets=targets,
+                ckpt_path=ckpt_path,
+            )
+        else:
+            # Or instanciate a set of target-specific checkpoints
+            self.source_models = torch.nn.ModuleDict(
+                {
+                    t: instanciate_src_model(
+                        args,
+                        targets=t,
+                        ckpt_path=join(ckpt_dir, t + ".ckpt"),
+                    )
+                    for t in targets
+                }
+            )
 
     def forward(self, mix):
         # mix: [B, nch, n_samples]
         # s_est: [B, n_targets, nch, n_samples]
-        s_est = [self.source_models[t](mix)["waveforms"] for t in self.targets]
-        s_est = torch.cat(s_est, dim=1)
+
+        if self.simo:
+            s_est = self.model(mix)["waveforms"]
+        else:
+            s_est = [self.source_models[t](mix)["waveforms"] for t in self.targets]
+            s_est = torch.cat(s_est, dim=1)
 
         return {"waveforms": s_est}
 

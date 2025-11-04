@@ -80,15 +80,26 @@
 #"src_mod=bsrnn-large targets=other optim.patience=30 ckpt_path=outputs/bsrnn-large/last-other.ckpt"
 
 
-#------------- Stereo model
-#"src_mod=bsrnnstereo targets=vocals"
-#"src_mod=bsrnnstereo targets=bass"
-#"src_mod=bsrnnstereo targets=drums"
-#"src_mod=bsrnnstereo targets=other"
-#"src_mod=bsrnnstereo targets=vocals src_mod.fac_mask=8"
-#"src_mod=bsrnnstereo targets=bass src_mod.fac_mask=8"
-#"src_mod=bsrnnstereo targets=drums src_mod.fac_mask=8"
-#"src_mod=bsrnnstereo targets=other src_mod.fac_mask=8"
+#------------- Stereo model - naive
+#"src_mod.stereo=naive targets=vocals"
+#"src_mod.stereo=naive targets=bass"
+#"src_mod.stereo=naive targets=drums"
+#"src_mod.stereo=naive targets=other"
+#"src_mod.stereo=naive targets=vocals src_mod.fac_mask=8"
+#"src_mod.stereo=naive targets=bass src_mod.fac_mask=8"
+#"src_mod.stereo=naive targets=drums src_mod.fac_mask=8"
+#"src_mod.stereo=naive targets=other src_mod.fac_mask=8"
+
+
+#------------- Stereo model using a TAC module
+#"targets=vocals src_mod.stereo=tac"
+#"targets=bass src_mod.stereo=tac"
+#"targets=drums src_mod.stereo=tac"
+#"targets=other src_mod.stereo=tac"
+#"targets=vocals src_mod.stereo=tac src_mod.act_tac=prelu"
+#"targets=bass src_mod.stereo=tac src_mod.act_tac=prelu"
+#"targets=drums src_mod.stereo=tac src_mod.act_tac=prelu"
+#"targets=other src_mod.stereo=tac src_mod.act_tac=prelu"
 
 
 #-------------- Layer type LSTM vs. GRU vs. CONV (vocals only)
@@ -141,7 +152,12 @@
 #"targets=other dset=musdb18hq"
 
 
-#------------- Optimized models (attention + no SAD preprocessing + large patience)
+#------------- Optimized models (attention + no SAD preprocessing + large patience + TAC or no TAC)
+#"src_mod=bsrnn-opt-notac targets=vocals dset=musdb18hq optim.patience=30"
+#"src_mod=bsrnn-opt-notac targets=bass dset=musdb18hq optim.patience=30"
+#"src_mod=bsrnn-opt-notac targets=drums dset=musdb18hq optim.patience=30"
+#"src_mod=bsrnn-opt-notac targets=other dset=musdb18hq optim.patience=30"
+
 #"src_mod=bsrnn-opt targets=vocals dset=musdb18hq optim.patience=30"
 #"src_mod=bsrnn-opt targets=bass dset=musdb18hq optim.patience=30"
 #"src_mod=bsrnn-opt targets=drums dset=musdb18hq optim.patience=30"

@@ -1,6 +1,6 @@
 # General / output dirs
-name: bsrnn
-name_out_dir: bsrnn
+name: bsrnn-opt-notac
+name_out_dir: bsrnn-opt-notac
 name_tblog_dir: bsrnn
 
 # Data-related
@@ -10,11 +10,11 @@ n_hop: ${n_hop}
 nb_channels: ${nb_channels}
 
 # Band-split
-feature_dim: 64
+feature_dim: 128
 joint_bandsplit: False
 
 # Separator
-num_repeat: 8
+num_repeat: 12
 fac_sep: 2
 time_layer: lstm
 band_layer: lstm
@@ -30,10 +30,10 @@ n_heads: 1
 group_num: 1
 
 # Attention
-n_att_head: 0
-attn_enc_dim: 0
+n_att_head: 2
+attn_enc_dim: 16
 
 # Stereo / TAC module
-stereo: # None (default), "naive", or "tac"
+stereo:
 fac_tac: 3
 act_tac: tanh

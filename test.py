@@ -1,4 +1,4 @@
-import os
+from os.path import join
 import hydra
 from omegaconf import DictConfig
 import lightning.pytorch as pl
@@ -18,14 +18,14 @@ def test(args: DictConfig):
     sdr_type = args.eval.sdr_type
     targets = args.targets
 
-    model_dir = os.path.join(args.out_dir, args.src_mod.name_out_dir)
-    args.eval.rec_dir = os.path.join(model_dir, "audio")
+    model_dir = join(args.out_dir, args.src_mod.name_out_dir)
+    args.eval.rec_dir = join(model_dir, "audio")
     model_name = args.src_mod.name
     print(" Model:", model_name)
 
     # Evaluation results file
-    path_eval_file = os.path.join(model_dir, "test_results_" + sdr_type + ".csv")
-    path_main_file = os.path.join(args.out_dir, "test_results_" + sdr_type + ".csv")
+    path_eval_file = join(model_dir, "test_results_" + sdr_type + ".csv")
+    path_main_file = join(args.out_dir, "test_results_" + sdr_type + ".csv")
 
     # Evaluation
     if not (args.only_append_res):

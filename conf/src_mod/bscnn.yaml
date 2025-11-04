@@ -1,12 +1,19 @@
+# General / output dirs
 name: bscnn
 name_out_dir: bscnn
 name_tblog_dir: bscnn
 
+# Data-related
 sample_rate: ${sample_rate}
 n_fft: ${n_fft}
 n_hop: ${n_hop}
+nb_channels: ${nb_channels}
 
+# Band-split
 feature_dim: 32
+joint_bandsplit: False
+
+# Separator
 num_repeat: 4
 time_layer:
   n_dil_conv: 3
@@ -16,5 +23,11 @@ band_layer:
   n_dil_conv: 3
   ks: 3
   hs_fac: 1
+
+# Masker
+fac_mask: 4
+mask_ctxt: 0
+
+# Attention
 n_att_head: 0
 attn_enc_dim: 0

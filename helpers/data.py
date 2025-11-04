@@ -626,7 +626,7 @@ def build_training_samplers(targets, cfg_dset, ngpus=None, fast_tr=False):
 
 
 def build_eval_sampler(targets, cfg_dset, subset="train", split="valid"):
-    my_db = MUSDBDataset(
+    eval_db = MUSDBDataset(
         targets=targets,
         subset=subset,
         split=split,
@@ -640,9 +640,9 @@ def build_eval_sampler(targets, cfg_dset, subset="train", split="valid"):
     )
 
     splr_kwargs = {"num_workers": cfg_dset.nb_workers, "pin_memory": True}
-    my_sampler = DataLoader(my_db, batch_size=1, **splr_kwargs)
+    eval_sampler = DataLoader(eval_db, batch_size=1, **splr_kwargs)
 
-    return my_sampler
+    return eval_sampler
 
 
 if __name__ == "__main__":

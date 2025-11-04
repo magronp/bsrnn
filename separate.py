@@ -1,6 +1,7 @@
 import torch
 import torchaudio
 import hydra
+from os.path import join
 from omegaconf import DictConfig
 from models.separator import Separator
 from helpers.data import rec_estimates
@@ -9,7 +10,7 @@ from helpers.data import rec_estimates
 @hydra.main(version_base=None, config_name="config", config_path="conf")
 def separate(args: DictConfig):
 
-    # Additional argument: path to the track to separate
+    # Track to separate
     track_path = args.file
     orig_sr = torchaudio.info(track_path).sample_rate
 
@@ -31,7 +32,7 @@ def separate(args: DictConfig):
     # Resample the mixture to the target sample rate
     mix = torchaudio.functional.resample(mix, orig_sr, args.sample_rate)
 
-    # Define the folder where the model ckpt are located
+    # Define the folder where the model ckpt is/are located
     args.src_mod.name_out_dir = args.model_dir
 
     # Load the model
@@ -48,9 +49,16 @@ def separate(args: DictConfig):
     mix /= max_norm
     estimates = model._apply_model_to_track(mix)[0]
     mix *= max_norm
+    estimates = estimates.squeeze(0)  # remove batch dimension
+
+    # In case of SIMO model, only keep the relevant target estimates
+    if args.simo:
+        all_targets_sep = model.model.targets
+        est_ind = [all_targets_sep.index(t) for t in args.targets]
+        estimates = estimates[est_ind]
 
     # Record estimates
-    rec_estimates(estimates[0], args.rec_dir, args.targets, args.sample_rate)
+    rec_estimates(estimates, args.rec_dir, args.targets, args.sample_rate)
 
 
 if __name__ == "__main__":

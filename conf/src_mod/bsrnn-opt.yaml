@@ -1,18 +1,39 @@
+# General / output dirs
 name: bsrnn-opt
 name_out_dir: bsrnn-opt
 name_tblog_dir: bsrnn
 
+# Data-related
 sample_rate: ${sample_rate}
 n_fft: ${n_fft}
 n_hop: ${n_hop}
+nb_channels: ${nb_channels}
 
+# Band-split
 feature_dim: 128
+joint_bandsplit: False
+
+# Separator
 num_repeat: 12
+fac_sep: 2
 time_layer: lstm
 band_layer: lstm
 bidirectional: True
+
+# Masker
+fac_mask: 4
+mask_ctxt: 0
+subtract_last_trgt: False
+
+# Parallel heads
 n_heads: 1
 group_num: 1
+
+# Attention
 n_att_head: 2
 attn_enc_dim: 16
-fac_mask: 4
+
+# Stereo / TAC module
+stereo: "tac"
+fac_tac: 3
+act_tac: prelu

@@ -1,7 +1,7 @@
 # General / output dirs
-name: bsrnn
-name_out_dir: bsrnn
-name_tblog_dir: bsrnn
+name: simo-bsrnn
+name_out_dir: simo-bsrnn
+name_tblog_dir: simo-bsrnn
 
 # Data-related
 sample_rate: ${sample_rate}
@@ -11,7 +11,7 @@ nb_channels: ${nb_channels}
 
 # Band-split
 feature_dim: 64
-joint_bandsplit: False
+joint_bandsplit: True
 
 # Separator
 num_repeat: 8
@@ -23,7 +23,7 @@ bidirectional: True
 # Masker
 fac_mask: 4
 mask_ctxt: 0
-subtract_last_trgt: False
+subtract_last_trgt: True
 
 # Parallel heads
 n_heads: 1

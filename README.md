@@ -1,4 +1,4 @@
-# Replicating Band-Split RNN for music separation
+# An Open - and Optimized - Implementation of Band-Split RNN for Music Separation
 
 <div style="align: center; text-align:center;">
     <img src="https://gitlab.aicrowd.com/Tomasyu/sdx-2023-music-demixing-track-starter-kit/-/raw/master/Figure/BSRNN.png" width="500px" />
@@ -7,12 +7,13 @@
 
 &nbsp;
 
-This repository is an unofficial implementation of the [BSRNN](https://arxiv.org/pdf/2209.15174.pdf) model for music separation. It complements our paper.
+This repository is an unofficial implementation of the [BSRNN](https://arxiv.org/pdf/2209.15174.pdf) model for music separation. It accompanies our [replication study](#reference), whose primary goal is to obtain a model that yields similar results to those of the original BSRNN paper, and to explore reproducibility issues in music separation research.
 
-Our primary goal is to reproduce the original results from the BSRNN paper, but we are currently about [0.5 dB SDR bellow](#test-results), (which is why we proposed an "optimized" variant that yields competitive results). Therefore, efforts are still needed to match the original results: if you spot an error, or something that differs from the description in the paper, please feel free to reach out, send a message, or open an issue. :slightly_smiling_face:
+Despite our work, we are currently about [0.5 dB SDR bellow](#test-results) the original results, thus efforts are still needed to match these. To bridge this performance gap, we proposed several variants and eventually obtained an *optimized* model that yields a large 1.2 dB performance improvement.
 
+This project is based on [PyTorch](https://pytorch.org/) ([Ligthning](https://lightning.ai/docs/pytorch/stable/)) and [Hydra](https://hydra.cc/), and uses the HQ version of the freely available [MUSDB18](https://sigsep.github.io/datasets/musdb.html) dataset. We provide pretrained models on a [Zenodo repository](https://zenodo.org/records/13903584), which you can use readily for [separating your own song](#separation--demo).
 
-This project is based on [PyTorch](https://pytorch.org/) ([Ligthning](https://lightning.ai/docs/pytorch/stable/)) and [Hydra](https://hydra.cc/), and uses the HQ version of the freely available [MUSDB18](https://sigsep.github.io/datasets/musdb.html) dataset. We provide pretrained models on a [Zenodo repository](https://zenodo.org/records/13903584), which you can use for [separating your own song](#separation--demo).
+The goal of this project is to foster reproducible research, to allow other researchers to experiment with this model (and variants), and to provide a fully fonctionning training pipeline and checkpoints for inference. Then feel free to use it (and [cite it](#reference) if you do), and if you spot an error, or something that differs from the description in the paper, please feel free to reach out, send a message, or open an issue. :slightly_smiling_face: 
 
 
 ## Contents
@@ -24,39 +25,39 @@ This project is based on [PyTorch](https://pytorch.org/) ([Ligthning](https://li
    1. [Setup](#setup)
    2. [Training and evaluation](#training-and-evaluation)
    3. [Separation / demo](#separation--demo)
-3. [Hardware](#hardware)
+3. [Ressources](#ressources)
+   1. [Hardware](#hardware)
+   2. [Related repositories](#related-repositories)
 4. [Acknowledgments](#acknowledgments)
-5. [Referenced repositories](#referenced-repositories)
+5. [Reference](#referenced-repositories)
 
 
 ## Performance
 
 ### Test results
 
-Below we report the results on the MUSDB18-HQ test set in terms of signal-to-distortion ratio (SDR). As in the original BSRNN paper, we consider two variants of the SDR:
+The table below displays results on the MUSDB18-HQ test set in terms of signal-to-distortion ratio (SDR). More precisely, we consider the *chunk* SDR, which is computed by taking the median over 1s-long chunks, and median over tracks (in practice, computation is performed using the [museval](https://github.com/sigsep/sigsep-mus-eval) tooblox). Complementary results in terms of *utterance* SDR are available in [our paper](#reference).
 
-**uSDR**: The utterance SDR is used as metric in the latest [MDX challenges](https://www.aicrowd.com/challenges/sound-demixing-challenge-2023/problems/music-demixing-track-mdx-23). This SDR is equal to a basic signal-to-noise ratio. It is computed on entire tracks (no chunking) and averaged over tracks.
+|                              |  vocals |   bass  |  drums  |  other  | average |
+|------------------------------|---------|---------|---------|---------|---------|
+|  BSRNN - original results    |  10.01  |   7.22  |   9.01  |   6.70  |   8.24  |
+|  BSRNN - our implementation  |   9.14  |   7.72  |   8.07  |   5.68  |   7.65  |
+|  **oBSRNN**                  |   **9.81**  |   **9.85**  |  **10.31**  |   **6.31**  |   **9.07**  |
+ 
+Our optimized model (**oBSRNN**) model includes a multi-head attention mechanism, a TAC module for stereo-awareness, and it is trained using a non-preprocessed dataset (see [here](docs/analysis.md#optimized-model) for more details). This substantially improves performance over our initial BSRNN implementation, and it largely outperforms the paper's results by ~0.8 dB. This improvement is mostly due to large SDR increase in the bass and drums estimates, while the vocals and other results are still inferior to those in the original paper.
 
-|                      | vocals |  bass  |  drums |  other | average|
-|----------------------|--------|--------|--------|--------|--------|
-|  paper's results     |  10.0  |   6.8  |   8.9  |   6.0  |   7.9  |
-|  our implementation  |   9.2  |   6.5  |   8.6  |   5.4  |   7.4  |
-|  optimized           |   9.7  |   7.4  |   9.6  |   5.8  |   8.1  |
+We also propose an optimized replication of the SIMO variant of BSRNN (see the [original SIMO-BSRNN paper](https://ieeexplore.ieee.org/document/10447771) and [our implementation](docs/simo.md) for more details).
 
-**cSDR**: The chunk SDR was used as metric in the [SiSEC 2018](https://sisec.inria.fr/2018-professionally-produced-music-recordings/) challenge. It is computed by taking the median over 1s-long chunks, and median over tracks. In practice, computation is performed using the [museval](https://github.com/sigsep/sigsep-mus-eval) tooblox.
-
-|                      | vocals |  bass  |  drums |  other | average|
-|----------------------|--------|--------|--------|--------|--------|
-|  paper's results     |  10.0  |   7.2  |   9.0  |   6.7  |   8.2  |
-|  our implementation  |   9.1  |   7.7  |   8.1  |   5.7  |   7.7  |
-|  optimized           |   9.9  |   8.9  |   9.2  |   6.1  |   8.5  |
+|                                |  vocals |   bass  |  drums  |  other  | average |
+|--------------------------------|---------|---------|---------|---------|---------|
+|  SIMO-BSRNN - original results |   9.73  |   7.80  |  10.06  |   6.56  |   8.54  |
+|  **oBSRNN-SIMO**               |  **10.66**  |   **9.73**  |  **10.98** |   **7.78**  |   **9.79**  |
 
 
-The optimized BSRNN model includes a multi-head attention mechanism, and it is trained using a non-preprocessed dataset (see [here](docs/analysis.md#optimized-model) for more details). This largely improves performance over our initial BSRNN implementation, and outperforms the paper's results by ~0.2 dB. This performance is mostly due to improvement in the bass and drums estimates, while the vocals and other results are still inferior to those in the original paper.
 
 ### Model variants
 
-We extensively experiment with model variants, and we report and analyze the results in a [separate document](docs/analysis.md). Beyond reproducing the paper's results, we provide several suggestions to further improving the results by additional architecture variants, as well as optimizing the data preparation and training process.
+We extensively experiment with model variants, and we report and analyze the results in a [dedicated document](docs/analysis.md). Beyond reproducing the paper's results, we provide several suggestions to further improving the results by additional architecture variants, as well as optimizing the data preparation and training process. We specifically detail the results corresponding to the [SIMO-BSRNN](https://ieeexplore.ieee.org/document/10447771) model in a [separate document](docs/simo.md) for clarity.
 
 
 ## How to use
@@ -69,51 +70,55 @@ pip install -r requirements.txt
 ```
 
 ### Training and evaluation
-For clarity, we provie a guide for model training and evaluation in a [separate document](docs/training.md).
+For clarity, we provide a guide for model training and evaluation in a [separate document](docs/training.md).
 
 ### Separation / demo
 
-If you simply want to apply BSRNN to separate your favorite song, then make sure to download the pretrained checkpoints from the [Zenodo repository](https://zenodo.org/records/13903584), and place them in the `outputs/` folder. Then, perform separation as follows:
+If you simply want to use BSRNN to separate your favorite song, then make sure to download the pretrained checkpoints from the [Zenodo repository](https://zenodo.org/records/13903584), and place them in the `outputs/` folder. Then, perform separation as follows:
 ```
 python separate.py file=path/to/my/file.wav
 ```
 You can specify:
 - an offset and a maximum duration (in seconds) with the `offset` and `duration` parameters (by default, the whole song is processed).
 - the directory where the separated tracks will be stored `rec_dir` (by default, it is the current working directory).
-- which `targets` to estimate (by default, all four tracks `vocals`, `bass`, `drums`, and `other`).
+- which `targets` to extract (by default, all four tracks `vocals`, `bass`, `drums`, and `other` are estimated ).
 - the folder where checkpoints are located, which is `<out_dir>/<model_dir>/`. You can change both `out_dir` (default: `outputs`) and `model_dir` (default: `bsrnn-opt`).
 
+**Note**: if you want to use the SIMO model, you need to add an extra flag `simo=true`, so that the code loads a multi-source checkpoint named `separator.ckpt` instead of multiple single-source checkpoints named `<target>.ckpt`.
 
+## Ressources
 
-
-
-## Hardware
-
+### Hardware
 All computation were carried out using the [Grid5000](https://www.grid5000.fr) testbed, supported by a French scientific interest group hosted by Inria and including CNRS, RENATER and several Universities as well as other organizations.
 
 Most models are trained using either 4 Nvidia RTX 2080 Ti (11 GiB), except for the small [drums model with attention](docs/analysis.md#attention-mechanism), which uses 4 Nvidia Tesla T4 (15 GiB) GPUs. The [larger](docs/analysis.md#large-model) / [optimized](docs/analysis.md#optimized-model) models are trained using 2 Nvidia Tesla L40S (45 GiB) GPUs.
 
-## Referenced repositories
+### Related repositories
 
 Our implementation relies on code from external sources.
 
-- The main BSRNN module definition is adapted from the [authors's repository](https://gitlab.aicrowd.com/Tomasyu/sdx-2023-music-demixing-track-starter-kit/) on the MDX 2023 challenge.
-- We adapated the attention mechanism from the TFGridNet implementation in the [ESPNET toolbox](https://github.com/espnet/espnet/blob/35c2e2b13026ba212a2ba5e454e1621d30f2d8b9/espnet2/enh/separator/tfgridnet_separator.py#L18).
 - We implemented the BSRNN-related classes (ResNet, BSNet, BSRNN) using the authors' [repository from the MDX challenge](http://gitlab.aicrowd.com/Tomasyu/sdx-2023-music-demixing-track-starter-kit). Note however that this code *needs to be adapted* so that it outputs both time-domain and TF domain components, which are necessary to compute the loss.
+- We adapated the attention mechanism from the TFGridNet implementation in the [ESPNET toolbox](https://github.com/espnet/espnet/blob/35c2e2b13026ba212a2ba5e454e1621d30f2d8b9/espnet2/enh/separator/tfgridnet_separator.py#L18).
 - The multi-head sequence module is adapted from the [DTTNet](https://github.com/junyuchen-cjy/DTTNet-Pytorch) code (and shares similarities with TFGridNet).
 - For the source activity detector used in preparing the dataset, we largely relied on the [implementation from Amantur Amatov](https://github.com/amanteur/BandSplitRNN-Pytorch).
+
 
 ## Acknowledgments
 
 We thank Jianwei Yu (author of the BSRNN paper) for trying to help us with the implementation. We also thank Christopher Landschoot for fruitful discussion related to his [own implementation](https://github.com/crlandsc/Music-Demixing-with-Band-Split-RNN). Finally, we thank Stefan Uhlich for discussions on [Open-Unmix](https://github.com/sigsep/open-unmix-pytorch) and the [MDX challenge](https://arxiv.org/pdf/2308.06979), which were helpful in improving our work overall.
 
 
+## Reference
 
-# Descriptif Zenodo
-Here you can download the pretrained weights (PyTorch Lightning checkpoints) of the BSRNN model for music separation. These are unofficial, and correspond to our implementation, whose code is freely available here. These models are trained using the MUSDB18HQ dataset.
+If you use this code, please cite our paper:
 
-We provide two sets of weights:
+```latex
+@article{MagronBSRNN,  
+  author={Paul Magron and Romain Serizel and Constance Douwes},  
+  title={The Costs of Reproducibility in Music Separation Research: a Replication of Band-Split {RNN}},
+  journal={under review},  
+  url = {lien arxiv}
+}
+```
 
-bsrnn-large, which correspond to our implementation of the original BSRNN paper
-bsrnn-opt, which correspond to an optimized version of BSRNN (using a non preprocessed dataset, and additional attention heads)
-
+You can use the acronym **oBSRNN** (or **oBSRNN-SIMO**) to refer to our implementation, e.g., to report the corresponding [results](#test-results), where "o" stands for both "open" and "optimized". This allows to make a distinction with the original paper's model / results.

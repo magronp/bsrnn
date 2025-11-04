@@ -1,10 +1,10 @@
 from omegaconf import OmegaConf
 import torch
 import torch.nn as nn
-import numpy as np
 from models.pl_module import PLModule
 from helpers.transforms import mySTFT, myISTFT
 from models.attention import AttentionBlock
+from models.bs import get_bandsplit, Masker
 
 
 class ResNetCNN(nn.Module):
@@ -116,7 +116,7 @@ class ResNetCNN(nn.Module):
         return input + output
 
 
-class BSNet(nn.Module):
+class BSNetCNN(nn.Module):
     def __init__(
         self,
         feature_dim=64,
@@ -185,7 +185,7 @@ class BSCNN(PLModule):
         cfg_optim,
         cfg_scheduler,
         cfg_eval,
-        target="vocals",
+        targets="vocals",
         sample_rate=44100,
         n_fft=2048,
         n_hop=512,
@@ -193,6 +193,8 @@ class BSCNN(PLModule):
         num_repeat=12,
         time_layer={"n_dil_conv": 2, "ks": 3, "hs_fac": 2},
         band_layer={"n_dil_conv": 2, "ks": 3, "hs_fac": 2},
+        fac_mask=4,
+        mask_ctxt=0,
         n_att_head=0,
         attn_enc_dim=20,
         eps=1e-7,
@@ -205,14 +207,12 @@ class BSCNN(PLModule):
             cfg_optim,
             cfg_scheduler,
             cfg_eval,
-            targets=target,
+            targets=targets,
             sample_rate=sample_rate,
             eps=eps,
         )
 
-        instrument = target
-        sr = sample_rate
-        self.sr = sr
+        self.sr = sample_rate
         self.win = n_fft
         self.stride = n_hop
         self.group = self.win // 2
@@ -224,40 +224,9 @@ class BSCNN(PLModule):
         self.stft = mySTFT(n_fft=n_fft, n_hop=n_hop)
         self.istft = myISTFT(n_fft=n_fft, n_hop=n_hop)
 
-        # 0-1k (100 hop), 1k-4k (250 hop), 4k-8k (500 hop), 8k-16k (1k hop), 16k-20k (2k hop), 20k-inf
-        bandwidth_50 = int(np.floor(50 / (sr / 2.0) * self.enc_dim))
-        bandwidth_100 = int(np.floor(100 / (sr / 2.0) * self.enc_dim))
-        bandwidth_250 = int(np.floor(250 / (sr / 2.0) * self.enc_dim))
-        bandwidth_500 = int(np.floor(500 / (sr / 2.0) * self.enc_dim))
-        bandwidth_1k = int(np.floor(1000 / (sr / 2.0) * self.enc_dim))
-        bandwidth_2k = int(np.floor(2000 / (sr / 2.0) * self.enc_dim))
-
-        if instrument == "vocals" or instrument == "other":
-            self.band_width = [bandwidth_100] * 10
-            self.band_width += [bandwidth_250] * 12
-            self.band_width += [bandwidth_500] * 8
-            self.band_width += [bandwidth_1k] * 8
-            self.band_width += [bandwidth_2k] * 2
-        elif instrument == "bass":
-            self.band_width = [bandwidth_50] * 10
-            self.band_width += [bandwidth_100] * 5
-            self.band_width += [bandwidth_500] * 6
-            self.band_width += [bandwidth_1k] * 4
-            self.band_width += [bandwidth_2k] * 4
-        elif instrument == "drums":
-            self.band_width = [bandwidth_50] * 20
-            self.band_width += [bandwidth_100] * 10
-            self.band_width += [bandwidth_250] * 8
-            self.band_width += [bandwidth_500] * 8
-            self.band_width += [bandwidth_1k] * 8
-        else:
-            print(f"Unknown Instrument {target}")
-            raise NotImplementedError
-
-        self.band_width.append(self.enc_dim - np.sum(self.band_width))
-        self.nband = len(self.band_width)
-
         # Band split module
+        self.band_width = get_bandsplit(sample_rate, self.enc_dim)
+        self.nband = len(self.band_width)
         self.BN = nn.ModuleList([])
         for i in range(self.nband):
             self.BN.append(
@@ -271,7 +240,7 @@ class BSCNN(PLModule):
         self.separator = []
         for i in range(num_repeat):
             self.separator.append(
-                BSNet(
+                BSNetCNN(
                     self.feature_dim,
                     time_layer=time_layer,
                     band_layer=band_layer,
@@ -284,24 +253,21 @@ class BSCNN(PLModule):
         self.separator = nn.Sequential(*self.separator)
 
         # Mask estimation module
-        self.mask = nn.ModuleList([])
-        for i in range(self.nband):
-            self.mask.append(
-                nn.Sequential(
-                    nn.GroupNorm(1, self.feature_dim, self.eps),
-                    nn.Conv1d(self.feature_dim, self.feature_dim * 4, 1),
-                    nn.Tanh(),
-                    nn.Conv1d(self.feature_dim * 4, self.feature_dim * 4, 1),
-                    nn.Tanh(),
-                    nn.Conv1d(self.feature_dim * 4, self.band_width[i] * 4, 1),
-                )
-            )
+        self.mask_ctxt = mask_ctxt
+        self.fac_mask = fac_mask
+        self.masker = Masker(
+            self.band_width,
+            self.feature_dim,
+            fac_mask=self.fac_mask,
+            mask_ctxt=self.mask_ctxt,
+            eps=eps,
+        )
 
     def forward(self, input):
-        # input shape: (B, nch, n_samples)
+        # input shape: (bsize, nch, n_samples)
 
-        B, nch, nsample = input.shape
-        input = input.view(B * nch, -1)
+        bsize, nch, nsample = input.shape
+        input = input.view(bsize * nch, -1)
 
         spec = self.stft(input)
 
@@ -316,50 +282,29 @@ class BSCNN(PLModule):
             )
             subband_mix_spec.append(
                 spec[:, band_idx : band_idx + self.band_width[i]]
-            )  # B*nch, BW, T
+            )  # B, BW, T
             band_idx += self.band_width[i]
 
         # normalization and bottleneck
         subband_feature = []
         for i in range(len(self.band_width)):
             subband_feature.append(
-                self.BN[i](subband_spec[i].view(B * nch, self.band_width[i] * 2, -1))
+                self.BN[i](subband_spec[i].view(bsize * nch, self.band_width[i] * 2, -1))
             )
         subband_feature = torch.stack(subband_feature, 1)  # B, nband, N, T
 
-        # separator
+        # Separator
         sep_output = self.separator(subband_feature)
-        sep_output = sep_output.view(B * nch, self.nband, self.feature_dim, -1)
 
-        # masking
-        sep_subband_spec = []
-        for i in range(len(self.band_width)):
-            # Compute the mask, reshape, and compute GLU
-            out = self.mask[i](sep_output[:, i])  # B*nch, BW*4, T
-            out = out.view(B * nch, 2, 2, self.band_width[i], -1)  # B*nch, 2, 2, BW, T
-            mask = out[:, 0] * torch.sigmoid(out[:, 1])  # B*nch, 2, BW, T
+        # Masker
+        est_spec = self.masker(sep_output, subband_mix_spec)  # B, F, T
 
-            # Apply the mask
-            mask_real = mask[:, 0]  # B*nch, BW, T
-            mask_imag = mask[:, 1]  # B*nch, BW, T
-            est_spec_real = (
-                subband_mix_spec[i].real * mask_real
-                - subband_mix_spec[i].imag * mask_imag
-            )  # B*nch, BW, T
-            est_spec_imag = (
-                subband_mix_spec[i].real * mask_imag
-                + subband_mix_spec[i].imag * mask_real
-            )  # B*nch, BW, T
-            sep_subband_spec.append(torch.complex(est_spec_real, est_spec_imag))
-        est_spec = torch.cat(sep_subband_spec, 1)  # B*nch, F, T
+        # Reshape and add "n_targets" dimension
+        est_spec = est_spec.view(bsize, nch, self.enc_dim, -1)  # bsize, nch, F, T
+        est_spec = est_spec.unsqueeze(1)  # bsize, 1, nch, F, T
 
-        output = self.istft(est_spec, length=nsample)
-        output = output.view(B, nch, -1)
-
-        # adjust to proper sizes
-        est_spec = est_spec.view(B, nch, self.enc_dim, -1)
-        est_spec = est_spec.unsqueeze(1)  # B, 1, nch, F, T
-        output = output.unsqueeze(1)  # B, 1, nch, n_samples
+        # istft
+        output = self.istft(est_spec, length=nsample)  # bsize, 1, nch, n_samples
 
         return {"waveforms": output, "stfts": est_spec}
 

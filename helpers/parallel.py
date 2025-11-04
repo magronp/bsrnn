@@ -21,7 +21,7 @@ def process_all_tracks_parallel(args, subset="test", split=None, num_cpus=None):
         num_cpus = max_cpus
     else:
         num_cpus = min(num_cpus, max_cpus)
-        
+
     # Freeze the non track-specific arguments
     myfun = functools.partial(sep_and_eval_track, args=args, subset=subset)
 
@@ -86,5 +86,6 @@ def sep_and_eval_track(track_name, args, subset="test"):
     test_sdr = model.test_step(test_batch, 0)
 
     return test_sdr
+
 
 # EOF

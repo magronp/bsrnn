@@ -1,8 +1,9 @@
-from codecarbon import OfflineEmissionsTracker
 import sys
+import numpy as np
 from os.path import join, exists
 import pandas as pd
 import glob
+from codecarbon import OfflineEmissionsTracker
 from tensorboard.backend.event_processing.event_accumulator import EventAccumulator
 
 
@@ -22,6 +23,7 @@ def get_exp_params_str():
                     "track_emissions",
                     "ckpt_path=",
                     "hydra.",
+                    "name_out_dir",
                 ]
             )
         ):
@@ -68,11 +70,13 @@ def append_df_to_main_file(path_main_file, df):
     return
 
 
-def store_exp_info(exp_name, target, vnum, nparams, tblog_dir, out_dir="outputs/"):
+def store_exp_info(exp_name, targets, vnum, nparams, tblog_dir, out_dir="outputs/"):
+
+    targets = "-".join(targets)
 
     df = pd.DataFrame(
         data={
-            "target": target,
+            "target": targets,
             "tb_version": vnum,
             "exp_name": exp_name,
             "num_params": nparams,
@@ -87,12 +91,15 @@ def store_exp_info(exp_name, target, vnum, nparams, tblog_dir, out_dir="outputs/
     return
 
 
-def load_val_log(version_list, tblogdir_model, monitor_val_loss=False):
+def load_val_log(
+    version_list, tblogdir_model, monitor_val_loss=False, monitor_target="epoch"
+):
 
+    # Assume a list of TB logs (in case training was resumed)
     if isinstance(version_list, int):
         version_list = [version_list]
 
-    df_valsdr, df_valloss = [], []
+    df_valsdr_monitor, df_valloss, df_valsdr_trg = [], [], []
     for v in version_list:
         # Get the path to the TB log, and load it
         tbpath = glob.glob(join(tblogdir_model, "version_" + str(v), "events*"))[0]
@@ -100,25 +107,55 @@ def load_val_log(version_list, tblogdir_model, monitor_val_loss=False):
         event_acc.Reload()
 
         # Get the validation SDR and loss over epoch
-        df_valsdr.append(pd.DataFrame(event_acc.Scalars("val_sdr_epoch")))
+        df_valsdr_monitor.append(pd.DataFrame(event_acc.Scalars("val_sdr_epoch")))
         df_valloss.append(pd.DataFrame(event_acc.Scalars("val_loss_epoch")))
 
-    # Concatenate SDR / loss over many runs (useful when resume training)
-    df_valsdr = pd.concat(df_valsdr, ignore_index=True)
+        if monitor_target != "epoch":
+            df_valsdr_trg.append(
+                pd.DataFrame(event_acc.Scalars("val_sdr_" + monitor_target))
+            )
+
+    if monitor_target == "epoch":
+        df_valsdr_trg = df_valsdr_monitor
+
+    # Concatenate SDR / loss over many runs (in case training was resumed)
+    df_valsdr_monitor = pd.concat(df_valsdr_monitor, ignore_index=True)
+    df_valsdr_trg = pd.concat(df_valsdr_trg, ignore_index=True)
     df_valloss = pd.concat(df_valloss, ignore_index=True)
 
     # Get the index corresponding to the optimal value
     if monitor_val_loss:
         idx_opt = df_valloss.idxmin()["value"]
     else:
-        idx_opt = df_valsdr.idxmax()["value"]
+        idx_opt = df_valsdr_monitor.idxmax()["value"]
 
     # Get the SDR corresponding to the index
-    best_sdr = df_valsdr["value"][idx_opt]
+    best_sdr = df_valsdr_trg["value"][idx_opt]
 
-    total_epochs = len(df_valsdr)
+    total_epochs = len(df_valsdr_monitor)
 
-    return best_sdr, idx_opt, df_valsdr, df_valloss, total_epochs
+    return best_sdr, idx_opt, df_valsdr_trg, df_valloss, total_epochs
+
+
+def get_pareto_mask(x):
+    """
+    Find the Pareto-efficient points
+    :input: x = [n_points, n_costs] array
+    :output: m = [n_points,] boolean array
+    adapted from: https://stackoverflow.com/questions/32791911/fast-calculation-of-pareto-front-in-python
+    """
+    is_efficient = np.arange(x.shape[0])
+    n_points = x.shape[0]
+    next_point_index = 0  # Next index in the is_efficient array to search for
+    while next_point_index < len(x):
+        nondominated_point_mask = np.any(x < x[next_point_index], axis=1)
+        nondominated_point_mask[next_point_index] = True
+        is_efficient = is_efficient[nondominated_point_mask]  # Remove dominated points
+        x = x[nondominated_point_mask]
+        next_point_index = np.sum(nondominated_point_mask[:next_point_index]) + 1
+    m = np.zeros(n_points, dtype=bool)
+    m[is_efficient] = True
+    return m
 
 
 # EOF
