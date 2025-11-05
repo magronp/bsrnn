@@ -1,9 +1,14 @@
-# Evaluation-related parameters (val and test)
+# General evaluation (val/test) parameters
 device: cuda
+verbose_per_track: True
+rec_dir:
+
+# Inference-related (fader or OLA)
 segment_len: 10.0
 overlap: 0.1
 hop_size: # leave it to None for using the linear fader; if a value is specified, it will use the OLA version
-verbose_per_track: True
-sdr_type: usdr # utterance SDR (usdr) or chunk sdr (csdr)
-win_dur: 1.0 # used for the museval SDR
-rec_dir:
+
+# SDR-related (type and attributes)
+sdr_type: usdr # "uSDR" or "cSDR" (utterance / chunk SDR)
+sdr_win: 1.0 # used for the cSDR
+sdr_hop: 1.0 # used for the cSDR

@@ -84,7 +84,7 @@ The code will create a `Separator` module, for which it will search for target-s
 
 **Note**: if you want to use the SIMO model, you need to add an extra flag `simo=true`, so that the code loads a multi-source checkpoint named `separator.ckpt` instead of multiple single-source checkpoints named `<target>.ckpt`, e.g.:
 ```
-python test.py src_mod=simo-bsrnn-large simo=true
+python test.py src_mod=simo-bsrnn-opt simo=true
 ```
 
 

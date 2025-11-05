@@ -36,7 +36,7 @@ The goal of this project is to foster reproducible research, to allow other rese
 
 ### Test results
 
-The table below displays results on the MUSDB18-HQ test set in terms of signal-to-distortion ratio (SDR). More precisely, we consider the *chunk* SDR, which is computed by taking the median over 1s-long chunks, and median over tracks (in practice, computation is performed using the [museval](https://github.com/sigsep/sigsep-mus-eval) tooblox). Complementary results in terms of *utterance* SDR are available in [our paper](#reference).
+The table below displays results on the MUSDB18-HQ test set in terms of signal-to-distortion ratio (SDR). More precisely, we consider the *chunk* SDR, which is computed by taking the median over 1s-long chunks, and median over tracks, and allowing a 512-point distortion filter (in practice, computation is performed using the [museval](https://github.com/sigsep/sigsep-mus-eval) tooblox). Complementary results in terms of *utterance* SDR are available in [our paper](#reference).
 
 |                              |  vocals |   bass  |  drums  |  other  | average |
 |------------------------------|---------|---------|---------|---------|---------|
@@ -69,6 +69,12 @@ Start by cloning this repository, creating/activating a virtual environment, and
 pip install -r requirements.txt
 ```
 
+On linux you will also need to install ffmpeg (needed for museval / musdb):
+```
+sudo apt install ffmpeg
+```
+
+
 ### Training and evaluation
 For clarity, we provide a guide for model training and evaluation in a [separate document](docs/training.md).
 
@@ -81,10 +87,13 @@ python separate.py file=path/to/my/file.wav
 You can specify:
 - an offset and a maximum duration (in seconds) with the `offset` and `duration` parameters (by default, the whole song is processed).
 - the directory where the separated tracks will be stored `rec_dir` (by default, it is the current working directory).
-- which `targets` to extract (by default, all four tracks `vocals`, `bass`, `drums`, and `other` are estimated ).
+- which `targets` to extract (by default, all four tracks `vocals`, `bass`, `drums`, and `other` are estimated).
 - the folder where checkpoints are located, which is `<out_dir>/<model_dir>/`. You can change both `out_dir` (default: `outputs`) and `model_dir` (default: `bsrnn-opt`).
 
-**Note**: if you want to use the SIMO model, you need to add an extra flag `simo=true`, so that the code loads a multi-source checkpoint named `separator.ckpt` instead of multiple single-source checkpoints named `<target>.ckpt`.
+**Note**: if you want to use the SIMO model, you need to add an extra flag `simo=true`, so that the code loads a multi-source checkpoint named `separator.ckpt` instead of multiple single-source checkpoints named `<target>.ckpt`, e.g.:
+```
+python separate.py file=path/to/my/file.wav model_dir=simo-bsrnn-opt simo=true
+```
 
 ## Ressources
 

@@ -46,10 +46,13 @@ class PLModule(pl.LightningModule):
         self.eval_segment_len = cfg_eval.segment_len
         self.eval_overlap = cfg_eval.overlap
         self.eval_hop_size = cfg_eval.hop_size
-        self.sdr_type = cfg_eval.sdr_type
-        self.win_bss = int(cfg_eval.win_dur * sample_rate)
         self.verbose_per_track = cfg_eval.verbose_per_track
         self.rec_dir = cfg_eval.rec_dir
+
+        # SDR-related
+        self.sdr_type = cfg_eval.sdr_type
+        self.sdr_win = int(cfg_eval.sdr_win * sample_rate)
+        self.sdr_hop = int(cfg_eval.sdr_hop * sample_rate)
 
         # Transforms
         self.n_fft = n_fft
@@ -134,9 +137,14 @@ class PLModule(pl.LightningModule):
 
         # Validation SDR
         val_sdr_trgts = compute_sdr(
-            y, y_hat, win_bss=self.win_bss, sdr_type=self.sdr_type, eps=self.eps
-        )[0]
-        val_sdr = torch.nanmean(val_sdr_trgts)  # in case there are more than one source
+            y,
+            y_hat,
+            win=self.sdr_win,
+            hop=self.sdr_hop,
+            type=self.sdr_type,
+            eps=self.eps,
+        )
+        val_sdr = torch.nanmean(val_sdr_trgts)  # mean over targets
 
         self.log(
             "val_sdr",
@@ -391,8 +399,13 @@ class PLModule(pl.LightningModule):
 
         # Test SDR
         sdr = compute_sdr(
-            y, y_hat, win_bss=self.win_bss, sdr_type=self.sdr_type, eps=self.eps
-        )[0]
+            y,
+            y_hat,
+            win=self.sdr_win,
+            hop=self.sdr_hop,
+            type=self.sdr_type,
+            eps=self.eps,
+        )
 
         # Arrange SDR into a dict
         testsdr = {}

@@ -104,12 +104,11 @@ def get_track_list(data_dir, subset, split=None):
 
     # for the training subset, need to keep or filter out val tracks
     if subset == "train":
-        # list of validation tracks, predefined in musdb
+        # List of validation track (see https://github.com/sigsep/sigsep-mus-db/blob/master/musdb/configs/mus.yaml)
         setup_path = os.path.join(musdb.__path__[0], "configs", "mus.yaml")
         with open(setup_path, "r") as f:
             list_tracks_val = yaml.safe_load(f)["validation_tracks"]
 
-        # list: see https://github.com/sigsep/sigsep-mus-db/blob/master/musdb/configs/mus.yaml)
         # list_tracks_val = [
         #    "Actions - One Minute Smile",
         #    "Clara Berry And Wooldog - Waltz For My Victims",

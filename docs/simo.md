@@ -11,6 +11,4 @@ The joint bandsplit scheme, still with source-specific models, and using a joint
 |  joint refined bandsplit    |   8.6  |   6.7  |   9.5  |   5.0  |   7.4  |
 |  simo, subtract last target |   8.1  |   6.7  |   8.7  |   5.5  |   7.3  |
 |  simo, one model per source |   8.2  |   6.7  |   8.9  |   5.6  |   7.4  |
-
-
-|  simo, opt                  |  11.26 |   9.76 | 11.76  |  8.38  |   10.29  |
+|  simo, opt                  |  11.3  |   9.8  | 11.8   |  8.4   |   10.3 |
