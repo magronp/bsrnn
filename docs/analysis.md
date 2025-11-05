@@ -58,22 +58,22 @@ While results are similar, overall maximizing the validation SDR allows training
 
 ### Training loss
 
-The original paper uses a combination (t+tf) of a time-domain (t) and time-frequency domain (tf) terms:
+The original paper uses a combination of a time-domain (t) and an STFT-domain (stft) terms:
 $$
 \text{(t)}: \quad |s-\hat{s}|_1
 $$
 $$
-\text{(tf)}: \quad |\Re{(S)}-\Re{(\hat{S})}|_1 + |\Im{(S)}-\Im{(\hat{S})}|_1
+\text{(stft)}: \quad |\Re{(S)}-\Re{(\hat{S})}|_1 + |\Im{(S)}-\Im{(\hat{S})}|_1
 $$
 We study the influence of the training loss domain by checking these terms individually (and their combination)
 
 | loss    | vocals |  bass  |  drums |  other | average|
 |---------|--------|--------|--------|--------|--------|
-|  t+tf   |   7.7  |   6.1  |   9.7  |   4.8  |   7.1  |
+|  t+stft   |   7.7  |   6.1  |   9.7  |   4.8  |   7.1  |
 |  t      |   7.9  |   6.1  |   9.4  |   4.9  |   7.1  |
-|  tf     |   7.9  |   6.4  |   9.6  |   4.9  |   7.2  |
+|  stft     |   7.9  |   6.4  |   9.6  |   4.9  |   7.2  |
 
-Interestingly, we don't observe any major difference between losses. While previous works have outline the [importance of time-domain training](https://arxiv.org/pdf/1911.08895) (rather than end-to-end time-domain modeling), it seems that if the whole complex-valued STFT is modeled, than TF-domain training works equally well.
+Interestingly, we do not observe any major difference between losses. While previous works have outline the [importance of time-domain training](https://arxiv.org/pdf/1911.08895), it seems that if the whole complex-valued STFT is modeled using two independent terms (real/imag parts), than STFT-domain training is equally powerful.
 
 
 ## Basic variants
