@@ -5,8 +5,7 @@ import lightning.pytorch as pl
 from models.separator import Separator
 from helpers.data import build_eval_sampler
 from helpers.parallel import process_all_tracks_parallel
-from helpers.utils import append_df_to_main_file
-from helpers.eval import aggregate_res_over_tracks
+from helpers.utils import append_df_to_main_file, aggregate_res_over_tracks
 
 
 @hydra.main(version_base=None, config_name="config", config_path="conf")

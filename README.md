@@ -36,7 +36,7 @@ The goal of this project is to foster reproducible research, to allow other rese
 
 ### Test results
 
-The table below displays results on the MUSDB18-HQ test set in terms of signal-to-distortion ratio (SDR). More precisely, we consider the *chunk* SDR, which is computed by taking the median over 1s-long chunks, and median over tracks, and allowing a 512-point distortion filter (in practice, computation is performed using the [museval](https://github.com/sigsep/sigsep-mus-eval) tooblox). Complementary results in terms of *utterance* SDR are available in [our paper](#reference).
+The table below displays results on the MUSDB18-HQ test set in terms of signal-to-distortion ratio (SDR). More precisely, we consider the *chunk* SDR, which is computed by taking the median over 1s-long chunks, and median over tracks. In practice, computation is performed using the [museval](https://github.com/sigsep/sigsep-mus-eval) tooblox, but we provide a [more efficient implementation](https://github.com/magronp/bsrnn/blob/main/helpers/eval.py#L29) if only the SDR is needed. Complementary results in terms of *utterance* SDR are available in [our paper](#reference).
 
 |                              |  vocals |   bass  |  drums  |  other  | average |
 |------------------------------|---------|---------|---------|---------|---------|

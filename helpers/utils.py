@@ -51,6 +51,34 @@ def get_emission_tracker(exp_name, country_iso_code="FRA", pue=1.5, out_dir="out
     return tracker
 
 
+def aggregate_res_over_tracks(path_or_df, method_name=None, sdr_type="usdr"):
+
+    # The results are either directly provided as dataframe, or as a path to a file
+    if isinstance(path_or_df, str):
+        test_results = pd.read_csv(path_or_df)
+    else:
+        test_results = path_or_df
+
+    # Aggregate scores over tracks (mean for the uSDR, median otherwise)
+    if sdr_type == "usdr":
+        test_results_agg = test_results.mean(numeric_only=True, axis=0)
+    else:
+        test_results_agg = test_results.median(numeric_only=True, axis=0)
+
+    # Get the mean over sources
+    mean_sdr = test_results_agg.mean()
+
+    # Reform the dataframe
+    test_results_agg = pd.DataFrame(test_results_agg).T
+    test_results_agg["song"] = mean_sdr
+
+    # Add the method name
+    if method_name is not None:
+        test_results_agg.insert(loc=0, column="method", value=method_name)
+
+    return test_results_agg
+
+
 def append_df_to_main_file(path_main_file, df):
 
     # Load the file containing all results if it exists

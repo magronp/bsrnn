@@ -4,7 +4,7 @@ import lightning.pytorch as pl
 import pandas as pd
 from os.path import join
 from helpers.data import rec_estimates
-from helpers.eval import compute_sdr, compute_loss
+from helpers.eval import compute_sdr
 from omegaconf import OmegaConf
 from helpers.transforms import mySTFT, myISTFT
 
@@ -472,6 +472,41 @@ class PLModule(pl.LightningModule):
 
     def count_params(self):
         return sum(p.numel() for p in self.parameters() if p.requires_grad)
+
+
+def get_loss_fn(loss_type="L1"):
+    if loss_type == "L1":
+        loss_fn = torch.nn.L1Loss()
+    elif loss_type == "MSE":
+        loss_fn = torch.nn.MSELoss()
+    else:
+        raise NameError("Unknown loss function")
+
+    return loss_fn
+
+
+def compute_loss(refs, est, loss_type="L1", loss_domain="t"):
+
+    # Transform the loss-domain string into a list (based on the separator "+")
+    loss_domains = loss_domain.split("+")
+
+    # Instanciate the loss function
+    loss_fn = get_loss_fn(loss_type)
+
+    # Iterate over domains to compute the total loss
+    loss = 0
+    for ld in loss_domains:
+        # Compute the loss depending on the domain (time-domain, TF, ...)
+        if ld == "t":
+            y, y_hat = refs["waveforms"], est["waveforms"]
+            loss += loss_fn(y_hat, y)
+        elif ld == "tf":
+            Y, Y_hat = refs["stfts"], est["stfts"]
+            loss += loss_fn(Y.real, Y_hat.real) + loss_fn(Y.imag, Y_hat.imag)
+        else:
+            raise NameError("Unknown loss domain")
+
+    return loss
 
 
 if __name__ == "__main__":

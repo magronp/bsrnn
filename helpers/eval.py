@@ -1,6 +1,5 @@
 import torch
 import museval
-import pandas as pd
 import math
 import time
 
@@ -117,69 +116,6 @@ def compute_sdr(
         sdr = torch.nanmean(sdr, dim=0)
 
     return sdr
-
-
-def get_loss_fn(loss_type="L1"):
-    if loss_type == "L1":
-        loss_fn = torch.nn.L1Loss()
-    elif loss_type == "MSE":
-        loss_fn = torch.nn.MSELoss()
-    else:
-        raise NameError("Unknown loss function")
-
-    return loss_fn
-
-
-def compute_loss(refs, est, loss_type="L1", loss_domain="t"):
-
-    # Transform the loss-domain string into a list (based on the separator "+")
-    loss_domains = loss_domain.split("+")
-
-    # Instanciate the loss function
-    loss_fn = get_loss_fn(loss_type)
-
-    # Iterate over domains to compute the total loss
-    loss = 0
-    for ld in loss_domains:
-        # Compute the loss depending on the domain (time-domain, TF, ...)
-        if ld == "t":
-            y, y_hat = refs["waveforms"], est["waveforms"]
-            loss += loss_fn(y_hat, y)
-        elif ld == "tf":
-            Y, Y_hat = refs["stfts"], est["stfts"]
-            loss += loss_fn(Y.real, Y_hat.real) + loss_fn(Y.imag, Y_hat.imag)
-        else:
-            raise NameError("Unknown loss domain")
-
-    return loss
-
-
-def aggregate_res_over_tracks(path_or_df, method_name=None, sdr_type="usdr"):
-
-    # The results are either directly provided as dataframe, or as a path to a file
-    if isinstance(path_or_df, str):
-        test_results = pd.read_csv(path_or_df)
-    else:
-        test_results = path_or_df
-
-    # Aggregate scores over tracks (mean for the uSDR, median otherwise)
-    if sdr_type == "usdr":
-        test_results_agg = test_results.mean(numeric_only=True, axis=0)
-    else:
-        test_results_agg = test_results.median(numeric_only=True, axis=0)
-
-    # Get the mean over sources
-    mean_sdr = test_results_agg.mean()
-
-    # Reform the dataframe
-    test_results_agg = pd.DataFrame(test_results_agg).T
-    test_results_agg["song"] = mean_sdr
-
-    # Add the method name
-    if method_name is not None:
-        test_results_agg.insert(loc=0, column="method", value=method_name)
-
-    return test_results_agg
 
 
 if __name__ == "__main__":
