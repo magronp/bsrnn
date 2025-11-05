@@ -2,7 +2,7 @@
 
 In this document we investigate several model configurations and hyper parameters. Our primary goal is to reproduce the paper's results, but we conduct several additional experiments to study the behavior of the model and training process in more depth. We also seek to optimize the model in order to eventually improve the performance over the original BSRNN.
 
-For speed, we display results on the validation set in terms of *utterance* SDR, as it is much faster to compute than the [chunk SDR](README.md#test-results). The utterance SDR is used as metric in the latest [MDX challenges](https://www.aicrowd.com/challenges/sound-demixing-challenge-2023/problems/music-demixing-track-mdx-23), and it is equal to a basic signal-to-noise ratio. It is computed on entire tracks and averaged over tracks.
+For speed, we display results on the validation set in terms of *utterance* SDR, as it is much faster to compute than the [chunk SDR](README.md#test-results) using museval. The utterance SDR is equal to a basic signal-to-noise ratio on entier tracks (no chunking into frames, no distortion filter). It is used as evaluation metric in the latest [MDX challenges](https://www.aicrowd.com/challenges/sound-demixing-challenge-2023/problems/music-demixing-track-mdx-23). We report the mean over songs.
 
 We consider a small model with a hidden dimension of 64 and a number of repeats of 8, except when trying the [larger](#large-model) or [optimized](#optimized-model) models.
 
@@ -128,17 +128,19 @@ We now suggest several potential directions for further improving the performanc
 
 ### Stereo modeling
 
-Even though BSRNN is applied to stereo music, it is inherently a monochannel modeling technique, since it is apply to each channel individually. We propose instead a first naive extension to [stereo modeling](models/bsrnnstereo.py) by jointly projecting the two channels into a common latent representation, rather than treating each channel independently. 
+BSRNN is inherently a monochannel model, since it is applied to each channel of the input music song independently, as these two channels were from 2 different songs. We propose a naive stereo extension to by projecting the two channels into a joint latent representation.
 
-|                  | vocals |  bass  |  drums |  other | average|
-|------------------|--------|--------|--------|--------|--------|
-|   "mono"         |   7.7  |   6.1  |   9.7  |   4.8  |   7.1  |
-|   stereo - naive |   7.7  |   6.6  |   ???  |   4.0  |   6.7  |
-|   stereo - TAC   |   7.7  |   6.6  |   ???  |   4.0  |   6.7  |
+|                              | vocals |  bass  |  drums |  other | average|
+|------------------------------|--------|--------|--------|--------|--------|
+|   "mono"                     |   7.7  |   6.1  |   9.7  |   4.8  |   7.1  |
+|   stereo - naive             |   7.7  |   6.6  |   8.4  |   4.0  |   6.7  |
+|   stereo - naive, fac_mask=8 |   7.9  |   6.1  |   8.7  |   4.3  |   6.7  |
+|   stereo - TAC, act=TanH     |   7.6  |   6.0  |   9.6  |   4.3  |   6.8  |
+|   stereo - TAC, act=PReLU    |   7.9  |   6.5  |   10.0 |   4.7  |   7.3  |
 
-Unfortunately, this approach results in a performance decrease, especially for the drums and other tracks (on the other hand it might be interesting for the bass track), and at the cost of an increase in terms of model size (9.2M vs. 8.0M parameters for the vocals track). One way to bridge this gap is by increasing the masker size via `fac_mask` (to be consistent with the subsequent increase in number of outputs - two channels need to be recovered instead of 1). This bridges the performance gap and yields a 7.9 dB SDR for the vocal tracks, but the model becomes too large (20M parameters) for usage when increasing feature_dim and num_repeat subsequently. Overall, this approach is not effective, although one advantage is the possibility to double the batch size for faster training.
+Unfortunately, this approach results in a performance decrease, especially for the drums and other tracks (on the other hand it might be interesting for the bass track), and at the cost of an increase in terms of model size (9.2M vs. 8.0M parameters for the vocals track). One way to bridge this gap is by increasing the masker size via `fac_mask` (to be consistent with the subsequent increase in number of outputs - two channels need to be recovered instead of 1). This bridges the performance gap and yields a 7.9 dB SDR for the vocal tracks, but the model becomes too large (20M parameters) for usage when increasing `feature_dim` and `num_repeat` subsequently. Overall, this approach is not effective, although one advantage is the possibility to double the batch size for faster training.
 
-
+A more refined approach to stereo modeling consists in leveraging the TAC module that accounts for cross-channel information. If using a TanH activation, as proposed in the [SIMO-BSRNN variant](https://ieeexplore.ieee.org/document/10447771), the perforamnce is not improved. However, if we use the PReLU activation, as proposed in [the original TAC paper](https://arxiv.org/abs/1910.14104), the performance is improved compared to the basic version, especially for the bass and drums tracks.
 
 
 ### Sequence and band modeling layers
@@ -157,7 +159,7 @@ GRUs yield similar results and might be considered as an interesting alternative
 
 ### BSCNN
 
-Here we propose to use  stacked dilated convolutions instead of naive Conv1D layers as done above. Indeed, they increase the receptive field in each block, thus being more suitable replacements for RNNs. We propose to implement the architecture [in this paper](https://arxiv.org/pdf/2306.05887), yielding a fully convolutional model we call band-split CNN ([BSCNN](models/bscnn.py)).
+We propose to use stacked dilated convolutions instead of naive Conv1D layers as done above. Indeed, they increase the receptive field in each block, thus being more suitable replacements for RNNs. We propose to implement the architecture [in this paper](https://arxiv.org/pdf/2306.05887), yielding a fully convolutional model we call band-split CNN ([BSCNN](models/bscnn.py)).
 
 We determine the optimal parameters via preliminary experiments on the vocals track. For speed, we considered time modeling only (no intra-band modeling layer), and a small architecture (`feature_dim`=32 and `num_repeat`=4). We found that the best model uses 4 dilation blocks, a kernel size of 3, and a hidden factor of 2.
 
@@ -173,7 +175,7 @@ We observe that an RNN-based network outperforms the CNN-based alternative. We l
 
 ### Attention mechanism
 
-We propose here to use a multi-head attention mechanism, inspired from the [TFGridNet](https://arxiv.org/abs/2209.03952) model. Indeed, TFGridNet is quite similar to BSRNN, as it projects frequency bands in a deep embedding space, and then applies LSTM over both time and band dimensions. However, it incorporates an additional multi-head attention mechanism, which we propose to incorporate to BSRNN here.
+Here we consider a multi-head attention mechanism, inspired from the [TFGridNet](https://arxiv.org/abs/2209.03952) model. Indeed, TFGridNet is quite similar to BSRNN, as it projects frequency bands in a deep embedding space, and then applies RNNs over both time and band dimensions, following a dual-path like architecture. It incorporates an additional multi-head attention mechanism, which we propose to incorporate to BSRNN here.
 
 |                       | vocals |  bass  | drums |  other | average|
 |-----------------------|--------|--------|-------|--------|--------|
@@ -189,17 +191,14 @@ Overall, using attention is beneficial, except for the other track. In particula
 
 ### Multi-head sequence module
 
-We took inspiration from the [DTTNet](https://arxiv.org/abs/2309.08684) model who proposed a so-called "improved" sequence module, based on splitting the latent representation into several heads for parallel processing. This allows for reducing the number of parameters and performance improvement.
+We took inspiration from the [DTTNet](https://arxiv.org/abs/2309.08684) model, where a so-called "improved" sequence module is used. This module is based on splitting the latent representation into several heads for parallel processing: the RNNs then process a smaller representation, which reduces the number of parameters.
 
 |                | vocals |  bass  |  drums |  other | average|
 |----------------|--------|--------|--------|--------|--------|
 |    Original    |   7.7  |   6.1  |   9.7  |   4.8  |   7.1  |
 |    Multi-head  |   7.6  |   5.5  |   9.1  |   4.0  |   6.6  |
 
-ngroups ="null" (donc automatiquement =3 ou 4), vocals=7.7, donc ne change pas grand chose.
-si on réduit num_repeats=4 as suggested dans DTTNet, worse results (7.5 dB vocals, même si 8M -> 5M parameters) 
-
-Thus, this scheme seems to be effective only when using the conv layers as in DTTNet, instead of the band-split mechanism here.
+However this approach yields a significant performance drop. If we further reduce `num_repeats=4` as suggested in the DTTNet paper, the results get worse, even though the model becomes much lighter (7.5 dB vocals and 5M parameters, vs. 8M for the base one). Thus, this mechanism seems to be effective only when using in cunjonction with other architecture aspects of DTTNet, e.g., not the band-split scheme of BSRNN considered here.
 
 
 ## Dataset and data preprocessing
@@ -212,31 +211,49 @@ In our experiments, we use a similar data preprocessing as suggested in the pape
 |  SAD +  alt   aug  |   7.9  |   6.6  |   9.5  |   4.4  |   7.1  |
 |  no SAD            |   8.2  |   6.9  |   9.5  |   5.3  |   7.5  |
 
-We obtain slightly better results with no preprocessing. This suggests that the SAD preprocessing implementation we used (taken from [another repository](https://github.com/amanteur/BandSplitRNN-Pytorch)) can probably be improved.
+We obtain slightly better results with no preprocessing. This suggests that the SAD preprocessing implementation we used (largely based on [another repository](https://github.com/amanteur/BandSplitRNN-Pytorch)) can probably be improved.
 
 
 ## Optimized model
 
-Following the results above, we train a large network (faeture dim 128 and num_repeats 12) that is optimized considering the experiments above, that is, using the non-preprocessed dataset, incorporating attention heads, and an increased patience for ensuring convergence.
+Following the results above, we consider an optimzed model that consists of a large network (`feature_dim=128` and `num_repeats=12`), is trained using the non-preprocessed dataset and a large patience for ensuring convergence, and it incorporates attention heads and a TAC module with PReLU activation.
 
-|                   | vocals |  bass  |  drums |  other | average|
-|-------------------|--------|--------|--------|--------|--------|
-|  as in the paper  |   9.5  |   7.8  |  10.3  |   6.3  |   8.5  |
-|  optimized        |   10.1 |   9.1  |  11.0  |   6.7  |   9.2  |
-
-This so-called optimized version of the model largely improves performance over our implementation of the paper's model. It should be noted that the drums model mostly benefits from using the attention mechanism, rather than increasing the model size via the feature_dim and num_repeats parameters. This should be considered if reducing the computational cost is important.
-
-
-## A note on the chunking process for evaluation
-
-For evaluation (both validation and test), songs are divided into small segments for performing separation, and then the chunked estimates are assembled to form whole songs/sources estimates. However, the exact procedure employed in the BSRNN paper is hard to understand (and therefore to reproduce). Indeed:
-- In the paper, the authors mention some zero-padding at the beginning and end of each chunk before applying the model, and then some overlap-add (OLA) in order to smooth the outputs. However, they don't specify which OLA procedure, i.e., which windowing function is used (does it ensure perfect reconstruction?).
-- It was suggested by an author of the BSRNN paper to use the [bytedance music separation repo](https://github.com/bytedance/music_source_separation), which includes a [chunk-level separator](https://github.com/bytedance/music_source_separation/blob/master/bytesep/separator.py#L122). However, the output chunks are cropped and concatenated, which does not involve any OLA / fader. Besides, it uses a fixed overlap ratio of 50%, thus it is not applicable to other ratios (e.g., those considered in the paper).
-- While test results reported in the paper use 3s chunks with 0.5 s hop size, one of the paper's authors mentioned using a 1s hop size for validation. Thus it is unclear whether the same setup was used for validation and testing, and which value is used exactly.
+|                      | vocals |  bass  |  drums |  other | average|
+|----------------------|--------|--------|--------|--------|--------|
+|  as in the paper     |   9.5  |   7.8  |  10.3  |   6.3  |   8.5  |
+|  optimized (no TAC)  |   10.1 |   9.1  |  10.9  |   6.7  |   9.2  |
+|  optimized           |   10.2 |  10.2  |  11.3  |   6.9  |   9.6  |
 
 
-To do that, we use chunks of 10 s with a 1 s overlap and a [linear fader](https://pytorch.org/audio/main/tutorials/hybrid_demucs_tutorial.html#configure-the-application-function).
+This optimized version of the model largely improves performance over our implementation of the paper's model. We report the results without the TAC module to show that the drums model mostly benefits from using the attention mechanism, rather than increasing the model size (as compared to the results for the [attention mechanism](#attention-mechanism)). This should be considered if reducing the computational cost is important. The further addition of the TAC module adds an extra 0.4 dB on average, mostly due to improvements for the bass and drums tracks, which really benefit from stereo modeling.
 
-While this matter might seem of limited importance at first glance (it is reasonable to assume that changing the chunking/OLA procedure will yield the same optimal model during training), it could actually be significant in terms of test results. Indeed, adjusting the hop size yield differences up to 0.3 dB (*cf* Table II in the paper), which is larger than the score difference between some competing methods. We implement a simple OLA method which uses rectangular windowing, and we compute the test results using a 3 s window and 0.5 s / 1.5 hop size. We don't observe any significant difference with the 10s-fader based chunking method. Nonetheless, considering the observations above, there might be some room for further improvement.
 
-Thus, this chunking/OLA procedure needs to be clarfied.
+## SIMO-BSRNN
+
+As complementary experiments, we implement variants that correspond to [SIMO-BSRNN](https://ieeexplore.ieee.org/document/10447771), a model that builds upon BSRNN with additional variants. In particular, it enables stereo modelind using a TAC module, which we already tested [above](#stereo-modeling). Another feature of SIMO-BSRNN is to use a masker that exploits adjacent frequencies as context. We implemented it but it was shown to yield poor performance in our experiments. Below we test the additional features of SIMO-BSRNN. Note that these (as well as the TAC module) are not evaluated specifically in the paper, thus these experiments might yield new insight about which one(s) contributes the most to the performance improvement.
+
+### Basic and proposed variants
+
+|                                        | vocals |  bass  |  drums |  other | average|
+|----------------------------------------|--------|--------|--------|--------|--------|
+|  base BSRNN                            |   7.7  |   6.1  |   9.7  |   4.8  |   7.1  |
+|  joint refined bandsplit               |   8.6  |   6.7  |   9.5  |   5.0  |   7.4  |
+|  shared encoder, subtract last source  |   8.1  |   6.7  |   8.7  |   5.5  |   7.3  |
+|  shared encoder, one masker per source |   8.2  |   6.7  |   8.9  |   5.6  |   7.4  |
+
+We first consider a finer-grain and joint band-split scheme, i.e., using the same frequency split for all instruments. This feature mostly improves the performance of the vocals and bass tracks, which is relevant since the refined scheme affects frequency regions where these tracks have some energy content, which is less the case for other / drums.
+
+We then consider using a shared encoder (band-split and sequence/band modeling modules) across sources, hence the name SIMO - *single-input-multiple-outputs*. The paper considers one masker per source for the vocals, bass, and drums track; and the last (=other) source is obtained by subtracting these 3 from the mixture. Note that this approch implies to use the joint bandsplit scheme for all source described above. This yields similar results to a model with a source-specific encoder, but the advantage of this approach is to reduce the number of parameters.
+
+Alternatively, we assume 4 maskers instead of 3 (i.e., one per source and no subtraction). This approach yields a slightly better performance overall, while keeping a reasonable total model size since the encoder is still shared among sources.
+
+### Optimized SIMO-BSRNN
+
+Based on these results, we finally consider a large (`feature_dim=128` and `num_repeats=12`) and optimzed SIMO model (called oBSRNN-SIMO). It combines the features of the [optimized BSRNN model described above](#optimized-model), as well as a joint encoder using a refined band-split scheme shared across sources, and one masker per source.
+
+|                | vocals |  bass  |  drums |  other | average|
+|----------------|--------|--------|--------|--------|--------|
+|  oBSRNN        |   10.2 |  10.2  |  11.3  |   6.9  |   9.6  |
+|  oBSRNN-SIMO   |   11.3 |   9.8  |  11.8  |   8.4  |  10.3  |
+
+This model yields a large performance improvement over the non-SIMO model, and will yield state-of-the-art performance in terms of chunk SDR on the [test set]. An interesting point is that the actual performance improvement of the SIMO model over BSRNN is mostly due to the TAC module for stereo modeling and to the finer band-split scheme - not so much from the actual *SIMO* aspect. Be that as it might, using a shared encoder allows to maintain performance and to reduce model size, which is a significant improvement in itself.

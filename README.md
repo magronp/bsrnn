@@ -36,7 +36,7 @@ The goal of this project is to foster reproducible research, to allow other rese
 
 ### Test results
 
-The table below displays results on the MUSDB18-HQ test set in terms of signal-to-distortion ratio (SDR). More precisely, we consider the *chunk* SDR, which is computed by taking the median over 1s-long chunks, and median over tracks. In practice, computation is performed using the [museval](https://github.com/sigsep/sigsep-mus-eval) tooblox, but we provide a [more efficient implementation](https://github.com/magronp/bsrnn/blob/main/helpers/eval.py#L29) if only the SDR is needed. Complementary results in terms of *utterance* SDR are available in [our paper](#reference).
+The table below displays results on the MUSDB18-HQ test set in terms of signal-to-distortion ratio (SDR). More precisely, we consider the *chunk* SDR, which is computed by taking the median over 1s-long chunks, and median over tracks. In practice, computation is performed using the [museval](https://github.com/sigsep/sigsep-mus-eval) tooblox, but we provide a [more efficient implementation](https://github.com/magronp/bsrnn/blob/main/helpers/eval.py#L28) if only the SDR is needed. Complementary results in terms of *utterance* SDR are available in [our paper](#reference).
 
 |                              |  vocals |   bass  |  drums  |  other  | average |
 |------------------------------|---------|---------|---------|---------|---------|
@@ -46,7 +46,7 @@ The table below displays results on the MUSDB18-HQ test set in terms of signal-t
  
 Our optimized model (**oBSRNN**) model includes a multi-head attention mechanism, a TAC module for stereo-awareness, and it is trained using a non-preprocessed dataset (see [here](docs/analysis.md#optimized-model) for more details). This substantially improves performance over our initial BSRNN implementation, and it largely outperforms the paper's results by ~0.8 dB. This improvement is mostly due to large SDR increase in the bass and drums estimates, while the vocals and other results are still inferior to those in the original paper.
 
-We also propose an optimized replication of the SIMO variant of BSRNN (see the [original SIMO-BSRNN paper](https://ieeexplore.ieee.org/document/10447771) and [our implementation](docs/simo.md) for more details).
+We also propose an optimized replication of the SIMO variant of BSRNN (see the [original SIMO-BSRNN paper](https://ieeexplore.ieee.org/document/10447771) and [our implementation](docs/analysis.md#simo-bsrnn) for more details).
 
 |                                |  vocals |   bass  |  drums  |  other  | average |
 |--------------------------------|---------|---------|---------|---------|---------|
@@ -57,7 +57,7 @@ We also propose an optimized replication of the SIMO variant of BSRNN (see the [
 
 ### Model variants
 
-We extensively experiment with model variants, and we report and analyze the results in a [dedicated document](docs/analysis.md). Beyond reproducing the paper's results, we provide several suggestions to further improving the results by additional architecture variants, as well as optimizing the data preparation and training process. We specifically detail the results corresponding to the [SIMO-BSRNN](https://ieeexplore.ieee.org/document/10447771) model in a [separate document](docs/simo.md) for clarity.
+We extensively experiment with model variants, and we report and analyze the results in a [dedicated document](docs/analysis.md). Beyond reproducing the paper's results, we provide several suggestions to further improving the results by additional architecture variants, as well as optimizing the data preparation and training process.
 
 
 ## How to use
