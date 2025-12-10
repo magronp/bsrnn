@@ -66,10 +66,9 @@ Then, to analyze validation results, run:
 ```
 python get_val_results.py
 ```
-This will aggregate results into several CSV files, including a summary of SDRs over targets and experiments, and a summary of energy consumption (see [below](#tracking-energy)). Note that if you didn't estimate energy consumption beforehand, you should comment the [corresponding line in this script](https://github.com/magronp/bsrnn/blob/main/models/get_val_results.py#L197). These results correspond to Table II in the paper.
+This will aggregate results into several CSV files, including a summary of SDRs over targets and experiments, corresponding to Table II in the paper.
 
-You can also run the notebook `vizualization.ipynb` to produce plots (including Figure 2 and 3 from the paper)
-
+You can also run the notebook `vizualization.ipynb` to produce plots as in the paper. Note that Figure 3 can be plot only if you have tracked energy when training your models (see [below](#tracking-energy)).
 
 
 ## Testing
@@ -86,7 +85,6 @@ The code will create a `Separator` module, for which it will search for target-s
 ```
 python test.py src_mod=simo-bsrnn-opt simo=true
 ```
-
 
 
 ### Inference procedure
@@ -121,9 +119,9 @@ python train.py targets=vocals track_emissions=true
 ```
 which will save the energy (along with the experiment name) in a `<out_dir>/emissions.csv` file.
 
-In the paper, we track emission separately by running additional jobs (listed in the `jobs/params/carbon.txt` file), for a specific number of epochs set at `track_epochs=3`. Then, we estimate the global energy for each considered experiment by accounting for the actual total number of epochs (see [here](https://github.com/magronp/bsrnn/blob/main/models/get_val_results.py#L168)).
+In the paper, we track emission separately by running additional jobs (listed in the `jobs/params/carbon.txt` file), for a specific number of epochs set at `track_epochs=3`. Then, we estimate the global energy for each considered experiment by accounting for the actual total number of epochs?
 
-If you prefer to estimate the consumption directly when training a model (rather than in separate experiments), then feel free to set `track_emissions=true` in the [config file](https://github.com/magronp/bsrnn/blob/main/conf/config.yaml#L45). Then, `<out_dir>/emissions.csv` will directly contain the overall estimated energy, thus you can edit the `get_val_results.py` script by [ignoring the energy estimation line](https://github.com/magronp/bsrnn/blob/main/models/get_val_results.py#L222).
+If you prefer to estimate the consumption directly when training a model (rather than in separate experiments), then feel free to set `track_emissions=true` in the [config file](https://github.com/magronp/bsrnn/blob/main/conf/config.yaml#L45). Then, `<out_dir>/emissions.csv` will directly contain the overall estimated energy.
 
 
 ## Use your own model

@@ -9,7 +9,7 @@
 
 This repository is an unofficial implementation of the [BSRNN](https://arxiv.org/pdf/2209.15174.pdf) model for music separation. It accompanies our [replication study](#reference), whose primary goal is to obtain a model that yields similar results to those of the original BSRNN paper, and to explore reproducibility issues in music separation research.
 
-Despite our work, we are currently about [0.5 dB SDR bellow](#test-results) the original results, thus efforts are still needed to match these. To bridge this performance gap, we proposed several variants and eventually obtained an *optimized* model that yields a large 1.2 dB performance improvement.
+Despite our efforts, we are currently about [0.5 dB SDR bellow](#test-results) the original results, thus some work is still needed to match these. To bridge this performance gap, we proposed several variants and eventually obtained an *optimized* model that largely improves the results.
 
 This project is based on [PyTorch](https://pytorch.org/) ([Ligthning](https://lightning.ai/docs/pytorch/stable/)) and [Hydra](https://hydra.cc/), and uses the HQ version of the freely available [MUSDB18](https://sigsep.github.io/datasets/musdb.html) dataset. We provide pretrained models on a [Zenodo repository](https://zenodo.org/records/13903584), which you can use readily for [separating your own song](#separation--demo).
 
@@ -53,9 +53,10 @@ We also propose an optimized replication of the SIMO variant of BSRNN (see the [
 |  SIMO-BSRNN - original results |   9.73  |   7.80  |  10.06  |   6.56  |   8.54  |
 |  **oBSRNN-SIMO**               |  **10.66**  |   **9.73**  |  **10.98** |   **7.78**  |   **9.79**  |
 
+This model largely outperforms the original results, and it yields state-of-the-art results without requiring extra private data. Thus we encourage to consider it as baseline, or for use if achieving maximum performance is the goal.
 
 
-### Model variants
+### Model selection
 
 We extensively experiment with model variants, and we report and analyze the results in a [dedicated document](docs/analysis.md). Beyond reproducing the paper's results, we provide several suggestions to further improving the results by additional architecture variants, as well as optimizing the data preparation and training process.
 

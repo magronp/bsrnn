@@ -17,6 +17,6 @@ outputs/*
 data/*
 !data/.dummy.txt
 
-annotations/*
-
 debug.py
+analyze_energy.ipynb
+annotate_jobs.ipynb

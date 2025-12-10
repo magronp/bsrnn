@@ -4,11 +4,10 @@ import math
 import time
 
 
-def mypad(input_tensor, tot_len):
-    input_tensor = torch.nn.functional.pad(
-        input_tensor, (0, tot_len - input_tensor.shape[-1])
-    )
-    return input_tensor
+# Zero-padding function
+def mypad(x, total_len):
+    x_padded = torch.nn.functional.pad(x, (0, total_len - x.shape[-1]))
+    return x_padded
 
 
 def compute_usdr(ref, est, eps=1e-7):
@@ -33,6 +32,10 @@ def compute_csdr_fast(ref, est, win=1 * 44100, hop=1 * 44100, eps=1e-7):
     output: [batch_size, n_targets]
     """
     dif = est - ref
+
+    # Make sure these are integers
+    win = int(win)
+    hop = int(hop)
 
     # Pad if needed so the signal length is a multiple of win_bss (crop the last bit, as in museval)
     tot_len = win + math.floor((ref.shape[-1] - win) / hop) * hop
@@ -61,6 +64,10 @@ def compute_csdr_museval(ref, est, win=1 * 44100, hop=1 * 44100):
     ref / est: [batch_size, n_targets, n_channels, n_samples]
     output: [batch_size, n_targets]
     """
+
+    # Make sure these are integers
+    win = int(win)
+    hop = int(hop)
 
     # Reshape to [batch_size, n_targets, n_samples, n_channels], and back to cpu/numpy
     ref = ref.cpu().transpose(2, 3).numpy()
@@ -93,9 +100,10 @@ def compute_sdr(
     """
     references / estimates: [batch_size, n_targets, n_channels, n_samples]
     sdr: [batch_size, n_targets]
+    type should be "usdr", "csdr" (=museval), or "csdr-fast" (= not computing the distortion filter)
     """
 
-    # Make sure there are integers
+    # Make sure these are integers
     win = int(win)
     hop = int(hop)
 
@@ -119,16 +127,16 @@ def compute_sdr(
 
 
 if __name__ == "__main__":
-    # Realistic signal parameters
+    # Signal parameters
     sample_rate = 44100
     bsize = 1
     n_targets = 4
     nb_channels = 2
-    win = 1.7 * sample_rate
-    hop = 0.6 * sample_rate
-    n_samples = int(sample_rate * 3.1)
+    win = 1 * sample_rate
+    hop = 1 * sample_rate
+    n_samples = int(sample_rate * 10)
 
-    # Create references and estimates signals
+    # Create references and estimates
     torch.manual_seed(0)
     references = torch.randn((bsize, n_targets, nb_channels, n_samples))
     estimates = torch.randn_like(references)
@@ -140,7 +148,7 @@ if __name__ == "__main__":
 
     ts = time.time()
     csdrmuseval = compute_sdr(references, estimates, win=win, hop=hop, type="csdr")
-    print(f"Chunk SDR museval: {csdrmuseval} dB --- Time: {time.time() - ts:.2f} s")
+    print(f"Chunk SDR, museval: {csdrmuseval} dB --- Time: {time.time() - ts:.2f} s")
 
     ts = time.time()
     csdr = compute_sdr(references, estimates, win=win, hop=hop, type="csdr-fast")
