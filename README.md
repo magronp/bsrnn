@@ -36,7 +36,7 @@ The goal of this project is to foster reproducible research, to allow other rese
 
 ### Test results
 
-The table below displays results on the MUSDB18-HQ test set in terms of signal-to-distortion ratio (SDR). More precisely, we consider the *chunk* SDR, which is computed by taking the median over 1s-long chunks, and median over tracks. In practice, computation is performed using the [museval](https://github.com/sigsep/sigsep-mus-eval) tooblox, but we provide a [more efficient implementation](https://github.com/magronp/bsrnn/blob/main/helpers/eval.py#L28) if only the SDR is needed. Complementary results in terms of *utterance* SDR are available in [our paper](#reference).
+The table below displays results on the MUSDB18-HQ test set in terms on of signal-to-distortion ratio (SDR). More precisely, we consider the *chunk* SDR. More details about this metric are found in the [note below](#note-on-the-metric), and complementary results in terms of *utterance* SDR are available in [our paper](#reference).
 
 |                              |  vocals |   bass  |  drums  |  other  | average |
 |------------------------------|---------|---------|---------|---------|---------|
@@ -59,6 +59,16 @@ This model largely outperforms the original results, and it yields state-of-the-
 ### Model selection
 
 We extensively experiment with model variants, and we report and analyze the results in a [dedicated document](docs/analysis.md). Beyond reproducing the paper's results, we provide several suggestions to further improving the results by additional architecture variants, as well as optimizing the data preparation and training process.
+
+
+### Note on the metric
+
+The *chunk* SDR considered here is computed by taking the median over 1s-long chunks, and median over tracks. In practice, computation is performed using the [museval](https://github.com/sigsep/sigsep-mus-eval) tooblox, which is customary in music separation research papers.
+
+However, most of this function's computational cost comes from calculating a distortion filter which does not actually affect the SDR. Indeed, when using default parameters as per SiSEC guidelines, the distortion filter only affects the signal-to-interference and -artifact ratios (SIR and SAR), which are not considered here nor in most recent MSS papers (see [this thread](https://github.com/sigsep/sigsep-mus-eval/issues/101) on the museval project).
+
+Therefore, we provide a [more efficient implementation](https://github.com/magronp/bsrnn/blob/main/helpers/eval.py#L28) if only the cSDR is needed (i.e., no SIR/SAR), which we encourage practitioners to use.
+
 
 
 ## How to use
