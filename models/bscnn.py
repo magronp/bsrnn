@@ -289,7 +289,9 @@ class BSCNN(PLModule):
         subband_feature = []
         for i in range(len(self.band_width)):
             subband_feature.append(
-                self.BN[i](subband_spec[i].view(bsize * nch, self.band_width[i] * 2, -1))
+                self.BN[i](
+                    subband_spec[i].view(bsize * nch, self.band_width[i] * 2, -1)
+                )
             )
         subband_feature = torch.stack(subband_feature, 1)  # B, nband, N, T
 
@@ -313,25 +315,25 @@ if __name__ == "__main__":
 
     cfg_optim = OmegaConf.create(
         {
+            "algo": "adam",
             "lr": 0.001,
             "loss_type": "L1",
             "loss_domain": "t",
             "monitor_val": "sdr",
-            "weight_mag": 0.1,
-            "algo": "adam",
         }
     )
     cfg_scheduler = OmegaConf.create({"name": "plateau", "factor": 0.5, "patience": 3})
     cfg_eval = OmegaConf.create(
         {
             "device": "cpu",
+            "verbose_per_track": True,
+            "rec_dir": None,
             "segment_len": 10,
             "overlap": 0.1,
             "hop_size": None,
             "sdr_type": "usdr",
-            "win_dur": 1.0,
-            "verbose_per_track": True,
-            "rec_dir": None,
+            "sdr_win": 1.0,
+            "sdr_hop": 1.0,
         }
     )
 

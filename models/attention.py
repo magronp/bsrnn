@@ -175,3 +175,6 @@ class AttentionBlock(nn.Module):
         out = self["attn_concat_proj"](out)  # [B, N, T, n_band])
 
         return out + x
+
+
+# EOF
