@@ -1,4 +1,5 @@
 numpy==2.3.4
+matplotlib==3.8.0
 museval==0.4.1
 musdb==0.4.3
 stempeg==0.2.6
