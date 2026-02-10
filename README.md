@@ -133,11 +133,11 @@ We thank Jianwei Yu (author of the BSRNN paper) for trying to help us with the i
 If you use this code, please cite our paper:
 
 ```latex
-@article{MagronBSRNN,  
+@misc{MagronBSRNN2026,  
   author={Paul Magron and Romain Serizel and Constance Douwes},  
   title={The Costs of Reproducibility in Music Separation Research: a Replication of Band-Split {RNN}},
-  journal={under review},  
-  url = {lien arxiv}
+  url = {coming soon},
+  year = {2026}
 }
 ```
 
