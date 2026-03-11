@@ -7,7 +7,7 @@
 
 &nbsp;
 
-This repository is an unofficial implementation of the [BSRNN](https://arxiv.org/pdf/2209.15174.pdf) model for music separation. It accompanies our [replication study](#reference), whose primary goal is to obtain a model that yields similar results to those of the original BSRNN paper, and to explore reproducibility issues in music separation research.
+This repository is an unofficial implementation of the [BSRNN](https://arxiv.org/pdf/2209.15174.pdf) model for music separation. It accompanies our [replication study](https://arxiv.org/abs/2603.09187), whose primary goal is to obtain a model that yields similar results to those of the original BSRNN paper, and to explore reproducibility issues in music separation research.
 
 Despite our efforts, we are currently about [0.5 dB SDR bellow](#test-results) the original results, thus some work is still needed to match these. To bridge this performance gap, we proposed several variants and eventually obtained an *optimized* model that largely improves the results.
 
@@ -36,7 +36,7 @@ The goal of this project is to foster reproducible research, to allow other rese
 
 ### Test results
 
-The table below displays results on the MUSDB18-HQ test set in terms on of signal-to-distortion ratio (SDR). More precisely, we consider the *chunk* SDR. More details about this metric are found in the [note below](#note-on-the-metric), and complementary results in terms of *utterance* SDR are available in [our paper](#reference).
+The table below displays results on the MUSDB18-HQ test set in terms on of signal-to-distortion ratio (SDR). More precisely, we consider the *chunk* SDR. More details about this metric are found in the [note below](#note-on-the-metric), and complementary results in terms of *utterance* SDR are available in [our paper](https://arxiv.org/abs/2603.09187).
 
 |                              |  vocals |   bass  |  drums  |  other  | average |
 |------------------------------|---------|---------|---------|---------|---------|
@@ -136,7 +136,7 @@ If you use this code, please cite our paper:
 @misc{MagronBSRNN2026,  
   author={Paul Magron and Romain Serizel and Constance Douwes},  
   title={The Costs of Reproducibility in Music Separation Research: a Replication of Band-Split {RNN}},
-  url = {coming soon},
+  url = {https://arxiv.org/abs/2603.09187},
   year = {2026}
 }
 ```
