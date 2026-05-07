@@ -1,8 +1,8 @@
 # An Open - and Optimized - Implementation of Band-Split RNN for Music Separation
 
 <div style="align: center; text-align:center;">
-    <img src="https://gitlab.aicrowd.com/Tomasyu/sdx-2023-music-demixing-track-starter-kit/-/raw/master/Figure/BSRNN.png" width="500px" />
-    <div class="caption"><i>Image taken from the <a href="https://arxiv.org/pdf/2209.15174.pdf">BSRNN paper</a>.</i></div>
+    <img src="https://user-images.githubusercontent.com/123350717/214468836-54b8c5cf-a670-4bd9-add9-f95f48a4a673.png" width="500px" />
+    <div class="caption"><i>Image taken from the <a href="https://github.com/sungwon23/BSRNN">here</a>.</i></div>
 </div>
 
 &nbsp;
@@ -11,7 +11,7 @@ This repository is an unofficial implementation of the [BSRNN](https://arxiv.org
 
 Despite our efforts, we are currently about [0.5 dB SDR bellow](#test-results) the original results, thus some work is still needed to match these. To bridge this performance gap, we proposed several variants and eventually obtained an *optimized* model that largely improves the results.
 
-This project is based on [PyTorch](https://pytorch.org/) ([Ligthning](https://lightning.ai/docs/pytorch/stable/)) and [Hydra](https://hydra.cc/), and uses the HQ version of the freely available [MUSDB18](https://sigsep.github.io/datasets/musdb.html) dataset. We provide pretrained models on a [Zenodo repository](https://zenodo.org/records/13903584), which you can use readily for [separating your own song](#separation--demo).
+This project is based on [PyTorch](https://pytorch.org/) ([Ligthning](https://lightning.ai/docs/pytorch/stable/)) and [Hydra](https://hydra.cc/), and uses the HQ version of the freely available [MUSDB18](https://sigsep.github.io/datasets/musdb.html) dataset. We provide pretrained models on a [Zenodo repository](https://zenodo.org/records/17516442), which you can use readily for [separating your own song](#separation--demo).
 
 The goal of this project is to foster reproducible research, to allow other researchers to experiment with this model (and variants), and to provide a fully fonctionning training pipeline and checkpoints for inference. Then feel free to use it (and [cite it](#reference) if you do), and if you spot an error, or something that differs from the description in the paper, please feel free to reach out, send a message, or open an issue. :slightly_smiling_face: 
 
@@ -91,7 +91,7 @@ For clarity, we provide a guide for model training and evaluation in a [separate
 
 ### Separation / demo
 
-If you simply want to use BSRNN to separate your favorite song, then make sure to download the pretrained checkpoints from the [Zenodo repository](https://zenodo.org/records/13903584), and place them in the `outputs/` folder. Then, perform separation as follows:
+If you simply want to use BSRNN to separate your favorite song, then make sure to download the pretrained checkpoints from the [Zenodo repository](https://zenodo.org/records/17516442), and place them in the `outputs/` folder. Then, perform separation as follows:
 ```
 python separate.py file=path/to/my/file.wav
 ```

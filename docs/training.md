@@ -8,7 +8,7 @@ To speed up data loading at training, you need to pre-process the dataset in ord
 ```
 python prep_dataset.py
 ```
-Note that if you want to skip training and only perform [evaluation](#evaluation), you can download pretrained models on the [Zenodo repository](https://zenodo.org/records/13903584) (and you can skip applying the preprocessing script above).
+Note that if you want to skip training and only perform [evaluation](#evaluation), you can download pretrained models on the [Zenodo repository](https://zenodo.org/records/17516442) (and you can skip applying the preprocessing script above).
 
 ## Training
 
