@@ -203,6 +203,21 @@ However this approach yields a significant performance drop. If we further reduc
 
 ## Dataset and data preprocessing
 
+### Shuffling tracks
+
+We compare shuffling tracks only once when training starts, or re-shuffling tracks at each epoch. In preliminary experiments, we did not observe any difference, therefore we used the former because it is faster. However, this behavior could be different for large models, as suggested in a [recent paper](https://www.merl.com/publications/docs/TR2026-012.pdf). Therefore, we also evaluate this on the large model using a patience of 30 to ensure convergence.
+
+|                           | vocals |  bass  |  drums |  other | average|
+|---------------------------|--------|--------|--------|--------|--------|
+|  Shuffling once           |   9.5  |   7.8  |  10.3  |   6.3  |   8.5  |
+|  Shuffling at each epoch  |   9.5  |   8.0  |  10.1  |   6.2  |   8.5  |
+
+
+We observe no difference on average in this setup, which can be explained by the fact that our pipeline still select a random chunk from each track at each epoch, therefore some randomness in the cacophony is still guaranteed. As a result, we use the same strategy (shuffling tracks only once) for large models since it is faster.
+
+
+### SAD and augmentations
+
 In our experiments, we use a similar data preprocessing as suggested in the paper, based on source activity detection (SAD), thus we compare it with no preprocessing.
 
 |                    | vocals |  bass  |  drums |  other | average|
@@ -212,6 +227,7 @@ In our experiments, we use a similar data preprocessing as suggested in the pape
 |  no SAD            |   8.2  |   6.9  |   9.5  |   5.3  |   7.5  |
 
 We obtain slightly better results with no preprocessing. This suggests that the SAD preprocessing implementation we used (largely based on [another repository](https://github.com/amanteur/BandSplitRNN-Pytorch)) can probably be improved.
+
 
 
 ## Optimized model

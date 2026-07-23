@@ -145,6 +145,15 @@
 #"targets=drums dset.aug_list=[random_chunk,random_track_mix,rescale_db,silenttarget]"
 #"targets=other dset.aug_list=[random_chunk,random_track_mix,rescale_db,silenttarget]"
 
+
+#-------------- Random track mix but on the large model (and with increase patience, to be sure)
+"src_mod=bsrnn-large targets=vocals optim.patience=30 dset.aug_list=[random_chunk,random_track_mix,rescale_db,silentsource]"
+"src_mod=bsrnn-large targets=bass optim.patience=30 dset.aug_list=[random_chunk,random_track_mix,rescale_db,silentsource]"
+"src_mod=bsrnn-large targets=drums optim.patience=30 dset.aug_list=[random_chunk,random_track_mix,rescale_db,silentsource]"
+"src_mod=bsrnn-large targets=other optim.patience=30 dset.aug_list=[random_chunk,random_track_mix,rescale_db,silentsource]"
+
+
+
 # no SAD, augmentations like in UMX
 #"targets=vocals dset=musdb18hq"
 #"targets=bass dset=musdb18hq"
