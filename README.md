@@ -2,7 +2,7 @@
 
 <div style="align: center; text-align:center;">
     <img src="https://user-images.githubusercontent.com/123350717/214468836-54b8c5cf-a670-4bd9-add9-f95f48a4a673.png" width="500px" />
-    <div class="caption"><i>Image taken from the <a href="https://github.com/sungwon23/BSRNN">here</a>.</i></div>
+    <div class="caption"><i>Image taken from the <a href="https://github.com/sungwon23/BSRNN">original paper</a>.</i></div>
 </div>
 
 &nbsp;
