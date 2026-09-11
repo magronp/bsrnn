@@ -3,11 +3,18 @@ from os.path import join
 import hydra
 from omegaconf import DictConfig
 from helpers.utils import load_val_log
+from helpers.energy import get_record_energy_summary
+
+# Global file names
+FILE_EXP_INFOS = "exp_infos.csv"
+FILE_VAL_RESULTS_ALL = "val_results_all.csv"
+FILE_VAL_RESULTS_EPOCHS = "val_results_epochs.csv"
+FILE_VAL_RESULTS_SDR = "val_results_sdr.csv"
 
 
 def process_all_val_tblogs(out_dir="outputs/"):
 
-    exp_info = pd.read_csv(join(out_dir, "exp_infos.csv"))
+    exp_info = pd.read_csv(join(out_dir, FILE_EXP_INFOS))
     exp_info = exp_info.reset_index()
 
     all_results = pd.DataFrame(
@@ -17,7 +24,7 @@ def process_all_val_tblogs(out_dir="outputs/"):
     list_exps = pd.unique(exp_info["exp_name"])
 
     for exp_name in list_exps:
-
+        print(exp_name)
         # Get info and all tb versions corresponding to the current exp
         df = exp_info.loc[exp_info["exp_name"] == exp_name]
         version_list = list(df["tb_version"])
@@ -48,16 +55,16 @@ def process_all_val_tblogs(out_dir="outputs/"):
             all_results.loc[len(all_results)] = curr_res
 
     # Save results (all)
-    all_results.to_csv(join(out_dir, "val_results_all.csv"), index=False)
+    all_results.to_csv(join(out_dir, FILE_VAL_RESULTS_ALL), index=False)
 
     return
 
 
 def get_val_epochs(out_dir="outputs/"):
 
-    df = pd.read_csv(join(out_dir, "val_results_all.csv"), index_col=None)
+    df = pd.read_csv(join(out_dir, FILE_VAL_RESULTS_ALL), index_col=None)
     df = df.drop(columns=["best_sdr"])
-    df.to_csv(join(out_dir, "val_results_epochs.csv"), index=False)
+    df.to_csv(join(out_dir, FILE_VAL_RESULTS_EPOCHS), index=False)
 
     return
 
@@ -65,7 +72,7 @@ def get_val_epochs(out_dir="outputs/"):
 def get_val_sdr(targets, out_dir="outputs/"):
 
     # Load the df containing all results
-    df = pd.read_csv(join(out_dir, "val_results_all.csv"), index_col=None)
+    df = pd.read_csv(join(out_dir, FILE_VAL_RESULTS_ALL), index_col=None)
 
     # Prepare the SDR results (including average)
     df = df.drop(columns=["total_epochs"])
@@ -89,16 +96,18 @@ def get_val_sdr(targets, out_dir="outputs/"):
     df.loc[len(df)] = bsrnnseeds
 
     # Save results
-    df.to_csv(join(out_dir, "val_results_sdr.csv"), index=False)
+    df.to_csv(join(out_dir, FILE_VAL_RESULTS_SDR), index=False)
 
     return
 
 
 @hydra.main(version_base=None, config_name="config", config_path="conf")
-def get_val_results(args: DictConfig):
+def process_val_results(args: DictConfig):
 
     out_dir = args.out_dir
     targets = args.targets
+    pue = args.pue
+    track_epochs = args.track_epochs
 
     # Scan the exp_infos file to get corresponding best uSDRs and total epochs per exp
     process_all_val_tblogs(out_dir=out_dir)
@@ -109,10 +118,15 @@ def get_val_results(args: DictConfig):
     # Assemble the val uSDR results to aggregate sources per exp
     get_val_sdr(targets, out_dir=out_dir)
 
+    # Get all energy metrics, for all exp /model training, and record it
+    get_record_energy_summary(
+        targets, out_dir=out_dir, pue=pue, track_epochs=track_epochs, disp=False
+    )
+
     return
 
 
 if __name__ == "__main__":
-    get_val_results()
+    process_val_results()
 
 # EOF

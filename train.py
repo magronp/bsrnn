@@ -22,7 +22,7 @@ def train(args: DictConfig):
 
     # Define the exp name from the input prompt, and model/target
     exp_params = get_exp_params_str()
-    exp_name = args.src_mod.name + exp_params + "-" + str_targets
+    exp_name = args.model.name + exp_params + "-" + str_targets
     print(exp_name)
 
     # Instanciate and start an object to track emissions
@@ -44,12 +44,12 @@ def train(args: DictConfig):
     )
 
     # Dir to record the model and tblogs
-    ckpt_dir = os.path.join(args.out_dir, args.src_mod.name_out_dir)
+    ckpt_dir = os.path.join(args.out_dir, args.model.name_out_dir)
     if args.tblog_dir is None:
         tblog_dir = None
     else:
         tblog_dir = os.path.join(
-            args.tblog_dir, args.src_mod.name_tblog_dir + "-" + str_targets + "/"
+            args.tblog_dir, args.model.name_tblog_dir + "-" + str_targets + "/"
         )
 
     # Trainer
@@ -72,13 +72,14 @@ def train(args: DictConfig):
         ckpt_path=ckpt_path,
     )
     nparams = model.count_params()
+    ntrparams = model.count_tr_params()
 
     # Display / store exp info only once (not on multiple GPUs)
     if "LOCAL_RANK" not in os.environ.keys() and "NODE_RANK" not in os.environ.keys():
 
         print("------------------")
         print(f"Experiment (model-parameters-target): {exp_name}")
-        print(f"Number of parameters: {nparams}")
+        print(f"Number of trainable/total parameters: {ntrparams} / {nparams}")
         print(f"--- Dir to record ckpts:  {ckpt_dir}")
         print(f"--- Dir to record tb log: {tblog_dir}")
         print("------------------")

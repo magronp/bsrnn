@@ -1,25 +1,23 @@
 ### Uncomment the config(s) below that you want to run when booking jobs
 
+# -------- Masker context -> doesn't seem to work...
+#"targets=vocals model.mask_ctxt=1"
+#"targets=bass model.mask_ctxt=1"
+#"targets=drums model.mask_ctxt=1"
+#"targets=other model.mask_ctxt=1"
 
 #-------------- Joint finer bandsplit scheme
-#"targets=vocals src_mod.joint_bandsplit=True"
-#"targets=bass src_mod.joint_bandsplit=True"
-#"targets=drums src_mod.joint_bandsplit=True"
-#"targets=other src_mod.joint_bandsplit=True"
+#"targets=vocals model.joint_bandsplit=True"
+#"targets=bass model.joint_bandsplit=True"
+#"targets=drums model.joint_bandsplit=True"
+#"targets=other model.joint_bandsplit=True"
 
+#------------- Shared encoder
+#"model=simo-bsrnn"
+#"model=simo-bsrnn model.subtract_last_trgt=False"
 
-# -------- Masker context -> doesn't seem to work yet...
-#"targets=vocals src_mod.mask_ctxt=1"
-#"targets=bass src_mod.mask_ctxt=1"
-#"targets=drums src_mod.mask_ctxt=1"
-#"targets=other src_mod.mask_ctxt=1"
+#------------- Shared encoder - optimized
+#"model=simo-bsrnn-opt dset=musdb18hq optim.patience=30 ckpt_path=outputs/simo-bsrnn-opt/last-separator.ckpt"
 
-
-#------------- Joint encoder
-#"src_mod=simo-bsrnn"
-#"src_mod=simo-bsrnn src_mod.subtract_last_trgt=False"
-
-
-#------------- Joint encoder - optimized
-#"src_mod=simo-bsrnn-opt dset=musdb18hq optim.patience=30 ckpt_path=outputs/simo-bsrnn-opt/last-separator.ckpt"
-
+#------------- "Lite" version (using multi-heads)
+"model=simo-bsrnn-opt model.n_heads=2 dset=musdb18hq optim.patience=30"

@@ -17,7 +17,7 @@ def get_exp_params_str():
             any(
                 substring in s
                 for substring in [
-                    "src_mod=",
+                    "model=",
                     "targets=",
                     "tblog_dir",
                     "track_emissions",
@@ -29,8 +29,8 @@ def get_exp_params_str():
         ):
             exp_params += "-" + s
 
-    # For better readability, remove the "src_mod." and "optim." strings when there are subparams
-    exp_params = exp_params.replace("src_mod.", "")
+    # For better readability, remove the "model." and "optim." strings when there are subparams
+    exp_params = exp_params.replace("model.", "")
     exp_params = exp_params.replace("optim.", "")
 
     ## Get a bool to see if it's a new run or a training that is resumed

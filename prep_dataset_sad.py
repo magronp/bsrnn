@@ -6,7 +6,7 @@ import typing as tp
 from tqdm import tqdm
 import pandas as pd
 from os.path import join
-from helpers.data import get_track_list
+from helpers.data import get_track_list_musdb18
 import hydra
 from omegaconf import DictConfig
 
@@ -117,7 +117,6 @@ class SAD:
 def get_indices(
     src,
     subset,
-    split,
     input_dir,
     output_dir,
     sad,
@@ -126,16 +125,18 @@ def get_indices(
     all_ind = pd.DataFrame(columns=["track", "ind_beg", "ind_end"])
 
     # get the list of tracks
-    list_tracks = get_track_list(input_dir, subset=subset, split=split)
+    list_tracks_dir = get_track_list_musdb18(input_dir, subset=subset)
 
-    for track_name in tqdm(list_tracks):
+    for track_dir in tqdm(list_tracks_dir):
         # load the audio
-        track_dir = join(input_dir, subset, track_name)
         src_path = join(track_dir, src + ".wav")
         y = torchaudio.load(src_path)[0]
 
         # find indices of salient segments
         indices = sad.calculate_salient_indices(y)
+
+        # Get track name
+        track_name = track_dir.split("/")[-1]
 
         # store the results in the df
         for curr_ind_beg in indices:
@@ -147,15 +148,14 @@ def get_indices(
             all_ind.loc[len(all_ind)] = curr_row
 
     # Record the df as a .csv file
-    subset_name = "test" if subset == "test" else split
-    file_path = output_dir / f"{src}_{subset_name}.csv"
+    file_path = join(output_dir, subset, f"{src}.csv")
     all_ind.to_csv(file_path)
 
     return None
 
 
 @hydra.main(version_base=None, config_name="config", config_path="conf")
-def prepare_dset(args: DictConfig):
+def prepare_dset_sad(args: DictConfig):
 
     # Get the relevant parameters
     cfg_sad = args.sad
@@ -166,17 +166,17 @@ def prepare_dset(args: DictConfig):
     # initialize directories where to save indices
     input_dir = cfg_sad.data_dir
     output_dir = Path(cfg_sad.prep_dir)
-    output_dir.mkdir(exist_ok=True)
+    output_dir.mkdir(parents=True, exist_ok=True)
 
     # get active indices for all sources' training tracks
     for src in cfg_sad.sources:
         print(f"Preparing the '{src}' track")
-        get_indices(src, "train", "train", input_dir, output_dir, sad)
+        get_indices(src, "train", input_dir, output_dir, sad)
 
     return
 
 
 if __name__ == "__main__":
-    prepare_dset()
+    prepare_dset_sad()
 
 # EOF

@@ -12,11 +12,9 @@
 
 .venv/*
 tb_logs/
-outputs/*
-!outputs/.dummy.txt
-data/*
-!data/.dummy.txt
+outputs/
+data/
+energy_jobs/
 
 debug.py
-analyze_energy.ipynb
-annotate_jobs.ipynb
+csdr.ipynb

@@ -4,7 +4,7 @@ import hydra
 from os.path import join
 from omegaconf import DictConfig
 from models.separator import Separator
-from helpers.data import rec_estimates
+from helpers.data import rec_audio
 
 
 @hydra.main(version_base=None, config_name="config", config_path="conf")
@@ -33,7 +33,7 @@ def separate(args: DictConfig):
     mix = torchaudio.functional.resample(mix, orig_sr, args.sample_rate)
 
     # Define the folder where the model ckpt is/are located
-    args.src_mod.name_out_dir = args.model_dir
+    args.model.name_out_dir = args.model_dir
 
     # Load the model
     model = Separator(args)
@@ -58,7 +58,7 @@ def separate(args: DictConfig):
         estimates = estimates[est_ind]
 
     # Record estimates
-    rec_estimates(estimates, args.rec_dir, args.targets, args.sample_rate)
+    rec_audio(estimates, args.rec_dir, args.targets, args.sample_rate)
 
 
 if __name__ == "__main__":

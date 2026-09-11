@@ -1,7 +1,7 @@
 import torchaudio
 import pandas as pd
 from os import sched_getaffinity
-from helpers.data import get_track_list
+from helpers.data import get_track_list_musdb18
 import multiprocessing.pool
 import functools
 import torch
@@ -10,10 +10,10 @@ import tqdm
 from models.separator import Separator
 
 
-def process_all_tracks_parallel(args, subset="test", split=None, num_cpus=None):
+def process_all_tracks_parallel(args, subset="test", num_cpus=None):
 
     # List of tracks to process
-    list_tracks = get_track_list(args.data_dir, subset=subset, split=split)
+    list_tracks_dir = get_track_list_musdb18(args.data_dir, subset=subset)
 
     # If num_cpus not specified, use all available CPUs
     max_cpus = len(sched_getaffinity(0)) // 4 - 1
@@ -23,7 +23,7 @@ def process_all_tracks_parallel(args, subset="test", split=None, num_cpus=None):
         num_cpus = min(num_cpus, max_cpus)
 
     # Freeze the non track-specific arguments
-    myfun = functools.partial(sep_and_eval_track, args=args, subset=subset)
+    myfun = functools.partial(sep_and_eval_track, args=args)
 
     # If parallel, use multi-CPU to perform evaluation
     if num_cpus > 1:
@@ -35,14 +35,14 @@ def process_all_tracks_parallel(args, subset="test", split=None, num_cpus=None):
             sdr_list = list(
                 pool.map(
                     func=myfun,
-                    iterable=list_tracks,
+                    iterable=list_tracks_dir,
                     chunksize=1,
                 )
             )
     else:
         # Simple loop over tracks (applies to both CPU and GPU)
         sdr_list = []
-        for track_name in tqdm.tqdm(list_tracks):
+        for track_name in tqdm.tqdm(list_tracks_dir):
             sdr = myfun(track_name)
             sdr_list.append(sdr)
 
@@ -56,16 +56,13 @@ def process_all_tracks_parallel(args, subset="test", split=None, num_cpus=None):
     return test_results
 
 
-def sep_and_eval_track(track_name, args, subset="test"):
+def sep_and_eval_track(track_dir, args):
 
     # Process only part of the track if needed (mostly for debugging)
     if args.dset.seq_duration_eval is None:
         nfr = -1
     else:
         nfr = int(args.dset.seq_duration_eval * args.sample_rate)
-
-    # Folder where the track reference files are stored
-    track_dir = join(args.data_dir, subset, track_name)
 
     # Load true sources, add batch dim [1, n_targets, n_channels, n_samples]
     references = torch.stack(
@@ -82,6 +79,7 @@ def sep_and_eval_track(track_name, args, subset="test"):
     model = Separator(args)
 
     # Test step : estimate the sources and get the SDR
+    track_name = track_dir.split("/")[-1]
     test_batch = (mix, references, [track_name])
     test_sdr = model.test_step(test_batch, 0)
 

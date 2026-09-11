@@ -6,7 +6,7 @@ defaults:
   - optim: default
   - scheduler: step
   - eval: default
-  - src_mod: bsrnn
+  - model: bsrnn
   - override hydra/hydra_logging: disabled
   - override hydra/job_logging: disabled
 
@@ -30,7 +30,7 @@ eps: 1e-7
 out_dir: outputs/
 tblog_dir: tb_logs/
 data_dir: data/musdb18hq/
-sad_dir: data/
+sad_dir: data/musdb18hq_sad/
 
 # Audio / STFT
 sample_rate: 44100
@@ -45,7 +45,7 @@ ckpt_path:
 # Track consumed energy with codecarbon
 track_emissions: False
 country_iso_code: FRA
-pue: 1.5
+pue: 1.5 #to adapt according to your computing platform
 track_epochs: 3
 
 # When instanciating the separator

@@ -17,9 +17,9 @@ def test(args: DictConfig):
     sdr_type = args.eval.sdr_type
     targets = args.targets
 
-    model_dir = join(args.out_dir, args.src_mod.name_out_dir)
+    model_dir = join(args.out_dir, args.model.name_out_dir)
     args.eval.rec_dir = join(model_dir, "audio")
-    model_name = args.src_mod.name
+    model_name = args.model.name
     print(" Model:", model_name)
 
     # Evaluation results file
@@ -33,7 +33,7 @@ def test(args: DictConfig):
         if args.parallel_cpu:
             args.eval.device = "cpu"  # make sure the device is CPU
             test_results = process_all_tracks_parallel(
-                args, subset="test", split=None, num_cpus=args.num_cpus
+                args, subset="test", num_cpus=args.num_cpus
             )
 
         else:

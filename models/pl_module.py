@@ -3,7 +3,7 @@ import torchaudio
 import lightning.pytorch as pl
 import pandas as pd
 from os.path import join
-from helpers.data import rec_estimates
+from helpers.data import rec_audio
 from helpers.eval import compute_sdr
 from omegaconf import OmegaConf
 from helpers.transforms import mySTFT, myISTFT
@@ -136,7 +136,7 @@ class PLModule(pl.LightningModule):
         )
 
         # Validation SDR
-        val_sdr_trgts = compute_sdr(
+        val_sdr_trgts, _ = compute_sdr(
             y,
             y_hat,
             win=self.sdr_win,
@@ -398,7 +398,7 @@ class PLModule(pl.LightningModule):
         y_hat, _ = self._apply_model_to_track(x, y, comp_loss=False)
 
         # Test SDR
-        sdr = compute_sdr(
+        sdr, _ = compute_sdr(
             y,
             y_hat,
             win=self.sdr_win,
@@ -420,7 +420,7 @@ class PLModule(pl.LightningModule):
         # Record the estimates
         if self.rec_dir:
             track_rec_dir = join(self.rec_dir, "test", track_name)
-            rec_estimates(y_hat[0], track_rec_dir, self.targets, self.sample_rate)
+            rec_audio(y_hat[0], track_rec_dir, self.targets, self.sample_rate)
 
         # Store it
         self.test_sdr_temp.append(testsdr)
@@ -471,6 +471,9 @@ class PLModule(pl.LightningModule):
         }
 
     def count_params(self):
+        return sum(p.numel() for p in self.parameters())
+
+    def count_tr_params(self):
         return sum(p.numel() for p in self.parameters() if p.requires_grad)
 
 

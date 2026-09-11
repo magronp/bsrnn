@@ -7,9 +7,9 @@ For speed, we display results on the validation set in terms of *utterance* SDR,
 We consider a small model with a hidden dimension of 64 and a number of repeats of 8, except when trying the [larger](#large-model) or [optimized](#optimized-model) models.
 
 
-## Preliminary tests
+## Training parameters
 
-This first series of test consists of basic experiments to train the model. Unless specified otherwise, the model is trained by minimizing the same loss as in the paper, using an adjusted learning rate as described [below](#learning-rate), and training is monitored by maximizing the SDR on the validation set. We set the maximum number of epochs at 200 (which is larger than in the paper, but needed to ensure convergence).
+This first series of test consists of basic experiments to train the model. Unless specified otherwise, the model is trained by minimizing the same loss as in the paper, using an adjusted learning rate as described [below](#adjusting-the-learning-rate), and training is monitored by maximizing the SDR on the validation set. We set the maximum number of epochs at 200 (which is larger than in the paper, but needed to ensure convergence).
 
 ### Randomness, convergence, and patience
 
@@ -28,12 +28,11 @@ We observe some variability in the results, which could become problematic when 
 We report hereafter the mean results over these 3 runs above which serves as a reference, and will perform only one run of each experiment to save some computational time. We will outline when a variant performs significantly better or worse based on the overall trend of the validation score (rather than the "best" value).
 
 
-### Learning rate
+### Adjusting the learning rate
 
 In the original paper, the model is trained using a learning rate of $10^{-3}$, a batch size of 2, and 8 GPUs in parallel, yielding a global batch size of 16. Unfortunately, we do not have access to enough (large) GPUs, so theoretically we should increase the batch size in order to yield the same global batch size. However, this is not possible because of memory constraints (larger batches do not fit into such GPUs). As a result, two strategies can be employed to compensate for this drop in global batch size:
 - [Accumulating gradients](https://lightning.ai/docs/pytorch/stable/advanced/training_tricks.html#accumulate-gradients), such that each SGD descent step is performed after considering the same amount of data samples.
 - Adjusting the learning rate (see [here](https://github.com/magronp/bsrnn/blob/main/train.py#L47)), such that the *effective* learning rate (= learning rate / global batch size) is the same (*cf*. [this paper](https://arxiv.org/pdf/1706.02677))
-
 
 |                           | vocals |  bass  |  drums |  other | average|
 |---------------------------|--------|--------|--------|--------|--------|
@@ -56,7 +55,7 @@ We study here the impact of the monitoring criterion on the validation set. Inde
 While results are similar, overall maximizing the validation SDR allows training to continue for more epochs, which in general is a better strategy for obtaining a larger validation SDR.
 
 
-### Training loss
+### Loss domain
 
 The original paper uses a combination of a time-domain (t) and an STFT-domain (stft) terms:
 $$
@@ -67,20 +66,20 @@ $$
 $$
 We study the influence of the training loss domain by checking these terms individually (and their combination)
 
-| loss    | vocals |  bass  |  drums |  other | average|
-|---------|--------|--------|--------|--------|--------|
+| loss      | vocals |  bass  |  drums |  other | average|
+|-----------|--------|--------|--------|--------|--------|
 |  t+stft   |   7.7  |   6.1  |   9.7  |   4.8  |   7.1  |
-|  t      |   7.9  |   6.1  |   9.4  |   4.9  |   7.1  |
+|  t        |   7.9  |   6.1  |   9.4  |   4.9  |   7.1  |
 |  stft     |   7.9  |   6.4  |   9.6  |   4.9  |   7.2  |
 
 Interestingly, we do not observe any major difference between losses. While previous works have outline the [importance of time-domain training](https://arxiv.org/pdf/1911.08895), it seems that if the whole complex-valued STFT is modeled using two independent terms (real/imag parts), than STFT-domain training is equally powerful.
 
 
-## Basic variants
+## Base architecture parameters
 
 ### FFT size
 
-The original BSRNN model uses a fixed FFT size of 2048, while an FFT size of 4096 is common for music separation models (*cf.* UMX, demucs). Thus, we suggest to investigate it since it only moderately increases the model size, while reducing the memory requirements (as the number of time frames is reduced). This allows to increase the batch size and therefore to speed up training.
+The original BSRNN model uses a fixed FFT size of 2048, while an FFT size of 4096 is common for music separation models (*cf.* UMX or Demucs). Thus, we suggest to investigate it since it only moderately increases the model size, while reducing the memory requirements (as the number of time frames is reduced). This allows to increase the batch size and therefore to speed up training.
 
 
 | n_fft / n_hop   | vocals |  bass  |  drums |  other | average|
@@ -89,7 +88,7 @@ The original BSRNN model uses a fixed FFT size of 2048, while an FFT size of 409
 |  4096 / 1024    |   7.3  |   5.9  |   8.7  |   4.4  |   6.6  |
 
 
-However, it does not yield good results, which we can explain as follows. While the change in frequency resolution is not really impactful since the STFT is projected into an embedding of fixed dimension, the time resolution is diminished, which has a much stronger impact on the results. This also explains why the drop is more significant for the bass track, which requires a refined time resolution, but not on the drums, which are localized events in time.
+However, it does not yield good results, which we can explain as follows. On the one hand, the increased frequency resolution is not really impactful since the STFT is projected into an embedding of fixed dimension early in the network. On the other hand, the time resolution is reduced, which has a much stronger impact on the results. This also explains why the drop is more significant for the drums track, since percussive events are localized in time, and therefore require a refined time resolution to be properly modeled.
 
 Note that an even larger FFT size of 6144 along with a hop size of 1024 (to match the setup of [DTTNet](https://arxiv.org/abs/2309.08684)) yields even worse results. Finally, a smaller FFT size (1024) with hop size of 256 doesn't fit because of memory constraints.
 
@@ -100,9 +99,24 @@ Note that an even larger FFT size of 6144 along with a hop size of 1024 (to matc
 |------------|--------|--------|--------|--------|--------|
 | fac_mask=4 |   7.7  |   6.1  |   9.7  |   4.8  |   7.1  |
 | fac_mask=2 |   7.9  |   6.8  |   9.4  |   4.4  |   7.1  |
-| fac_mask=2 |   7.5  |   6.1  |   9.8  |   4.7  |   7.0  |
+| fac_mask=1 |   7.5  |   6.1  |   9.8  |   4.7  |   7.0  |
 
 We observe that average results are similar, but the bahavior might depend on the source: while reducing the masker size might negatively affect performance for drums and other, it improves performance slightly for the vocals or more substantially for the bass. Further decreasing `fac_mask` to 1 slightly decreases the overall performance, although the model becomes much lighter in terms of number of parameters.
+
+
+## Data preprocessing and augmentations
+
+Most of our experiments use a source activity detection (SAD) preprocessing, as per the original paper, as well several data augmentation techniques. We investigate these as well as alternatives.
+
+|                                         | vocals |  bass  |  drums |  other | average|
+|-----------------------------------------|--------|--------|--------|--------|--------|
+|  As in the paper                        |   7.7  |   6.1  |   9.7  |   4.8  |   7.1  |
+|  Silent target (instead of all sources) |   7.9  |   6.6  |   9.5  |   4.4  |   7.1  |
+|  no SAD  +  BSRNN augm                  |   8.2  |   6.6  |   9.5  |   4.9  |   7.3  |
+|  no SAD  +  alt aug                     |   8.2  |   6.9  |   9.5  |   5.3  |   7.5  |
+
+First, instead of randomly dropping *each chunk* to simulate silent sources when generating data, we only drop the *target source*. Results show this performs similarly on average, but it yields a substantial performance improvement for the bass track. Then, removing the SAD preprocessing (but keeping the same augmentations) yields better performance for the vocals and bass tracks. This suggests that there is room for improvement for our SAD implementation (we used one largely based on [another repository](https://github.com/amanteur/BandSplitRNN-Pytorch)), since this preprocessing is alleged to greatly benefit the separation. However, it is not clear to what extent, since its impact is not evaluated specifically in the original publication. Lastly, we remove SAD and also use alternative augmentation schemes (no silent target/source, randomly swapping channels, rescaling energy using a different range), which more substantially improve performance.
+
 
 
 ## Large model
@@ -114,17 +128,32 @@ We now use the original paper's architecture by increasing the model size, i.e.,
 |   small                |   7.7  |   6.1  |   9.7  |   4.8  |   7.1  |
 |   large                |   9.2  |   7.3  |  10.3  |   5.9  |   8.2  |
 |   large (patience=30)  |   9.5  |   7.8  |  10.3  |   6.3  |   8.5  |
+|   + no SAD / alt. data |   9.6  |   8.2  |  10.0  |   6.4  |   8.5  |
 
 
-We observe a large improvement of 1.1 dB on average when using this larger model. This improvement is slightly more important for the vocals track, and less for the drums track.
+We observe a large improvement of 1.1 dB on average when using this larger model. This improvement is slightly more important for the vocals track, and less important for the drums track.
 
 When checking at the validation SDR over epoch, we observe that the model has not fully converged (as in this [previous experiment](#randomness-convergence-and-patience)). As a result, we increase the patience parameter at 30 in order to allow training to continue and ensure convergence. However, note that the maximum number of epochs is set at 200 to prevent from excessive computation time. The drums and bass models converge before reaching that limit, and the vocals and other models reach a plateau by 200 epochs. While the drums track does not benefit from this larger training time (overfitting is observed sooner), the remaining models exhibit some improvement. We report the test results using this model in the [readme document](README.md) as our implementation of the original BSRNN model.
+
+In an attempt to bridge this performance gap, we retrain a large model using our alternative data generation process. This outperforms the previous model by XXX dB, and performs on par with the original on the test set.
+
+
+### Back to random track mixing
+
+Note that an important augmentation is to perform *random track mixing*, that is, building mixtures from instruments that belong to different songs. This yields inconsistent mixtures (a phenomenon known as *cacophony*) but it is known to benefit separation quality. We compare shuffling tracks *only once* when training starts, or re-shuffling tracks *at each epoch*. In preliminary experiments, we did not observe any difference, therefore we used the former because it is faster. However, this behavior could be different for large models, as suggested in a [recent paper](https://www.merl.com/publications/docs/TR2026-012.pdf). Therefore, we also evaluate this on the large model using a patience of 30 to ensure convergence.
+
+|                           | vocals |  bass  |  drums |  other | average|
+|---------------------------|--------|--------|--------|--------|--------|
+|  Shuffling once           |   9.5  |   7.8  |  10.3  |   6.3  |   8.5  |
+|  Shuffling at each epoch  |   9.5  |   8.0  |  10.1  |   6.2  |   8.5  |
+
+
+We observe no difference on average in this setup, which can be explained by the fact that our pipeline still select a random chunk from each track at each epoch, therefore some level of cacophony is still guaranteed. As a result, we use the same strategy (shuffling tracks only once) for large models since it is faster.
 
 
 ## Further architecture variants
 
 We now suggest several potential directions for further improving the performance of BSRNN.
-
 
 ### Stereo modeling
 
@@ -191,48 +220,19 @@ Overall, using attention is beneficial, except for the other track. In particula
 
 ### Multi-head sequence module
 
-We took inspiration from the [DTTNet](https://arxiv.org/abs/2309.08684) model, where a so-called "improved" sequence module is used. This module is based on splitting the latent representation into several heads for parallel processing: the RNNs then process a smaller representation, which reduces the number of parameters.
+We took inspiration from the [DTTNet](https://arxiv.org/abs/2309.08684) model, where a so-called "improved" sequence module is used. This module is based on [group RNNs](https://aclanthology.org/N18-1073/), which split the latent representation into several heads for parallel processing: the RNNs then process a smaller representation, which reduces the number of parameters.
 
 |                | vocals |  bass  |  drums |  other | average|
 |----------------|--------|--------|--------|--------|--------|
 |    Original    |   7.7  |   6.1  |   9.7  |   4.8  |   7.1  |
 |    Multi-head  |   7.6  |   5.5  |   9.1  |   4.0  |   6.6  |
 
-However this approach yields a significant performance drop. If we further reduce `num_repeats=4` as suggested in the DTTNet paper, the results get worse, even though the model becomes much lighter (7.5 dB vocals and 5M parameters, vs. 8M for the base one). Thus, this mechanism seems to be effective only when using in cunjonction with other architecture aspects of DTTNet, e.g., not the band-split scheme of BSRNN considered here.
-
-
-## Dataset and data preprocessing
-
-### Shuffling tracks
-
-We compare shuffling tracks only once when training starts, or re-shuffling tracks at each epoch. In preliminary experiments, we did not observe any difference, therefore we used the former because it is faster. However, this behavior could be different for large models, as suggested in a [recent paper](https://www.merl.com/publications/docs/TR2026-012.pdf). Therefore, we also evaluate this on the large model using a patience of 30 to ensure convergence.
-
-|                           | vocals |  bass  |  drums |  other | average|
-|---------------------------|--------|--------|--------|--------|--------|
-|  Shuffling once           |   9.5  |   7.8  |  10.3  |   6.3  |   8.5  |
-|  Shuffling at each epoch  |   9.5  |   8.0  |  10.1  |   6.2  |   8.5  |
-
-
-We observe no difference on average in this setup, which can be explained by the fact that our pipeline still select a random chunk from each track at each epoch, therefore some randomness in the cacophony is still guaranteed. As a result, we use the same strategy (shuffling tracks only once) for large models since it is faster.
-
-
-### SAD and augmentations
-
-In our experiments, we use a similar data preprocessing as suggested in the paper, based on source activity detection (SAD), thus we compare it with no preprocessing.
-
-|                    | vocals |  bass  |  drums |  other | average|
-|--------------------|--------|--------|--------|--------|--------|
-|  SAD preprocessing |   7.7  |   6.1  |   9.7  |   4.8  |   7.1  |
-|  SAD +  alt   aug  |   7.9  |   6.6  |   9.5  |   4.4  |   7.1  |
-|  no SAD            |   8.2  |   6.9  |   9.5  |   5.3  |   7.5  |
-
-We obtain slightly better results with no preprocessing. This suggests that the SAD preprocessing implementation we used (largely based on [another repository](https://github.com/amanteur/BandSplitRNN-Pytorch)) can probably be improved.
-
+We observe that this approach yields a moderate drop in vocals performance, which is consistent with what was observed in the DTTNet paper. However, considering other sources and average results, this approach yields a significant performance drop. If we further reduce `num_repeats=4` as suggested in the DTTNet paper, the results get worse, even though the model becomes much lighter (for vocals: an overall 0.2 dB drop, and 5M parameters, vs. 8M for the base one). Therefore, while this mechanism seems to be effective for vocals, this is not the case for other sources that are not tested specifically in the DTTNet paper. Alternatively, it can be efficient for other sources as well, but only when used in conjunction with other architecture aspects of DTTNet, e.g., the convolutional encoder/decoders vs. the band-split scheme of BSRNN considered here.
 
 
 ## Optimized model
 
-Following the results above, we consider an optimzed model that consists of a large network (`feature_dim=128` and `num_repeats=12`), is trained using the non-preprocessed dataset and a large patience for ensuring convergence, and it incorporates attention heads and a TAC module with PReLU activation.
+Following the results above, we consider an *optimzed* model that consists of a large network (`feature_dim=128` and `num_repeats=12`), is trained using the non-preprocessed dataset and a patience of 30 for ensuring convergence, and it incorporates attention heads and a TAC module with PReLU activation.
 
 |                      | vocals |  bass  |  drums |  other | average|
 |----------------------|--------|--------|--------|--------|--------|
@@ -272,4 +272,4 @@ Based on these results, we finally consider a large (`feature_dim=128` and `num_
 |  oBSRNN        |   10.2 |  10.2  |  11.3  |   6.9  |   9.6  |
 |  oBSRNN-SIMO   |   11.3 |   9.8  |  11.8  |   8.4  |  10.3  |
 
-This model yields a large performance improvement over the non-SIMO model, and will yield state-of-the-art performance in terms of chunk SDR on the [test set]. An interesting point is that the actual performance improvement of the SIMO model over BSRNN is mostly due to the TAC module for stereo modeling and to the finer band-split scheme - not so much from the actual *SIMO* aspect. Be that as it might, using a shared encoder allows to maintain performance and to reduce model size, which is a significant improvement in itself.
+This model yields a large performance improvement over the non-SIMO model, and will yield state-of-the-art performance in terms of chunk SDR on the [test set](README.md#test-results). An interesting point is that the actual performance improvement (in terms of SDR) of the SIMO model over BSRNN is mostly due to the TAC module for stereo modeling and to the finer band-split scheme - not so much from the actual *SIMO* aspect (i.e., the joint encoder). Be that as it might, using a shared encoder allows to maintain performance and to reduce model size, which is a significant improvement in itself.

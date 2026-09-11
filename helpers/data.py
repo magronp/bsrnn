@@ -4,6 +4,7 @@ import torchaudio
 import random
 from typing import Optional
 import os
+from os.path import join
 from torch.utils.data import DataLoader
 import pandas as pd
 from pathlib import Path
@@ -12,16 +13,16 @@ import musdb
 import yaml
 
 
-def rec_estimates(estimates, track_rec_dir, targets, sample_rate):
+def rec_audio(audio, track_rec_dir, targets, sample_rate):
     """
-    estimates: [n_targets, n_channels, n_samples]
+    audio: [n_targets, n_channels, n_samples]
     """
 
     if track_rec_dir is None:
         track_rec_dir = os.getcwd()
 
-    # Make sure the estimates tensor is detached and on cpu
-    estimates = estimates.cpu().detach()
+    # Make sure the audio tensor is detached and on cpu
+    audio = audio.cpu().detach()
 
     # create the rec folder if needed
     Path(track_rec_dir).mkdir(parents=True, exist_ok=True)
@@ -29,8 +30,8 @@ def rec_estimates(estimates, track_rec_dir, targets, sample_rate):
     # Loop over targets
     for ind_trg, trg in enumerate(targets):
         torchaudio.save(
-            os.path.join(track_rec_dir, trg + ".wav"),
-            estimates[ind_trg],
+            join(track_rec_dir, trg + ".wav"),
+            audio[ind_trg],
             sample_rate,
         )
 
@@ -98,17 +99,21 @@ class Augmentator(object):
         return audio
 
 
-def get_track_list(data_dir, subset, split=None):
-    # get the list of tracks in the subset
-    list_tracks_subset = os.listdir(data_dir + subset)
+def get_track_list_musdb18(data_dir, subset):
 
-    # for the training subset, need to keep or filter out val tracks
-    if subset == "train":
-        # List of validation track (see https://github.com/sigsep/sigsep-mus-db/blob/master/musdb/configs/mus.yaml)
-        setup_path = os.path.join(musdb.__path__[0], "configs", "mus.yaml")
+    # get the list of tracks in the subset
+    subset_dir = "test" if subset == "test" else "train"
+    list_tracks_dir = os.listdir(join(data_dir, subset_dir))
+
+    # Then we need to keep or filter out val tracks
+    if not (subset == "test"):
+
+        # list of validation tracks (predefined in musdb)
+        setup_path = join(musdb.__path__[0], "configs", "mus.yaml")
         with open(setup_path, "r") as f:
             list_tracks_val = yaml.safe_load(f)["validation_tracks"]
 
+        # We keep them explicitly here, in case the page is not reachable
         # list_tracks_val = [
         #    "Actions - One Minute Smile",
         #    "Clara Berry And Wooldog - Waltz For My Victims",
@@ -126,26 +131,28 @@ def get_track_list(data_dir, subset, split=None):
         #    "Traffic Experiment - Sirens",
         # ]
 
-        if split == "valid":
-            list_tracks_subset = list_tracks_val
+        # either keep the val tracks or remove them from the whole list of train tracks
+        if subset == "val":
+            list_tracks_dir = list_tracks_val
         else:
-            # if split=="train", remove the val tracks from the whole list of train tracks
-            list_tracks_subset = list(set(list_tracks_subset) - set(list_tracks_val))
+            list_tracks_dir = list(set(list_tracks_dir) - set(list_tracks_val))
 
     # Sort the list
-    list_tracks_subset.sort()
+    list_tracks_dir.sort()
 
-    return list_tracks_subset
+    # Append the name of data/subset dir to get the full path to the track dir
+    list_tracks_dir = [join(data_dir, subset_dir, i) for i in list_tracks_dir]
+
+    return list_tracks_dir
 
 
-class MUSDBDataset(Dataset):
+class MusicDataset(Dataset):
     def __init__(
         self,
         targets=["vocals"],
         sources=["vocals", "bass", "drums", "other"],
         data_dir: str = "data/musdb18hq/",
         subset: str = "train",
-        split: str = "train",
         sample_rate: int = 44100,
         seq_duration: Optional[float] = 3.0,
         n_samples: int = 20000,
@@ -170,10 +177,9 @@ class MUSDBDataset(Dataset):
             i in sources for i in targets
         ), "At least one target is not among sources"
 
-        # Dataset split and dir
-        self.subset = subset
-        self.split = split
+        # Dataset dir and subset
         self.data_dir = data_dir
+        self.subset = subset
 
         # Sample rates (original and new)
         self.orig_sample_rate = 44100  # musdb has a fixed sample rate
@@ -183,12 +189,19 @@ class MUSDBDataset(Dataset):
         self.seq_duration = seq_duration
         self.n_samples = n_samples
 
-        # List of tracks
-        self.list_tracks = get_track_list(data_dir, subset, split)
+        # Get the dir where the tracks are and the list of tracks
+        if "musdb" in data_dir:
+            self.list_tracks_dir = get_track_list_musdb18(data_dir, subset)
+        else:
+            # for MoisesDB, no extra subset sub-folder
+            self.list_tracks_dir = [
+                join(data_dir, i) for i in os.listdir(self.data_dir)
+            ]
+            self.list_tracks_dir.sort()
 
         # Adjust n_samples if not precised
         if self.n_samples is None:
-            self.n_samples = len(self.list_tracks)
+            self.n_samples = len(self.list_tracks_dir)
 
         # Resample function
         self.resample_bool = self.sample_rate != self.orig_sample_rate
@@ -206,23 +219,23 @@ class MUSDBDataset(Dataset):
         audio_sources = []
 
         # define the track when it's the same for all sources (valid and test)
-        track_name = self.list_tracks[index % len(self.list_tracks)]
+        track_dir = self.list_tracks_dir[index % len(self.list_tracks_dir)]
+
+        # Get the track name from the track dir (will be dummy if mix tracks anyway)
+        track_name = track_dir.split("/")[-1]
 
         # Load the sources
         for source in self.sources:
 
             # Get the track for the current source (needed for training)
             if self.random_track_mix:
-                track_name = random.choice(self.list_tracks)
-
-            # Track folder
-            track_dir = os.path.join(self.data_dir, self.subset, track_name)
+                track_dir = random.choice(self.list_tracks_dir)
 
             # Get the total track duration (useful if 'seq_duration' is specified)
-            track_info = torchaudio.info(os.path.join(track_dir, "mixture.wav"))
+            track_info = torchaudio.info(join(track_dir, "mixture.wav"))
             track_duration = track_info.num_frames / track_info.sample_rate
 
-            src_path = os.path.join(track_dir, source + ".wav")
+            src_path = join(track_dir, source + ".wav")
 
             # Check wether a duration is provided or not
             if self.seq_duration:
@@ -248,7 +261,7 @@ class MUSDBDataset(Dataset):
             )[0]
 
             # Data augmentation (for the train subset only)
-            if self.subset == self.split == "train":
+            if self.subset == "train":
                 audio = self.augs_fn(audio)
 
             # Add the current source to the list of all sources
@@ -279,10 +292,9 @@ class MUSDBDatasetSAD(Dataset):
         self,
         targets=["vocals"],
         subset: str = "train",
-        split: str = "train",
         sources: list = ["vocals", "bass", "drums", "other"],
         data_dir: str = "data/musdb18hq/",
-        sad_dir: str = "data/",
+        sad_dir: str = "data/musdb18hq_sad/",
         sample_rate: int = 44100,
         seq_duration: Optional[float] = 3.0,
         n_samples=None,
@@ -307,10 +319,9 @@ class MUSDBDatasetSAD(Dataset):
             i in sources for i in targets
         ), "At least one target is not among sources"
 
-        # Dataset split and dir
-        self.subset = subset
-        self.split = split
+        # Dataset and subset dir
         self.data_dir = data_dir
+        self.subset = subset
 
         # Sample rates (original and new)
         self.orig_sample_rate = 44100  # musdb has a fixed sample rate
@@ -325,7 +336,7 @@ class MUSDBDatasetSAD(Dataset):
         # also store their lengths
         self.list_chunks, self.n_chunks = {}, {}
         for src in sources:
-            chunks = pd.read_csv(sad_dir + src + "_" + split + ".csv", index_col=0)
+            chunks = pd.read_csv(join(sad_dir, subset, f"{src}.csv"), index_col=0)
             if (
                 "shuffle_tracks" in aug_list
             ):  # even if no shuffle_tracks, tracks will occasionnally be mixed since they have diffferent number of valid chunks
@@ -368,9 +379,7 @@ class MUSDBDatasetSAD(Dataset):
             )
 
             # Get the track name to load the audio
-            src_path = os.path.join(
-                self.data_dir, self.subset, track_name, src + ".wav"
-            )
+            src_path = join(self.data_dir, self.subset, track_name, src + ".wav")
 
             # If random chunk, offset inside the SAD-processed segment
             if self.random_chunk:
@@ -384,7 +393,7 @@ class MUSDBDatasetSAD(Dataset):
             )[0]
 
             # Data augmentation (for the train subset only)
-            if self.subset == self.split == "train":
+            if self.subset == "train":
                 audio = self.augs_fn(audio)
 
             # Add the current source to the list of all sources
@@ -441,12 +450,11 @@ def build_training_samplers(targets, cfg_dset, ngpus=None, fast_tr=False):
     if cfg_dset.sad_dir:
         DSET = MUSDBDatasetSAD
     else:
-        DSET = MUSDBDataset
+        DSET = MusicDataset
 
     train_db = DSET(
         targets=targets,
         subset="train",
-        split="train",
         n_samples=cfg_dset.n_samples_tr,
         seq_duration=cfg_dset.seq_duration_tr,
         **cfg_dset,
@@ -456,10 +464,9 @@ def build_training_samplers(targets, cfg_dset, ngpus=None, fast_tr=False):
     if fast_tr:
         valid_db = train_db
     else:
-        valid_db = MUSDBDataset(
+        valid_db = MusicDataset(
             targets=targets,
-            subset="train",
-            split="valid",
+            subset="val",
             sources=cfg_dset.sources,
             data_dir=cfg_dset.data_dir,
             sample_rate=cfg_dset.sample_rate,
@@ -483,11 +490,10 @@ def build_training_samplers(targets, cfg_dset, ngpus=None, fast_tr=False):
     return train_sampler, valid_sampler
 
 
-def build_eval_sampler(targets, cfg_dset, subset="train", split="valid"):
-    eval_db = MUSDBDataset(
+def build_eval_sampler(targets, cfg_dset, subset="val"):
+    eval_db = MusicDataset(
         targets=targets,
         subset=subset,
-        split=split,
         sources=cfg_dset.sources,
         data_dir=cfg_dset.data_dir,
         sample_rate=cfg_dset.sample_rate,
@@ -526,7 +532,7 @@ if __name__ == "__main__":
         {
             "sources": ["vocals", "bass", "drums", "other"],
             "data_dir": "data/musdb18hq/",
-            # "sad_dir": "data/",
+            # "sad_dir": "data/musdb18hq_sad/",
             "sad_dir": None,
             "sample_rate": 44100,
             "n_samples_tr": 5000,
@@ -547,9 +553,8 @@ if __name__ == "__main__":
     train_db = MUSDBDatasetSAD(
         targets=targets,
         subset="train",
-        split="train",
         data_dir=cfg_dset.data_dir,
-        sad_dir="data/",
+        sad_dir="data/musdb18hq_sad/",
         sample_rate=cfg_dset.sample_rate,
         n_samples=cfg_dset.n_samples_tr,
         seq_duration=cfg_dset.seq_duration_tr,
@@ -561,7 +566,7 @@ if __name__ == "__main__":
 
     # Retrieve one training sample
     x, y, track_name = train_db[0]
-    print(x.shape, y.shape)
+    print(x.shape, y.shape, track_name)
 
     # Build samplers
     train_sampler, valid_sampler = build_training_samplers(
@@ -569,14 +574,14 @@ if __name__ == "__main__":
     )
 
     # Retrieve one training batch
-    x, y, _ = next(iter(train_sampler))
-    print(len(train_sampler), x.shape, y.shape)
+    x, y, track_name = next(iter(train_sampler))
+    print(len(train_sampler), x.shape, y.shape, track_name)
     torchaudio.save("ex_tr_mix.wav", x[0], 44100)
     torchaudio.save("ex_tr_target.wav", y[0, 0], 44100)
 
     # Retrieve one validation batch
-    x, y, _ = next(iter(valid_sampler))
-    print(len(valid_sampler), x.shape, y.shape)
+    x, y, track_name = next(iter(valid_sampler))
+    print(len(train_sampler), x.shape, y.shape, track_name)
     torchaudio.save("ex_val_mix.wav", x[0], 44100)
     torchaudio.save("ex_val_target.wav", y[0, 0], 44100)
 

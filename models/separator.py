@@ -31,7 +31,7 @@ class Separator(PLModule):
         self.simo = args.simo
 
         # Dir where to look for checkpoints
-        ckpt_dir = join(args.out_dir, args.src_mod.name_out_dir)
+        ckpt_dir = join(args.out_dir, args.model.name_out_dir)
 
         # Either instanciate a SIMO model from a separator checkpoint
         if self.simo:

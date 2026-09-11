@@ -10,6 +10,13 @@ def mypad(x, total_len):
     return x_padded
 
 
+def any_source_silent(sources):
+    """Returns true if the parameter sources has any silent first dimensions"""
+    return torch.any(
+        torch.all(torch.sum(sources, dim=tuple(range(2, sources.ndim))) == 0, dim=1)
+    ).item()
+
+
 def compute_usdr(ref, est, eps=1e-7):
     """
     The utterance SDR is a basic SNR (no distortion filter, no framewise computation), as in MDX21/23 challenges.
@@ -21,7 +28,7 @@ def compute_usdr(ref, est, eps=1e-7):
     den = torch.sum(torch.square(est - ref), dim=(2, 3)) + eps
     sdr = 10 * torch.log10(num / den)
 
-    return sdr
+    return sdr, None
 
 
 def compute_csdr_fast(ref, est, win=1 * 44100, hop=1 * 44100, eps=1e-7):
@@ -31,7 +38,6 @@ def compute_csdr_fast(ref, est, win=1 * 44100, hop=1 * 44100, eps=1e-7):
     ref / est: [batch_size, n_targets, n_channels, n_samples]
     output: [batch_size, n_targets]
     """
-    dif = est - ref
 
     # Make sure these are integers
     win = int(win)
@@ -40,21 +46,26 @@ def compute_csdr_fast(ref, est, win=1 * 44100, hop=1 * 44100, eps=1e-7):
     # Pad if needed so the signal length is a multiple of win_bss (crop the last bit, as in museval)
     tot_len = win + math.floor((ref.shape[-1] - win) / hop) * hop
     ref = mypad(ref, tot_len)
-    dif = mypad(dif, tot_len)
+    est = mypad(est, tot_len)
 
     # Chunking into overlapping frames
     ref = ref.unfold(-1, win, hop)
-    dif = dif.unfold(-1, win, hop)
+    est = est.unfold(-1, win, hop)
 
     # SDR for each frame
     num = torch.sum(torch.square(ref), dim=(2, 4)) + eps
-    den = torch.sum(torch.square(dif), dim=(2, 4)) + eps
+    den = torch.sum(torch.square(est - ref), dim=(2, 4)) + eps
     sdr_frames = 10 * torch.log10(num / den)
+
+    # If silent ref/est, set the value at "nan" to then discard it (as in museval)
+    for f in range(sdr_frames.shape[-1]):
+        if any_source_silent(est[..., f, :]) or any_source_silent(ref[..., f, :]):
+            sdr_frames[..., f] = torch.nan
 
     # Get the median over frames
     sdr = torch.nanmedian(sdr_frames, dim=-1)[0]
 
-    return sdr
+    return sdr, sdr_frames
 
 
 def compute_csdr_museval(ref, est, win=1 * 44100, hop=1 * 44100):
@@ -74,10 +85,10 @@ def compute_csdr_museval(ref, est, win=1 * 44100, hop=1 * 44100):
     est = est.cpu().transpose(2, 3).numpy()
 
     # Need to loper over batch samples
-    sdr = []
+    sdr, sdr_frames = [], []
     batch_size = ref.shape[0]
     for ib in range(batch_size):
-        sdr_frames = museval.metrics.bss_eval(
+        sdr_framesb = museval.metrics.bss_eval(
             ref[ib],
             est[ib],
             compute_permutation=False,
@@ -86,12 +97,14 @@ def compute_csdr_museval(ref, est, win=1 * 44100, hop=1 * 44100):
             framewise_filters=False,
             bsseval_sources_version=False,
         )[0]
-        sdr_frames = torch.from_numpy(sdr_frames)
-        sdrb = torch.nanmedian(sdr_frames, dim=1)[0]  # Median over frames
+        sdr_framesb = torch.from_numpy(sdr_framesb)
+        sdrb = torch.nanmedian(sdr_framesb, dim=1)[0]  # Median over frames
+        sdr_frames.append(sdr_framesb)
         sdr.append(sdrb)
     sdr = torch.stack(sdr)
+    sdr_frames = torch.stack(sdr_frames)
 
-    return sdr
+    return sdr, sdr_frames
 
 
 def compute_sdr(
@@ -109,11 +122,13 @@ def compute_sdr(
 
     # Compute the SDR over batches
     if type == "usdr":
-        sdr = compute_usdr(references, estimates, eps=eps)
+        sdr, sdr_frames = compute_usdr(references, estimates, eps=eps)
     elif type == "csdr":
-        sdr = compute_csdr_museval(references, estimates, win=win, hop=hop)
+        sdr, sdr_frames = compute_csdr_museval(references, estimates, win=win, hop=hop)
     elif type == "csdr-fast":
-        sdr = compute_csdr_fast(references, estimates, win=win, hop=hop, eps=eps)
+        sdr, sdr_frames = compute_csdr_fast(
+            references, estimates, win=win, hop=hop, eps=eps
+        )
     else:
         raise NameError("Unknown SDR type")
 
@@ -123,7 +138,7 @@ def compute_sdr(
     else:
         sdr = torch.nanmean(sdr, dim=0)
 
-    return sdr
+    return sdr, sdr_frames
 
 
 if __name__ == "__main__":
@@ -151,7 +166,7 @@ if __name__ == "__main__":
     print(f"Chunk SDR, museval: {csdrmuseval} dB --- Time: {time.time() - ts:.2f} s")
 
     ts = time.time()
-    csdr = compute_sdr(references, estimates, win=win, hop=hop, type="csdr-fast")
-    print(f"Chunk SDR, fast: {csdr} dB --- Time: {time.time() - ts:.2f} s")
+    csdr_fast = compute_sdr(references, estimates, win=win, hop=hop, type="csdr-fast")
+    print(f"Chunk SDR, fast: {csdr_fast} dB --- Time: {time.time() - ts:.2f} s")
 
 # EOF

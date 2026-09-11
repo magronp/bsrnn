@@ -1,28 +1,16 @@
-# Training and evaluation
+# Training
 
-## Setup
-
-To train and/or evaluate the model as per our paper, you need to download the [MUSDB18-HQ](https://zenodo.org/records/3338373) dataset. Unzip it in the `data` folder; if you want to use a different folder structure, remember to change the path accordingly [in the config file](https://github.com/magronp/bsrnn/blob/main/conf/config.yaml#L32).
-
-To speed up data loading at training, you need to pre-process the dataset in order to extract non-silent segment indices using a source activity detector. To that end, run:
-```
-python prep_dataset.py
-```
-Note that if you want to skip training and only perform [evaluation](#evaluation), you can download pretrained models on the [Zenodo repository](https://zenodo.org/records/17516442) (and you can skip applying the preprocessing script above).
-
-## Training
-
-### Basic usage
+## Basic usage
 
 The core training function can be simply run as follows:
 ```
 python train.py targets=xxx
 ```
-where `xxx` can be `vocals`, `bass`, `drums`, or `other`. You can specify the source model via the `src_mod` parameter as follows:
+where `xxx` can be `vocals`, `bass`, `drums`, or `other`. You can specify the model type via the `model` parameter as follows:
 ```
-python train.py targets=vocals src_mod=bsrnn-opt
+python train.py targets=vocals model=bsrnn-opt
 ```
-By default, `src_mod=bsrnn`, which corresponds to the base model in the paper (i.e., a small-size BSRNN).
+By default, `model=bsrnn`, which corresponds to a small-size BSRNN.
 
 To resume training, provide a checkpoint path as follows:
 ```
@@ -42,11 +30,12 @@ It enables the [overfit_batches](https://lightning.ai/docs/pytorch/stable/common
 
 This project uses the Hydra framework for structured configuration files, thus changing parameters (e.g., model size, number of layers, learning rate), is quite straightforward:
 ```
-python train.py targets=bass,vocals optim.loss_domain=t+tf src_mod.num_repeat=10
+python train.py targets=bass,vocals optim.loss_domain=t+tf model.num_repeat=10
 ```
-Feel free to check the conf files to see all possible parameters and default values.
+Feel free to check the conf files (e.g., `conf/model/<model>.yaml` for the model types) to see all possible parameters and default values, or to change these directly.
 
-### Launching jobs
+
+## Launching jobs
 
 In practice, you will likely performing training (and testing) using a cluster of GPUs. Here, we use the [Grid5000](https://www.grid5000.fr/w/Grid5000:Home) testbed, which operates under the [OAR](https://oar.imag.fr/) task manager. Adapting our script to operate with the [SLURM](https://slurm.schedmd.com/overview.html) job manager or another testbed should only require minor adjustments.
 
@@ -55,60 +44,6 @@ For lauching jobs, simply run:
 jobs/book train <CLUSTER_NAME> <PARAM_ARRAY>
 ```
 where `<CLUSTER_NAME>` is the name of the cluster (this depends on the available hardware), and `<PARAM_ARRAY>` is the txt file that stores the configuration(s) you want to run, whose path is `jobs/params/<PARAM_ARRAY>.txt`. You can adjust the default `<CLUSTER_NAME>` as well as the walltime depending on your hardware in the `jobs/book` file.
-
-
-## Analyzing results
-
-This project uses tensorboard for logging and monitoring training and validation. In particular, each run of the training script will create a name for the experiment by aggregating all input parameters to the function (see [here](https://github.com/magronp/bsrnn/blob/main/helpers/utils.py#L9)), and store it in an file `<out_dir>/exp_infos.csv`, along with the tensorboard version and folder, and the number of parameters.
-
-Then, to analyze validation results, run:
-
-```
-python get_val_results.py
-```
-This will aggregate results into several CSV files, including a summary of SDRs over targets and experiments, corresponding to Table II in the paper.
-
-You can also run the notebook `vizualization.ipynb` to produce plots as in the paper. Note that Figure 3 can be plot only if you have tracked energy when training your models (see [below](#tracking-energy)).
-
-
-## Testing
-
-### Basic usage
-
-To perform evaluation on the test set, simply run the `test.py` script, optionally specifying the source model (default: `bsrnn`) and SDR type (default: `usdr`):
-```
-python test.py src_mod=bsrnn-large eval.sdr_type=csdr
-```
-The code will create a `Separator` module, for which it will search for target-specific checkpoints with the following path: `<out_dir>/<src_mod.name_out_dir>/<target>.ckpt`. If a certain checkpoint is not found, a model will be initialized from scratch with random weights instead. You can change the checkpoint location by overriding the `out_dir` and `src_mod.name_out_dir` parameters.
-
-**Note**: if you want to use the SIMO model, you need to add an extra flag `simo=true`, so that the code loads a multi-source checkpoint named `separator.ckpt` instead of multiple single-source checkpoints named `<target>.ckpt`, e.g.:
-```
-python test.py src_mod=simo-bsrnn-opt simo=true
-```
-
-
-### Inference procedure
-
-As detailed in the paper (Section 3.5), instead of the default linear fader, it is possible to use an OLA procedure to handle whole songs. To do so, simply change the parameters in the `eval` configuration, e.g.:
-```
-python test.py eval.segment_len=3 eval.hop_size=1.5
-```
-By default, `eval.hop_size=null`, which uses the linear fader. Setting a value for `eval.hop_size` will trigger the OLA inference procedure instead.
-
-### Launching jobs
-
-You can perform multiple testing by editing the `jobs/params/test.txt` file (just like for [training](#launching-jobs)), and running the following command:
-```
-jobs/book test <CLUSTER_NAME>
-```
-
-### GPU vs. (parallel) CPUs
-
-By default, testing will be performed on GPU if available (you can change it via the `eval.device` parameter). If you'd rather use several CPUs in parallel, you can simply set:
-```
-python test.py src_mod=bsrnn-large parallel_cpu=True
-```
-and you can adjust the number of CPUs with the `num_cpus` parameter (if null, then all available CPUs will be used).
 
 
 ## Tracking energy
@@ -123,15 +58,14 @@ In the paper, we track emission separately by running additional jobs (listed in
 
 If you prefer to estimate the consumption directly when training a model (rather than in separate experiments), then feel free to set `track_emissions=true` in the [config file](https://github.com/magronp/bsrnn/blob/main/conf/config.yaml#L45). Then, `<out_dir>/emissions.csv` will directly contain the overall estimated energy.
 
-
 ## Use your own model
 
 Lastly, even though this project's primary goal is not to be a universal framework for music separation (as [UMX](https://github.com/sigsep/open-unmix-pytorch) or [Asteroid](https://github.com/asteroid-team/asteroid)), it is rather easy to add a custom model:
 - add a script, e.g., in the `models/` folder, that defines your model class
-- add a corresponding yaml configuration file in the `conf/src_mod/` folder (e.g., `mycustommodel`)
+- add a corresponding yaml configuration file in the `conf/model/` folder (e.g., `mycustommodel`)
 - import the model class from your script so you can use it when [instanciating a model](https://github.com/magronp/bsrnn/blob/main/models/instanciate_src.py#L9)
 
 Then, training (and further testing) your model is a simple as: 
 ```
-python train.py targets=vocals src_mod=mycustommodel
+python train.py targets=vocals model=mycustommodel
 ```

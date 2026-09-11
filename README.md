@@ -1,4 +1,4 @@
-# An Open - and Optimized - Implementation of Band-Split RNN for Music Separation
+# An Open and Optimized Implementation of Band-Split RNN for Music Separation
 
 <div style="align: center; text-align:center;">
     <img src="https://user-images.githubusercontent.com/123350717/214468836-54b8c5cf-a670-4bd9-add9-f95f48a4a673.png" width="500px" />
@@ -7,9 +7,9 @@
 
 &nbsp;
 
-This repository is an unofficial implementation of the [BSRNN](https://arxiv.org/pdf/2209.15174.pdf) model for music separation. It accompanies our [replication study](https://arxiv.org/abs/2603.09187), whose primary goal is to obtain a model that yields similar results to those of the original BSRNN paper, and to explore reproducibility issues in music separation research.
+This repository is an unofficial implementation of the [BSRNN](https://arxiv.org/pdf/2209.15174.pdf) model for music separation. It accompanies our [replication study](https://arxiv.org/abs/2603.09187), whose primary goal is to obtain a model that yields similar results to those of the original BSRNN paper.
 
-Despite our efforts, we are currently about [0.5 dB SDR bellow](#test-results) the original results, thus some work is still needed to match these. To bridge this performance gap, we proposed several variants and eventually obtained an *optimized* model that largely improves the results.
+Despite our efforts, we are currently about [0.8 dB SDR bellow](#test-results) the original results, thus some work is still needed to match these. To bridge this performance gap, we proposed several variants, ultimately yielding *optimized* models that largely improves the results.
 
 This project is based on [PyTorch](https://pytorch.org/) ([Ligthning](https://lightning.ai/docs/pytorch/stable/)) and [Hydra](https://hydra.cc/), and uses the HQ version of the freely available [MUSDB18](https://sigsep.github.io/datasets/musdb.html) dataset. We provide pretrained models on a [Zenodo repository](https://zenodo.org/records/17516442), which you can use readily for [separating your own song](#separation--demo).
 
@@ -41,19 +41,26 @@ The table below displays results on the MUSDB18-HQ test set in terms on of signa
 |                              |  vocals |   bass  |  drums  |  other  | average |
 |------------------------------|---------|---------|---------|---------|---------|
 |  BSRNN - original results    |  10.01  |   7.22  |   9.01  |   6.70  |   8.24  |
-|  BSRNN - our implementation  |   9.14  |   7.72  |   8.07  |   5.68  |   7.65  |
+|  BSRNN - our implementation  |   8.91  |   7.46  |   8.07  |   5.22  |   7.42  |
+|  BSRNN - alternative data    |   9.39  |   8.04  |   8.32  |   5.73  |   7.87  |
 |  **oBSRNN**                  |   **9.81**  |   **9.85**  |  **10.31**  |   **6.31**  |   **9.07**  |
  
-Our optimized model (**oBSRNN**) model includes a multi-head attention mechanism, a TAC module for stereo-awareness, and it is trained using a non-preprocessed dataset (see [here](docs/analysis.md#optimized-model) for more details). This substantially improves performance over our initial BSRNN implementation, and it largely outperforms the paper's results by ~0.8 dB. This improvement is mostly due to large SDR increase in the bass and drums estimates, while the vocals and other results are still inferior to those in the original paper.
+ 
+We notably propose an alternative data generation process that reduces the gap to 0.4 dB. Further, our optimized model (**oBSRNN**) model includes a multi-head attention mechanism, a TAC module for stereo-awareness, and it is trained using a non-preprocessed dataset (see [here](docs/analysis.md#optimized-model) for more details). This substantially improves performance over our initial BSRNN implementation, and it largely outperforms the paper's results by ~0.8 dB. This improvement is mostly due to large SDR increase in the bass and drums estimates, while the vocals and other results are still inferior to those in the original paper.
 
-We also propose an optimized replication of the SIMO variant of BSRNN (see the [original SIMO-BSRNN paper](https://ieeexplore.ieee.org/document/10447771) and [our implementation](docs/analysis.md#simo-bsrnn) for more details).
+We also propose an optimized version of SIMO-BSRNN (see the [original SIMO-BSRNN paper](https://ieeexplore.ieee.org/document/10447771) and [our implementation](docs/analysis.md#simo-bsrnn) for more details).
 
 |                                |  vocals |   bass  |  drums  |  other  | average |
 |--------------------------------|---------|---------|---------|---------|---------|
 |  SIMO-BSRNN - original results |   9.73  |   7.80  |  10.06  |   6.56  |   8.54  |
 |  **oBSRNN-SIMO**               |  **10.66**  |   **9.73**  |  **10.98** |   **7.78**  |   **9.79**  |
 
-This model largely outperforms the original results, and it yields state-of-the-art results without requiring extra private data. Thus we encourage to consider it as baseline, or for use if achieving maximum performance is the goal.
+This model largely outperforms the original results, and it yields state-of-the-art results without requiring extra private data. Thus we encourage to consider this variant if achieving maximum performance is the goal.
+
+
+### Comparison with competing methods
+
+A [dedicated document](docs/sota.md) details the comparison with state-of-the-art methods on the MUSDB18-HQ dataset. We notably observe that oBSRNN-SIMO performs on par with the best models. We also report the test results on the [MoisesDB dataset](https://github.com/moises-ai/moises-db/), in order to demonstrate the generalization capability of this model.
 
 
 ### Model selection
@@ -67,7 +74,7 @@ The *chunk* SDR considered here is computed by taking the median over 1s-long ch
 
 However, most of this function's computational cost comes from calculating a distortion filter which does not actually affect the SDR. Indeed, when using default parameters as per SiSEC guidelines, the distortion filter only affects the signal-to-interference and -artifact ratios (SIR and SAR), which are not considered here nor in most recent MSS papers (see [this thread](https://github.com/sigsep/sigsep-mus-eval/issues/101) on the museval project).
 
-Therefore, we provide a [more efficient implementation](https://github.com/magronp/bsrnn/blob/main/helpers/eval.py#L28) if only the cSDR is needed (i.e., no SIR/SAR), which we encourage practitioners to use.
+Therefore, we propose an [efficient implementation](https://github.com/magronp/bsrnn/blob/main/helpers/eval.py#L34) if only the cSDR is needed (i.e., no SIR/SAR). However, there are some discrepancies between this implementation and the museval results, which seems to come from several frames being set at "nan" when a source is silent (still under investigation).
 
 
 
@@ -84,10 +91,12 @@ On linux you will also need to install ffmpeg (needed for museval / musdb):
 ```
 sudo apt install ffmpeg
 ```
-
+This project has been tested under python 3.10.
 
 ### Training and evaluation
-For clarity, we provide a guide for model training and evaluation in a [separate document](docs/training.md).
+
+For clarity, we provide guides for preparing the [data](docs/data.md), [training](docs/training.md) the model(s), and performing [evaluation](docs/evaluation.md) in separate documents.
+
 
 ### Separation / demo
 

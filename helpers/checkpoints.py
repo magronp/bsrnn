@@ -22,7 +22,12 @@ def display_ckpt(model_dir="bsrnn", target="vocals", out_dir="outputs"):
 
 
 def update_ckpt_param(
-    model_dir="bsrnn", target="vocals", out_dir="outputs", param="patience", value=30
+    model_dir="bsrnn",
+    target="vocals",
+    out_dir="outputs",
+    param="patience",
+    value=30,
+    model_dir_new="bsrnn-new",
 ):
 
     # Check if the update is implemented (you can add your own)
@@ -32,11 +37,10 @@ def update_ckpt_param(
 
     # Define paths
     ckpt_path = join(out_dir, model_dir, target + ".ckpt")
-    ckpt_path_old = join(out_dir, model_dir, target + "-old.ckpt")
+    ckpt_path_new = join(out_dir, model_dir_new, target + ".ckpt")
 
     # Load checkpoint, and save a duplicate
     checkpoint = torch.load(ckpt_path, map_location="cpu", weights_only=False)
-    torch.save(checkpoint, ckpt_path_old)
 
     # Update the checkpoint
     if param == "patience":
@@ -46,10 +50,9 @@ def update_ckpt_param(
         ] = value
 
     # Record updated checkpoint
-    torch.save(checkpoint, ckpt_path)
+    torch.save(checkpoint, ckpt_path_new)
 
-    print(f"Checkpoint updated at: {ckpt_path}")
-    print(f"Checkpoint backed-up at: {ckpt_path_old}")
+    print(f"Checkpoint updated at: {ckpt_path_new}")
 
     return
 
@@ -60,15 +63,15 @@ def update_ckpt_key(
     out_dir="outputs",
     key_old="mask.",
     key_new="maskers.0.mask.",
+    model_dir_new="bsrnn-new",
 ):
 
     # Define paths
     ckpt_path = join(out_dir, model_dir, target + ".ckpt")
-    ckpt_path_old = join(out_dir, model_dir, target + "-old.ckpt")
+    ckpt_path_new = join(out_dir, model_dir_new, target + ".ckpt")
 
-    # Load checkpoint, and save a duplicate
+    # Load checkpoint
     checkpoint = torch.load(ckpt_path, map_location="cpu", weights_only=False)
-    torch.save(checkpoint, ckpt_path_old)
 
     # Iterate over keys to update them
     for key in list(checkpoint["state_dict"].keys()):
@@ -78,10 +81,9 @@ def update_ckpt_key(
             ].pop(key)
 
     # Record updated checkpoint
-    torch.save(checkpoint, ckpt_path)
+    torch.save(checkpoint, ckpt_path_new)
 
-    print(f"Checkpoint updated at: {ckpt_path}")
-    print(f"Checkpoint backed-up at: {ckpt_path_old}")
+    print(f"Checkpoint updated at: {ckpt_path_new}")
 
     return
 
@@ -101,6 +103,7 @@ if __name__ == "__main__":
     parser.add_argument("-p", "--param", default="patience")
     parser.add_argument("-v", "--value", default=30)
     parser.add_argument("-k", "--updatekey", default=False)
+    parser.add_argument("-n", "--model_dir_new", default="bsrnn-new")
 
     args = parser.parse_args()
 
@@ -115,6 +118,7 @@ if __name__ == "__main__":
             out_dir=args.out_dir,
             param=args.param,
             value=args.value,
+            model_dir_new=args.model_dir_new,
         )
 
     if args.updatekey:
@@ -122,6 +126,7 @@ if __name__ == "__main__":
             model_dir=args.model_dir,
             target=args.target,
             out_dir=args.out_dir,
+            model_dir_new=args.model_dir_new,
         )
 
 # EOF

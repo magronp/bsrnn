@@ -15,8 +15,7 @@ seq_duration_eval:
 # Augmentations
 aug_list:
 - random_chunk
-- shuffle_tracks
-#- random_track_mix
+- shuffle_tracks # different from 'random_track_mix' : does it once vs. at each epoch (faster)
 - rescale_db
 - silentsource
 

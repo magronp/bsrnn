@@ -23,14 +23,14 @@ def instanciate_src_model(
     cfg_optim = args.optim
     cfg_scheduler = args.scheduler
     cfg_eval = args.eval
-    cfg_src_mod = args.src_mod
+    cfg_model = args.model
 
     # Targets
     if isinstance(targets, str):
         targets = [targets]
 
     # Model class
-    Model = get_class_from_str(cfg_src_mod.name)
+    Model = get_class_from_str(cfg_model.name)
 
     # Load the pretrained sources only if path is provided and if they exist
     ckpt_exists = False
@@ -52,7 +52,7 @@ def instanciate_src_model(
     # Otherwise, instanciate the model from scratch
     else:
         print(f"Initializing model for the {targets} track(s)")
-        model = Model(cfg_optim, cfg_scheduler, cfg_eval, targets, **cfg_src_mod)
+        model = Model(cfg_optim, cfg_scheduler, cfg_eval, targets, **cfg_model)
 
     return model
 
