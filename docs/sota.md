@@ -84,6 +84,6 @@ Let us recall that the MUSDB18 dataset comprises a high-quality version denoted 
 
 Lastly, another source of confusion is the existence of several model variants. For instance, the [Hybrid Demucs paper](https://arxiv.org/abs/2111.03600) reports the performance of both a *basic model*, and that of an *optimized bag of models*. Subsequent papers then report either [one](https://arxiv.org/abs/2211.08553) or [the other](https://arxiv.org/abs/2209.15174), without specifying which one explicitly, nor providing justification. 
 
-In Table~\ref{tab:sdr_comparison} we report results that correspond to the optimized bag of models, since it yields the largest SDR. The same applies to HT Demucs, for which we report the best results from the [original paper](https://arxiv.org/abs/2211.08553), except for the average SDR of the model trained with extra data (we replace the erroneous $9.20$ value with the actual average of $9.27$ dB).
+Here we report results that correspond to the optimized bag of models, since it yields the largest SDR. The same applies to HT Demucs, for which we report the best results from the [original paper](https://arxiv.org/abs/2211.08553), except for the average SDR of the model trained with extra data (we replace the erroneous $9.20$ value with the actual average of $9.27$ dB).
 
 
