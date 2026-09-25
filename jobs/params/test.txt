@@ -1,7 +1,7 @@
 ### Uncomment the config(s) below that you want to run when booking jobs
 
 # Large model, as in the paper
-#"model=bsrnn-large eval.sdr_type=usdr"
+#"model=bsrnn-large"
 #"model=bsrnn-large eval.sdr_type=csdr"
 
 # Large model, patience=30
@@ -23,9 +23,12 @@
 #"model=bsrnn-opt eval.segment_len=3 eval.hop_size=0.5"
 
 # SIMO model
-#"model=simo-bsrnn-opt simo=true"
-#"model=simo-bsrnn-opt simo=true eval.sdr_type=csdr"
+#"model=simo-bsrnn-opt"
+#"model=simo-bsrnn-opt eval.sdr_type=csdr"
+
+"model=simo-bsrnn-opt model.name_out_dir=simo-bsrnn-lite"
+"model=simo-bsrnn-opt model.name_out_dir=simo-bsrnn-lite eval.sdr_type=csdr"
 
 # Test opt models on the MoisesDB dataset for generalization
-#"model=simo-bsrnn-opt simo=true data_dir=data/moisesdb_4stems eval.sdr_type=csdr"
 #"model=bsrnn-opt data_dir=data/moisesdb_4stems eval.sdr_type=csdr"
+#"model=simo-bsrnn-opt data_dir=data/moisesdb_4stems eval.sdr_type=csdr"

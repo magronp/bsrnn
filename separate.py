@@ -32,9 +32,6 @@ def separate(args: DictConfig):
     # Resample the mixture to the target sample rate
     mix = torchaudio.functional.resample(mix, orig_sr, args.sample_rate)
 
-    # Define the folder where the model ckpt is/are located
-    args.model.name_out_dir = args.model_dir
-
     # Load the model
     model = Separator(args)
 
@@ -45,6 +42,7 @@ def separate(args: DictConfig):
     model.eval_device = eval_device
 
     # Estimate the sources
+    print(f"Separate sources")
     max_norm = mix.abs().max()
     mix /= max_norm
     estimates = model._apply_model_to_track(mix)[0]
@@ -52,13 +50,15 @@ def separate(args: DictConfig):
     estimates = estimates.squeeze(0)  # remove batch dimension
 
     # In case of SIMO model, only keep the relevant target estimates
-    if args.simo:
+    if "simo" in args.ckpt_dir:
         all_targets_sep = model.model.targets
         est_ind = [all_targets_sep.index(t) for t in args.targets]
         estimates = estimates[est_ind]
 
     # Record estimates
+    print(f"Record separated sources")
     rec_audio(estimates, args.rec_dir, args.targets, args.sample_rate)
+    print(f"Done")
 
 
 if __name__ == "__main__":

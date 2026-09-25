@@ -27,11 +27,16 @@ class Separator(PLModule):
             eps=args.eps,
         )
 
-        # SIMO or target-specific models
-        self.simo = args.simo
+        # Dir where to load checkpoint(s)
+        ckpt_dir = args.ckpt_dir
 
-        # Dir where to look for checkpoints
-        ckpt_dir = join(args.out_dir, args.model.name_out_dir)
+        # By default, that should be none -> use predifined path structure
+        if ckpt_dir is None:
+            ckpt_dir = join(args.out_dir, args.model.name_out_dir)
+            self.simo = "simo" in args.model.name
+
+        else:
+            self.simo = "simo" in ckpt_dir
 
         # Either instanciate a SIMO model from a separator checkpoint
         if self.simo:

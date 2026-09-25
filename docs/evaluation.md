@@ -18,7 +18,7 @@ You can also run the notebook `vizualization.ipynb` to produce plots as in the p
 
 ### Basic usage
 
-To perform evaluation on the test set, simply run the `test.py` script, optionally specifying the source model (default: `bsrnn`) and SDR type (default: `usdr`):
+To perform evaluation on the test set, simply run the `test.py` script, optionally specifying the source model (default: `bsrnn`) and SDR type (default: `usdr`, see the [note below](#note-on-the-metrics) for more information about the metrics):
 ```
 python test.py model=bsrnn-large eval.sdr_type=csdr
 ```
@@ -64,3 +64,13 @@ python test.py model=bsrnn-large parallel_cpu=True
 and you can adjust the number of CPUs with the `num_cpus` parameter (if null, then all available CPUs will be used).
 
 
+
+## Note on the metrics
+
+We consider two variants of the signal-to-distortion ratio (SDR), which is common is modern source separation papers:
+- the *utterance* SDR (uSDR), computed by taking the mean SDR across whole songs.
+- the *chunk* SDR (cSDR), computed via the [museval](https://github.com/sigsep/sigsep-mus-eval) toolbox by taking the median SDR across 1 s-long chunks and across songs.
+
+Note that most of the museval function's computational cost comes from calculating a distortion filter which does not actually affect the SDR. Indeed, when using default parameters as per SiSEC guidelines, the distortion filter only affects the signal-to-interference and -artifact ratios (SIR and SAR), which are not considered here nor in most recent MSS papers (see [this thread](https://github.com/sigsep/sigsep-mus-eval/issues/101) on the museval project).
+
+Therefore, we propose an [efficient implementation](https://github.com/magronp/bsrnn/blob/main/helpers/eval.py#L34) if only the cSDR is needed (i.e., no SIR/SAR). However, there are some discrepancies between this implementation and the museval results, which stem from several frames being set at "NaN" when a source is silent - this is still under investigation.

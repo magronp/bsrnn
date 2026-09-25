@@ -40,7 +40,7 @@ nb_channels: 2
 
 # Training-related
 fast_tr: False  # for overfitting on one batch (useful for debugging)
-ckpt_path: 
+ckpt_path: # used for resume training / load a trained model for evaluation
 
 # Track consumed energy with codecarbon
 track_emissions: False
@@ -51,17 +51,17 @@ track_epochs: 3
 # When instanciating the separator
 load_pretrained_sources: True
 
-# Evaluation: test and separate
+# Evaluation
 parallel_cpu: false
 num_cpus: 10
 only_append_res: false
-simo: false
+
+# Inference / separation
 file:
 duration:
 offset:
+ckpt_dir:
 rec_dir:
-model_dir: bsrnn-opt
-
 
 # Hydra-related
 hydra:  

@@ -61,8 +61,10 @@ def train(args: DictConfig):
         fast_tr=args.fast_tr,
     )
 
-    # Adjust learning rate using effective batch size (to match the effective lr from the BSRNN paper)
-    args.optim.lr *= args.dset.batch_size * ngpus * args.optim.acc_grad / (2 * 8 * 1)
+    # Adjust learning rate using total batch size to match the reference effective
+    if args.optim.adjust_lr:
+        total_bsize = args.dset.batch_size * ngpus * args.optim.acc_grad
+        args.optim.lr *= total_bsize / args.optim.total_bsize_ref
 
     # Instanciate model
     ckpt_path = args.ckpt_path

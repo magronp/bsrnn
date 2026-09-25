@@ -9,7 +9,7 @@ then
 	full_command="oarsub -vv -l /nodes=1,walltime=168 -p $CLUSTER -q production jobs/train.sh --array-param-file jobs/params/${PARAMARRAY}.txt"
 elif [[ $JOBTYPE == "test" ]]
 then
-	full_command="oarsub -vv -l /gpu=1,walltime=3 -p $CLUSTER -q production jobs/test.sh --array-param-file jobs/params/test.txt"
+	full_command="oarsub -vv -l /gpu=1,walltime=6 -p $CLUSTER -q production jobs/test.sh --array-param-file jobs/params/test.txt"
 fi
 
 $full_command

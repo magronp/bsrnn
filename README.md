@@ -7,13 +7,11 @@
 
 &nbsp;
 
-This repository is an unofficial implementation of the [BSRNN](https://arxiv.org/pdf/2209.15174.pdf) model for music separation. It accompanies our [replication study](https://arxiv.org/abs/2603.09187), whose primary goal is to obtain a model that yields similar results to those of the original BSRNN paper.
-
-Despite our efforts, we are currently about [0.8 dB SDR bellow](#test-results) the original results, thus some work is still needed to match these. To bridge this performance gap, we proposed several variants, ultimately yielding *optimized* models that largely improves the results.
+This repository is an unofficial implementation of the [BSRNN](https://arxiv.org/pdf/2209.15174.pdf) model for music separation. Our primary goal is to obtain a model that yields similar results to those of the original BSRNN paper. After conducting many experiments to bridge the performance gap, we eventually obtained optimized models with state-of-the-art separation quality.
 
 This project is based on [PyTorch](https://pytorch.org/) ([Ligthning](https://lightning.ai/docs/pytorch/stable/)) and [Hydra](https://hydra.cc/), and uses the HQ version of the freely available [MUSDB18](https://sigsep.github.io/datasets/musdb.html) dataset. We provide pretrained models on a [Zenodo repository](https://zenodo.org/records/17516442), which you can use readily for [separating your own song](#separation--demo).
 
-The goal of this project is to foster reproducible research, to allow other researchers to experiment with this model (and variants), and to provide a fully fonctionning training pipeline and checkpoints for inference. Then feel free to use it (and [cite it](#reference) if you do), and if you spot an error, or something that differs from the description in the paper, please feel free to reach out, send a message, or open an issue. :slightly_smiling_face: 
+The goal of this project is to foster reproducible research, to allow other researchers to experiment with this model (and variants), and to provide a fully fonctionning training pipeline and checkpoints for inference. Feel free to use it (if so, please [cite it](#reference)), and if you spot an error / something that differs from the description in the original paper / have a suggestion to improve the implementation, please feel free to reach out, send a message, or open an issue. :slightly_smiling_face: 
 
 
 ## Contents
@@ -36,26 +34,30 @@ The goal of this project is to foster reproducible research, to allow other rese
 
 ### Test results
 
-The table below displays results on the MUSDB18-HQ test set in terms on of signal-to-distortion ratio (SDR). More precisely, we consider the *chunk* SDR. More details about this metric are found in the [note below](#note-on-the-metric), and complementary results in terms of *utterance* SDR are available in [our paper](https://arxiv.org/abs/2603.09187).
+The table below displays results on the MUSDB18-HQ test set in terms of *chunk* signal-to-distortion ratio (cSDR). cSDR is computed by taking the median over 1s-long chunks, and median over tracks, using the [museval](https://github.com/sigsep/sigsep-mus-eval) tooblox, which is customary in music separation research papers. Complementary results in terms of *utterance* SDR are available in [our papers](#reference).
 
 |                              |  vocals |   bass  |  drums  |  other  | average |
 |------------------------------|---------|---------|---------|---------|---------|
-|  BSRNN - original results    |  10.01  |   7.22  |   9.01  |   6.70  |   8.24  |
-|  BSRNN - our implementation  |   8.91  |   7.46  |   8.07  |   5.22  |   7.42  |
-|  BSRNN - alternative data    |   9.39  |   8.04  |   8.32  |   5.73  |   7.87  |
-|  **oBSRNN**                  |   **9.81**  |   **9.85**  |  **10.31**  |   **6.31**  |   **9.07**  |
+|  original results    |  10.01  |   7.22  |   9.01  |   6.70  |   8.24  |
+|  our implementation  |   8.91  |   7.46  |   8.07  |   5.22  |   7.42  |
+|  our alternative    |   9.39  |   8.04  |   8.32  |   5.73  |   7.87  |
  
  
-We notably propose an alternative data generation process that reduces the gap to 0.4 dB. Further, our optimized model (**oBSRNN**) model includes a multi-head attention mechanism, a TAC module for stereo-awareness, and it is trained using a non-preprocessed dataset (see [here](docs/analysis.md#optimized-model) for more details). This substantially improves performance over our initial BSRNN implementation, and it largely outperforms the paper's results by ~0.8 dB. This improvement is mostly due to large SDR increase in the bass and drums estimates, while the vocals and other results are still inferior to those in the original paper.
+Despite our efforts, our implementation is about [0.8 dB SDR bellow](#test-results) the original results, thus some work is still needed to match these. We propose an alternative data generation process and increasing the number of epochs for better convergence, which reduces the gap to 0.4 dB (see [here](docs/analysis.md#large-model) for implementation details).
 
-We also propose an optimized version of SIMO-BSRNN (see the [original SIMO-BSRNN paper](https://ieeexplore.ieee.org/document/10447771) and [our implementation](docs/analysis.md#simo-bsrnn) for more details).
+
+To further bridge the performance gap, we proposed several variants, ultimately yielding [optimized](docs/analysis.md#optimized-model) models that largely improve separation quality.
 
 |                                |  vocals |   bass  |  drums  |  other  | average |
 |--------------------------------|---------|---------|---------|---------|---------|
+|  BSRNN - original results    |  10.01  |   7.22  |   9.01  |   6.70  |   8.24  |
+|  **oBSRNN**                  |   **9.81**  |   **9.85**  |  **10.31**  |   **6.31**  |   **9.07**  |
 |  SIMO-BSRNN - original results |   9.73  |   7.80  |  10.06  |   6.56  |   8.54  |
 |  **oBSRNN-SIMO**               |  **10.66**  |   **9.73**  |  **10.98** |   **7.78**  |   **9.79**  |
 
-This model largely outperforms the original results, and it yields state-of-the-art results without requiring extra private data. Thus we encourage to consider this variant if achieving maximum performance is the goal.
+The oBSRNN optimized model substantially improves performance over our initial BSRNN implementation, and it outperforms the paper's results by ~0.8 dB. This improvement is mostly due to large SDR increase in the bass and drums estimates, while the vocals and other results are still inferior to those in the original paper.
+ 
+We also propose an optimized version of SIMO-BSRNN (see the [original SIMO-BSRNN paper](https://ieeexplore.ieee.org/document/10447771) and [our implementation](docs/analysis.md#simo-bsrnn) for more details). This oBSRNN-SIMO model yields state-of-the-art results without requiring extra private data. Thus we encourage to consider this variant if achieving maximum performance is the goal.
 
 
 ### Comparison with competing methods
@@ -66,16 +68,6 @@ A [dedicated document](docs/sota.md) details the comparison with state-of-the-ar
 ### Model selection
 
 We extensively experiment with model variants, and we report and analyze the results in a [dedicated document](docs/analysis.md). Beyond reproducing the paper's results, we provide several suggestions to further improving the results by additional architecture variants, as well as optimizing the data preparation and training process.
-
-
-### Note on the metric
-
-The *chunk* SDR considered here is computed by taking the median over 1s-long chunks, and median over tracks. In practice, computation is performed using the [museval](https://github.com/sigsep/sigsep-mus-eval) tooblox, which is customary in music separation research papers.
-
-However, most of this function's computational cost comes from calculating a distortion filter which does not actually affect the SDR. Indeed, when using default parameters as per SiSEC guidelines, the distortion filter only affects the signal-to-interference and -artifact ratios (SIR and SAR), which are not considered here nor in most recent MSS papers (see [this thread](https://github.com/sigsep/sigsep-mus-eval/issues/101) on the museval project).
-
-Therefore, we propose an [efficient implementation](https://github.com/magronp/bsrnn/blob/main/helpers/eval.py#L34) if only the cSDR is needed (i.e., no SIR/SAR). However, there are some discrepancies between this implementation and the museval results, which seems to come from several frames being set at "nan" when a source is silent (still under investigation).
-
 
 
 ## How to use
@@ -100,20 +92,21 @@ For clarity, we provide guides for preparing the [data](docs/data.md), [training
 
 ### Separation / demo
 
-If you simply want to use BSRNN to separate your favorite song, then make sure to download the pretrained checkpoints from the [Zenodo repository](https://zenodo.org/records/17516442), and place them in the `outputs/` folder. Then, perform separation as follows:
+If you simply want to use BSRNN to separate your favorite song, then make sure to download the pretrained checkpoints from the [Zenodo repository](https://zenodo.org/records/17516442). Then, perform separation as follows:
 ```
-python separate.py file=path/to/my/file.wav
+python separate.py file=path/to/my/file.wav ckpt_dir=path/to/ckpt/dir
 ```
-You can specify:
+
+You can additionally specify:
 - an offset and a maximum duration (in seconds) with the `offset` and `duration` parameters (by default, the whole song is processed).
 - the directory where the separated tracks will be stored `rec_dir` (by default, it is the current working directory).
 - which `targets` to extract (by default, all four tracks `vocals`, `bass`, `drums`, and `other` are estimated).
-- the folder where checkpoints are located, which is `<out_dir>/<model_dir>/`. You can change both `out_dir` (default: `outputs`) and `model_dir` (default: `bsrnn-opt`).
 
-**Note**: if you want to use the SIMO model, you need to add an extra flag `simo=true`, so that the code loads a multi-source checkpoint named `separator.ckpt` instead of multiple single-source checkpoints named `<target>.ckpt`, e.g.:
-```
-python separate.py file=path/to/my/file.wav model_dir=simo-bsrnn-opt simo=true
-```
+The script expect to find a source-specific checkpoint `<ckpt_dir>/<target>.ckpt` for each target. However, if the `ckpt_dir` contains "`simo`", the script will automatically search for a multi-source `separator.ckpt` model instead.
+
+If one target checkpoint is missing among the required `targets` to separate, it will instanciate a random model (same for the multi-source separator in the case of a simo model).
+
+
 
 ## Ressources
 
@@ -139,13 +132,22 @@ We thank Jianwei Yu (author of the BSRNN paper) for trying to help us with the i
 
 ## Reference
 
-If you use this code, please cite our paper:
+If you use this code, please consider citing our papers.
 
 ```latex
-@misc{MagronBSRNN2026,  
+@misc{Magron2026bsrnn_opt,  
   author={Paul Magron and Romain Serizel and Constance Douwes},  
   title={The Costs of Reproducibility in Music Separation Research: a Replication of Band-Split {RNN}},
   url = {https://arxiv.org/abs/2603.09187},
+  year = {2026}
+}
+```
+
+```latex
+@misc{Magron2026bsrnn_nrj,  
+  author={Paul Magron and Romain Serizel and Constance Douwes},  
+  title={Investigating the performance and energy costs of replicating Band-Split {RNN} for Music Source Separation},
+  url = {https://arxiv.org/abs/2609.21918},
   year = {2026}
 }
 ```

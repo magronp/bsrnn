@@ -146,6 +146,19 @@ def get_track_list_musdb18(data_dir, subset):
     return list_tracks_dir
 
 
+def get_track_list(data_dir, subset):
+
+    if "musdb" in data_dir:
+        list_tracks_dir = get_track_list_musdb18(data_dir, subset)
+
+    else:
+        # for MoisesDB, no extra subset sub-folder
+        list_tracks_dir = [join(data_dir, i) for i in os.listdir(data_dir)]
+        list_tracks_dir.sort()
+
+    return list_tracks_dir
+
+
 class MusicDataset(Dataset):
     def __init__(
         self,
@@ -190,14 +203,7 @@ class MusicDataset(Dataset):
         self.n_samples = n_samples
 
         # Get the dir where the tracks are and the list of tracks
-        if "musdb" in data_dir:
-            self.list_tracks_dir = get_track_list_musdb18(data_dir, subset)
-        else:
-            # for MoisesDB, no extra subset sub-folder
-            self.list_tracks_dir = [
-                join(data_dir, i) for i in os.listdir(self.data_dir)
-            ]
-            self.list_tracks_dir.sort()
+        self.list_tracks_dir = get_track_list(data_dir, subset)
 
         # Adjust n_samples if not precised
         if self.n_samples is None:
@@ -549,7 +555,7 @@ if __name__ == "__main__":
         }
     )
 
-    # Dataset
+    # SAD Dataset
     train_db = MUSDBDatasetSAD(
         targets=targets,
         subset="train",
@@ -584,5 +590,14 @@ if __name__ == "__main__":
     print(len(train_sampler), x.shape, y.shape, track_name)
     torchaudio.save("ex_val_mix.wav", x[0], 44100)
     torchaudio.save("ex_val_target.wav", y[0, 0], 44100)
+
+    # Build test sampler
+    test_sampler = build_eval_sampler(
+        targets, cfg_dset, subset="test"
+    )
+    x, y, track_name = next(iter(test_sampler))
+    print(len(test_sampler), x.shape, y.shape, track_name)
+    torchaudio.save("ex_test_mix.wav", x[0], 44100)
+    torchaudio.save("ex_test_target.wav", y[0, 0], 44100)
 
 # EOF

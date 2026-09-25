@@ -9,7 +9,7 @@ def create_trainer(
     log_dir="tb_logs/",
     fast_tr=False,
 ):
-    
+
     if len(targets) == 1:
         ckpt_name = targets[0]
     else:
@@ -70,11 +70,11 @@ def create_trainer(
         ],
         logger=my_logger,
         accelerator="gpu",
-        strategy="ddp",
+        strategy=pl.strategies.DDPStrategy(process_group_backend=cfg_optim.backend),
         num_nodes=1,
         devices=ngpus,
         overfit_batches=overfit_batches,
-        num_sanity_val_steps=1,
+        num_sanity_val_steps=0 if cfg_optim.skip_sanity_check else 1,
         sync_batchnorm=cfg_optim.sync_bn,
         accumulate_grad_batches=cfg_optim.acc_grad,
         deterministic=cfg_optim.deterministic,

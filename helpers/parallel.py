@@ -1,7 +1,7 @@
 import torchaudio
 import pandas as pd
 from os import sched_getaffinity
-from helpers.data import get_track_list_musdb18
+from helpers.data import get_track_list
 import multiprocessing.pool
 import functools
 import torch
@@ -13,7 +13,7 @@ from models.separator import Separator
 def process_all_tracks_parallel(args, subset="test", num_cpus=None):
 
     # List of tracks to process
-    list_tracks_dir = get_track_list_musdb18(args.data_dir, subset=subset)
+    list_tracks_dir = get_track_list(args.data_dir, subset=subset)
 
     # If num_cpus not specified, use all available CPUs
     max_cpus = len(sched_getaffinity(0)) // 4 - 1

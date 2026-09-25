@@ -1,11 +1,14 @@
 # General
 max_epochs: 200
 deterministic: False
+skip_sanity_check: False
 
 # Algo-related
 algo: adam
 lr: 0.001
 grad_clip_norm: 5
+adjust_lr: True
+total_bsize_ref: 16 # in the original BSRNN paper = 2 (batch_size) x 8 (n_gpus)
 
 # Loss
 loss_type: L1
@@ -19,3 +22,4 @@ patience: 10
 ngpus:  # leave None for using all available GPUs
 sync_bn: True
 acc_grad: 1
+backend: gloo

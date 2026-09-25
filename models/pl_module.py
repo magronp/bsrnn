@@ -394,6 +394,8 @@ class PLModule(pl.LightningModule):
         x, y, track_name = batch
         track_name = track_name[0]
 
+        print(track_name)
+
         # Get the estimates
         y_hat, _ = self._apply_model_to_track(x, y, comp_loss=False)
 

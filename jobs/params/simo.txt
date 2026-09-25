@@ -17,7 +17,7 @@
 #"model=simo-bsrnn model.subtract_last_trgt=False"
 
 #------------- Shared encoder - optimized
-#"model=simo-bsrnn-opt dset=musdb18hq optim.patience=30 ckpt_path=outputs/simo-bsrnn-opt/last-separator.ckpt"
+#"model=simo-bsrnn-opt dset=musdb18hq optim.patience=30"
 
 #------------- "Lite" version (using multi-heads)
-"model=simo-bsrnn-opt model.n_heads=2 dset=musdb18hq optim.patience=30"
+#"model=simo-bsrnn-opt model.n_heads=2 dset=musdb18hq optim.patience=30 model.name_out_dir=simo-bsrnn-lite"
