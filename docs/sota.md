@@ -2,7 +2,7 @@
 
 On this page we summarize the performance of most state-of-the-art music separation models. We display results on the [MUSDB18-HQ test set](#musdb18-hq), as well as generalization on the [MoisesDB dataset](#generalization-capability-on-moisesdb). Importantly, we explain how we [obtain and report](#reporting-results) these results.
 
-All results displayed here are expressed in terms of [chunk SDR](README.md#note-on-the-metric) (dB).
+All results displayed here are expressed in terms of [chunk SDR](README.md#test-results) (dB).
 
 
 ## MUSDB18-HQ

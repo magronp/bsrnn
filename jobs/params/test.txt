@@ -17,8 +17,8 @@
 #"model=bsrnn-opt eval.sdr_type=csdr"
 
 # Trying different overlapp-add strategy for chunking full songs (uSDR only)
-#"model=bsrnn-large model.name_out_dir=bsrnn-alt eval.segment_len=3 eval.hop_size=1.5"
-#"model=bsrnn-large model.name_out_dir=bsrnn-alt eval.segment_len=3 eval.hop_size=0.5"
+#"model=bsrnn-large eval.segment_len=3 eval.hop_size=1.5"
+#"model=bsrnn-large eval.segment_len=3 eval.hop_size=0.5"
 #"model=bsrnn-opt eval.segment_len=3 eval.hop_size=1.5"
 #"model=bsrnn-opt eval.segment_len=3 eval.hop_size=0.5"
 
@@ -26,8 +26,8 @@
 #"model=simo-bsrnn-opt"
 #"model=simo-bsrnn-opt eval.sdr_type=csdr"
 
-"model=simo-bsrnn-opt model.name_out_dir=simo-bsrnn-lite"
-"model=simo-bsrnn-opt model.name_out_dir=simo-bsrnn-lite eval.sdr_type=csdr"
+#"model=simo-bsrnn-opt model.name_out_dir=simo-bsrnn-lite"
+#"model=simo-bsrnn-opt model.name_out_dir=simo-bsrnn-lite eval.sdr_type=csdr"
 
 # Test opt models on the MoisesDB dataset for generalization
 #"model=bsrnn-opt data_dir=data/moisesdb_4stems eval.sdr_type=csdr"

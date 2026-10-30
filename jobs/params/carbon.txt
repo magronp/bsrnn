@@ -96,3 +96,4 @@
 #"model=simo-bsrnn track_emissions=true tblog_dir=null"
 #"model=simo-bsrnn model.subtract_last_trgt=False track_emissions=true tblog_dir=null"
 #"model=simo-bsrnn-opt dset=musdb18hq optim.patience=30 track_emissions=true tblog_dir=null"
+#"model=simo-bsrnn-opt model.n_heads=2 dset=musdb18hq optim.patience=30 track_emissions=true tblog_dir=null"

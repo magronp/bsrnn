@@ -7,11 +7,11 @@
 
 &nbsp;
 
-This repository is an unofficial implementation of the [BSRNN](https://arxiv.org/pdf/2209.15174.pdf) model for music separation. Our primary goal is to obtain a model that yields similar results to those of the original BSRNN paper. After conducting many experiments to bridge the performance gap, we eventually obtained optimized models with state-of-the-art separation quality.
-
-This project is based on [PyTorch](https://pytorch.org/) ([Ligthning](https://lightning.ai/docs/pytorch/stable/)) and [Hydra](https://hydra.cc/), and uses the HQ version of the freely available [MUSDB18](https://sigsep.github.io/datasets/musdb.html) dataset. We provide pretrained models on a [Zenodo repository](https://zenodo.org/records/17516442), which you can use readily for [separating your own song](#separation--demo).
+This repository is an unofficial implementation of the [BSRNN](https://arxiv.org/pdf/2209.15174.pdf) model for music separation. Our primary objective is to obtain a model that yields similar results to those of the original BSRNN paper. After conducting many experiments to bridge the performance gap, we eventually obtained optimized models with state-of-the-art separation quality.
 
 The goal of this project is to foster reproducible research, to allow other researchers to experiment with this model (and variants), and to provide a fully fonctionning training pipeline and checkpoints for inference. Feel free to use it (if so, please [cite it](#reference)), and if you spot an error / something that differs from the description in the original paper / have a suggestion to improve the implementation, please feel free to reach out, send a message, or open an issue. :slightly_smiling_face: 
+
+This project is based on [PyTorch](https://pytorch.org/) ([Ligthning](https://lightning.ai/docs/pytorch/stable/)) and [Hydra](https://hydra.cc/), and uses the HQ version of the freely available [MUSDB18](https://sigsep.github.io/datasets/musdb.html) dataset (we also conduct an experiment on the [MoisesDB dataset](https://github.com/moises-ai/moises-db/) to evaluate generalization capability). We provide pretrained models on a [Zenodo repository](https://zenodo.org/records/17516442), which you can use readily for [separating your own song](#separation--demo).
 
 
 ## Contents
@@ -43,7 +43,7 @@ The table below displays results on the MUSDB18-HQ test set in terms of *chunk* 
 |  our alternative    |   9.39  |   8.04  |   8.32  |   5.73  |   7.87  |
  
  
-Despite our efforts, our implementation is about [0.8 dB SDR bellow](#test-results) the original results, thus some work is still needed to match these. We propose an alternative data generation process and increasing the number of epochs for better convergence, which reduces the gap to 0.4 dB (see [here](docs/analysis.md#large-model) for implementation details).
+Despite our efforts, our implementation is about 0.8 dB SDR bellow the original results, thus some work is still needed to match these. We propose an alternative data generation process and increasing the number of epochs for better convergence, which reduces the gap to 0.4 dB (see [here](docs/analysis.md#large-model) for implementation details).
 
 
 To further bridge the performance gap, we proposed several variants, ultimately yielding [optimized](docs/analysis.md#optimized-model) models that largely improve separation quality.
@@ -83,11 +83,14 @@ On linux you will also need to install ffmpeg (needed for museval / musdb):
 ```
 sudo apt install ffmpeg
 ```
-This project has been tested under python 3.10.
+This setup has been tested under python 3.13.
 
 ### Training and evaluation
 
-For clarity, we provide guides for preparing the [data](docs/data.md), [training](docs/training.md) the model(s), and performing [evaluation](docs/evaluation.md) in separate documents.
+For clarity, we provide detailed information in dedicated documents for :
+- preparing the [data](docs/data.md)
+- [training](docs/training.md) the model(s)
+- performing [evaluation](docs/evaluation.md)
 
 
 ### Separation / demo
@@ -102,11 +105,9 @@ You can additionally specify:
 - the directory where the separated tracks will be stored `rec_dir` (by default, it is the current working directory).
 - which `targets` to extract (by default, all four tracks `vocals`, `bass`, `drums`, and `other` are estimated).
 
-The script expect to find a source-specific checkpoint `<ckpt_dir>/<target>.ckpt` for each target. However, if the `ckpt_dir` contains "`simo`", the script will automatically search for a multi-source `separator.ckpt` model instead.
+The script expects to find a source-specific checkpoint `<ckpt_dir>/<target>.ckpt` for each target. However, if the `ckpt_dir` contains "`simo`", the script will automatically search for a multi-source `separator.ckpt` model instead.
 
-If one target checkpoint is missing among the required `targets` to separate, it will instanciate a random model (same for the multi-source separator in the case of a simo model).
-
-
+If one target checkpoint is missing among the required `targets` to separate, it will instanciate a random model (same for the multi-target separator in the case of a SIMO model).
 
 ## Ressources
 
