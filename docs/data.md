@@ -11,7 +11,7 @@ python prep_dataset_sad.py
 
 You can change the SAD parameters via the config file located in the `conf/sad` folder (or in command line, using Hydra).
 
-Note that if you want to skip training and only perform [evaluation](#evaluation), you can download pretrained models on the [Zenodo repository](https://zenodo.org/records/17516442) (and you can skip applying the preprocessing script above).
+Note that if you want to skip training and only perform [evaluation](#evaluation), you can download pretrained models on the [Zenodo repository](https://zenodo.org/records/23940909) (and you can skip applying the preprocessing script above).
 
 
 ### MoisesDB

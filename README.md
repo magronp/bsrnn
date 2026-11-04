@@ -11,7 +11,7 @@ This repository is an unofficial implementation of the [BSRNN](https://arxiv.org
 
 The goal of this project is to foster reproducible research, to allow other researchers to experiment with this model (and variants), and to provide a fully fonctionning training pipeline and checkpoints for inference. Feel free to use it (if so, please [cite it](#reference)), and if you spot an error / something that differs from the description in the original paper / have a suggestion to improve the implementation, please feel free to reach out, send a message, or open an issue. :slightly_smiling_face: 
 
-This project is based on [PyTorch](https://pytorch.org/) ([Ligthning](https://lightning.ai/docs/pytorch/stable/)) and [Hydra](https://hydra.cc/), and uses the HQ version of the freely available [MUSDB18](https://sigsep.github.io/datasets/musdb.html) dataset (we also conduct an experiment on the [MoisesDB dataset](https://github.com/moises-ai/moises-db/) to evaluate generalization capability). We provide pretrained models on a [Zenodo repository](https://zenodo.org/records/17516442), which you can use readily for [separating your own song](#separation--demo).
+This project is based on [PyTorch](https://pytorch.org/) ([Ligthning](https://lightning.ai/docs/pytorch/stable/)) and [Hydra](https://hydra.cc/), and uses the HQ version of the freely available [MUSDB18](https://sigsep.github.io/datasets/musdb.html) dataset (we also conduct an experiment on the [MoisesDB dataset](https://github.com/moises-ai/moises-db/) to evaluate generalization capability). We provide pretrained models on a [Zenodo repository](https://zenodo.org/records/23940909), which you can use readily for [separating your own song](#separation--demo).
 
 
 ## Contents
@@ -95,7 +95,7 @@ For clarity, we provide detailed information in dedicated documents for :
 
 ### Separation / demo
 
-If you simply want to use BSRNN to separate your favorite song, then make sure to download the pretrained checkpoints from the [Zenodo repository](https://zenodo.org/records/17516442). Then, perform separation as follows:
+If you simply want to use BSRNN to separate your favorite song, then make sure to download the pretrained checkpoints from the [Zenodo repository](https://zenodo.org/records/23940909). Then, perform separation as follows:
 ```
 python separate.py file=path/to/my/file.wav ckpt_dir=path/to/ckpt/dir
 ```
